@@ -1,0 +1,68 @@
+;
+; Copyright (c) 2001 Andrew Fernandes <andrew@fernandes.org>. All rights reserved.
+;
+; This work may be used and distributed under the terms of the GNU Public License,
+; as written in the included file "gpl.txt" or online at <http://www.gnu.org/>.
+;
+LIBRARY winscard
+EXPORTS
+SCardAccessNewReaderEvent
+SCardAccessStartedEvent
+SCardAddReaderToGroupA
+SCardAddReaderToGroupW
+SCardBeginTransaction
+SCardCancel
+SCardConnectA
+SCardConnectW
+SCardControl
+SCardDisconnect
+SCardEndTransaction
+SCardEstablishContext
+SCardForgetCardTypeA
+SCardForgetCardTypeW
+SCardForgetReaderA
+SCardForgetReaderGroupA
+SCardForgetReaderGroupW
+SCardForgetReaderW
+SCardFreeMemory
+SCardGetAttrib
+SCardGetCardTypeProviderNameA
+SCardGetCardTypeProviderNameW
+SCardGetProviderIdA
+SCardGetProviderIdW
+SCardGetStatusChangeA
+SCardGetStatusChangeW
+SCardIntroduceCardTypeA
+SCardIntroduceCardTypeW
+SCardIntroduceReaderA
+SCardIntroduceReaderGroupA
+SCardIntroduceReaderGroupW
+SCardIntroduceReaderW
+SCardIsValidContext
+SCardListCardsA
+SCardListCardsW
+SCardListInterfacesA
+SCardListInterfacesW
+SCardListReaderGroupsA
+SCardListReaderGroupsW
+SCardListReadersA
+SCardListReadersW
+SCardLocateCardsA
+SCardLocateCardsW
+SCardReconnect
+SCardReleaseAllEvents
+SCardReleaseContext
+SCardReleaseNewReaderEvent
+SCardReleaseStartedEvent
+SCardRemoveReaderFromGroupA
+SCardRemoveReaderFromGroupW
+SCardSetAttrib
+SCardSetCardTypeProviderNameA
+SCardSetCardTypeProviderNameW
+SCardState
+SCardStatusA
+SCardStatusW
+SCardTransmit
+g_rgSCardRawPci DATA
+g_rgSCardT0Pci DATA
+g_rgSCardT1Pci DATA

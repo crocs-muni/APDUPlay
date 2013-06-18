@@ -1,0 +1,139 @@
+; Copyright (c) 2001 Andrew Fernandes <andrew@fernandes.org>. All rights reserved.
+;
+; This work may be used and distributed under the terms of the GNU Public License,
+; as written in the included file "gpl.txt" or online at <http://www.gnu.org/>.
+;
+LIBRARY "winscard"
+EXPORTS
+;
+; functions to pass transparently
+;
+;SCardAccessNewReaderEvent=original.SCardAccessNewReaderEvent @1
+;SCardAccessStartedEvent=original.SCardAccessStartedEvent @2
+;SCardAddReaderToGroupA=original.SCardAddReaderToGroupA @6
+;SCardAddReaderToGroupW=original.SCardAddReaderToGroupW @7
+;SCardBeginTransaction=original.SCardBeginTransaction @8
+;SCardCancel=original.SCardCancel @9
+;SCardConnectA=original.SCardConnectA @10
+;SCardConnectW=original.SCardConnectW @11
+;SCardControl=original.SCardControl @12
+;SCardDisconnect=original.SCardDisconnect @13
+;SCardEndTransaction=original.SCardEndTransaction @14
+;SCardEstablishContext=original.SCardEstablishContext @15
+;SCardForgetCardTypeA=original.SCardForgetCardTypeA @16
+;SCardForgetCardTypeW=original.SCardForgetCardTypeW @17
+;SCardForgetReaderA=original.SCardForgetReaderA @18
+;SCardForgetReaderGroupA=original.SCardForgetReaderGroupA @19
+;SCardForgetReaderGroupW=original.SCardForgetReaderGroupW @20
+;SCardForgetReaderW=original.SCardForgetReaderW @21
+;SCardFreeMemory=original.SCardFreeMemory @22
+;SCardGetAttrib=original.SCardGetAttrib @23
+;SCardGetCardTypeProviderNameA=original.SCardGetCardTypeProviderNameA @24
+;SCardGetCardTypeProviderNameW=original.SCardGetCardTypeProviderNameW @25
+;SCardGetProviderIdA=original.SCardGetProviderIdA @26
+;SCardGetProviderIdW=original.SCardGetProviderIdW @27
+;SCardGetStatusChangeA=original.SCardGetStatusChangeA @28
+;SCardGetStatusChangeW=original.SCardGetStatusChangeW @29
+;SCardIntroduceCardTypeA=original.SCardIntroduceCardTypeA @30
+;SCardIntroduceCardTypeW=original.SCardIntroduceCardTypeW @31
+;SCardIntroduceReaderA=original.SCardIntroduceReaderA @32
+;SCardIntroduceReaderGroupA=original.SCardIntroduceReaderGroupA @33
+;SCardIntroduceReaderGroupW=original.SCardIntroduceReaderGroupW @34
+;SCardIntroduceReaderW=original.SCardIntroduceReaderW @35
+;SCardIsValidContext=original.SCardIsValidContext @36
+;SCardListCardsA=original.SCardListCardsA @37
+;SCardListCardsW=original.SCardListCardsW @38
+;SCardListInterfacesA=original.SCardListInterfacesA @39
+;SCardListInterfacesW=original.SCardListInterfacesW @40
+;SCardListReaderGroupsA=original.SCardListReaderGroupsA @41
+;SCardListReaderGroupsW=original.SCardListReaderGroupsW @42
+;SCardListReadersA=original.SCardListReadersA @43
+;SCardListReadersW=original.SCardListReadersW @44
+;SCardLocateCardsA=original.SCardLocateCardsA @45
+;SCardLocateCardsW=original.SCardLocateCardsW @46
+;SCardReconnect=original.SCardReconnect @47
+;SCardReleaseAllEvents=original.SCardReleaseAllEvents @3
+;SCardReleaseContext=original.SCardReleaseContext @48
+;SCardReleaseNewReaderEvent=original.SCardReleaseNewReaderEvent @4
+;SCardReleaseStartedEvent=original.SCardReleaseStartedEvent @5
+;SCardRemoveReaderFromGroupA=original.SCardRemoveReaderFromGroupA @49
+;SCardRemoveReaderFromGroupW=original.SCardRemoveReaderFromGroupW @50
+;SCardSetAttrib=original.SCardSetAttrib @51
+;SCardSetCardTypeProviderNameA=original.SCardSetCardTypeProviderNameA @52
+;SCardSetCardTypeProviderNameW=original.SCardSetCardTypeProviderNameW @53
+;SCardState=original.SCardState @54
+;SCardStatusA=original.SCardStatusA @55
+;SCardStatusW=original.SCardStatusW @56
+;
+; initialized shared data symbols
+;
+g_rgSCardRawPci=original.g_rgSCardRawPci @58 DATA
+g_rgSCardT0Pci=original.g_rgSCardT0Pci @59 DATA
+g_rgSCardT1Pci=original.g_rgSCardT1Pci @60 DATA
+;
+; functions to be intercepted
+;
+SCardTransmit @57
+SCardConnectW @11
+SCardDisconnect @13
+SCardListReadersA @43
+SCardListReadersW @44
+SCardFreeMemory @22
+
+
+SCardAccessNewReaderEvent @1
+SCardAccessStartedEvent @2
+SCardAddReaderToGroupA @6
+SCardAddReaderToGroupW @7
+SCardBeginTransaction @8
+SCardCancel @9
+SCardConnectA @10
+SCardConnectW @11
+SCardControl @12
+SCardDisconnect @13
+SCardEndTransaction @14
+SCardEstablishContext @15
+SCardForgetCardTypeA @16
+SCardForgetCardTypeW @17
+SCardForgetReaderA @18
+SCardForgetReaderGroupA @19
+SCardForgetReaderGroupW @20
+SCardForgetReaderW @21
+SCardFreeMemory @22
+SCardGetAttrib @23
+SCardGetCardTypeProviderNameA @24
+SCardGetCardTypeProviderNameW @25
+SCardGetProviderIdA @26
+SCardGetProviderIdW @27
+SCardGetStatusChangeA @28
+SCardGetStatusChangeW @29
+SCardIntroduceCardTypeA @30
+SCardIntroduceCardTypeW @31
+SCardIntroduceReaderA @32
+SCardIntroduceReaderGroupA @33
+SCardIntroduceReaderGroupW @34
+SCardIntroduceReaderW @35
+SCardIsValidContext @36
+SCardListCardsA @37
+SCardListCardsW @38
+SCardListInterfacesA @39
+SCardListInterfacesW @40
+SCardListReaderGroupsA @41
+SCardListReaderGroupsW @42
+SCardListReadersA @43
+SCardListReadersW @44
+SCardLocateCardsA @45
+SCardLocateCardsW @46
+SCardReconnect @47
+SCardReleaseAllEvents @3
+SCardReleaseContext @48
+SCardReleaseNewReaderEvent @4
+SCardReleaseStartedEvent @5
+SCardRemoveReaderFromGroupA @49
+SCardRemoveReaderFromGroupW @50
+SCardSetAttrib @51
+SCardSetCardTypeProviderNameA @52
+SCardSetCardTypeProviderNameW @53
+SCardState @54
+SCardStatusA @55
+SCardStatusW @56
