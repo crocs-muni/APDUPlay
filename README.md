@@ -16,8 +16,11 @@ How to use it?
 4. (Optional) Change configuration file winscard_rules.txt to modify default behaviour (see below)
 
 APDUPlay project provides winscard.dll library that is stub used instead of original winscard.dll provided by Microsoft. For correct usage, you need to find  Microsoft's library and copy it to folder with application you are trying to control with APDUPlay. 
+
 If you are using Windows XP or Windows 7 32bit, you can find it at c:\Windows\winscard.dll
+
 If you are using Windows 7 64bit, you can find it at c:\Windows\SysWOW64\winscard.dll
+
 NOTE: If you will use (wrongly) 64bit version of library winscard.dll, it will fail with "The procedure entry point original.g_rgSCardT1Pci could not be located in the dynamic link library WinSCard.dll."  
 
 Please send me any comments or found bugs to the mail written at the footer of this page. 
