@@ -1,7 +1,7 @@
 #ifndef COMMONFNC_H
 #define COMMONFNC_H
 
-#include "..\..\Shared\globals.h"
+#include "..\Shared\globals.h"
 
 
 
