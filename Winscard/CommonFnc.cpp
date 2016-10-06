@@ -36,8 +36,9 @@
 #include "CommonFnc.h"
 #include <math.h>
 #include <memory>
+#include <fstream>
 
-int CCommonFnc::File_AppendString(CString filePath, CString data) {
+/*int CCommonFnc::File_AppendString(CString filePath, CString data) {
     int             status = STAT_OK;
     CFile           file;
 
@@ -50,6 +51,20 @@ int CCommonFnc::File_AppendString(CString filePath, CString data) {
 
     return status;
 
+}*/
+
+int CCommonFnc::File_AppendString(std::string filePath, std::string data) {
+	int             status = STAT_OK;
+	std::ofstream file;
+	file.open(filePath, std::fstream::out | std::fstream::app);
+
+	if (file.is_open()) {
+		file.write((LPCTSTR)data.c_str(), data.length());
+		file.close();
+	}
+	else status = STAT_FILE_OPEN_FAIL;
+
+	return status;
 }
 
 int CCommonFnc::File_GetAvailableFileName(CString baseFile, CString* pFreeFileName) {
@@ -288,13 +303,13 @@ int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lc
     return status;
 }
 
-int CCommonFnc::SCSAT_SaveSamples(CString filePath, SAMPLE_PLOT* pSample, int startOffset, int endOffset) {
+int CCommonFnc::SCSAT_SaveSamples(string filePath, SAMPLE_PLOT* pSample, int startOffset, int endOffset) {
     int     status = STAT_OK;
     
-    MoveFile(filePath, filePath + ".bak");
-    DeleteFile(filePath);
+    MoveFile(filePath.c_str(), (filePath + ".bak").c_str());
+    DeleteFile(filePath.c_str());
     // SAVE HEADER
-    CString tmp;
+    string tmp;
     pSample->measureInfo.formatToString(&tmp);
     CCommonFnc::File_AppendString(filePath, tmp);
     
@@ -304,13 +319,14 @@ int CCommonFnc::SCSAT_SaveSamples(CString filePath, SAMPLE_PLOT* pSample, int st
             // store number of written samples
             if (endOffset == -1) endOffset = pSample->dataBlob.dwActLen;
             pSample->measureInfo.numSamples = endOffset - startOffset + 2;
-            tmp.Format("%d", pSample->measureInfo.numSamples);
-            WritePrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_NUMSAMPLES, tmp, filePath);
+			tmp = string_format("%d", pSample->measureInfo.numSamples);
+            //tmp.Format("%d", pSample->measureInfo.numSamples);
+            WritePrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_NUMSAMPLES, tmp.c_str(), filePath.c_str());
         }      
     }
     
     if (status == STAT_OK) {
-        DeleteFile(filePath + ".bak");
+        DeleteFile((filePath + ".bak").c_str());
     }
 
     return status;

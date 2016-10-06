@@ -6,7 +6,7 @@
 class CCommonFnc {
 public:
     static int File_GetAvailableFileName(CString baseFile, CString* pFreeFileName);
-    static int File_AppendString(CString filePath, CString data);
+    static int File_AppendString(string filePath, string data);
     static int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
     static int CCommonFnc::File_SaveMatrixInt(CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
 
@@ -20,7 +20,7 @@ public:
     static int String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString);
     static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString);
 
-    static int SCSAT_SaveSamples(CString filePath, SAMPLE_PLOT* pSample, int startOffset = 0, int endOffset = -1);
+    static int SCSAT_SaveSamples(string filePath, SAMPLE_PLOT* pSample, int startOffset = 0, int endOffset = -1);
     static int SCSAT_GetPowerSamplesFileOffset(CString fileName, int* pOffset);
 	static int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
 
