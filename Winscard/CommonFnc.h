@@ -5,8 +5,6 @@
 
 class CCommonFnc {
 public:
-	template <class ... Args>
-	static std::string string_format(const std::string& format, Args ... args);
     static int File_GetAvailableFileName(CString baseFile, CString* pFreeFileName);
     static int File_AppendString(CString filePath, CString data);
     static int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);

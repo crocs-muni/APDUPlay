@@ -37,19 +37,6 @@
 #include <math.h>
 #include <memory>
 
-#pragma warning(disable : 4996) // for Visual Studio: Microsoft renamed std::snprintf to _snprintf
-							   // this should remove the warnings
-
-							   //This function is used to format std::string with arguments like with printf
-template<typename ... Args>
-string CCommonFnc::string_format(const std::string& format, Args ... args)
-{
-	size_t size = snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
-	unique_ptr<char[]> buf(new char[size]);
-	snprintf(buf.get(), size, format.c_str(), args ...);
-	return string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
-}
-
 int CCommonFnc::File_AppendString(CString filePath, CString data) {
     int             status = STAT_OK;
     CFile           file;
