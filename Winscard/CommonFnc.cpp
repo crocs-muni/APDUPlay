@@ -332,11 +332,12 @@ int CCommonFnc::SCSAT_SaveSamples(string filePath, SAMPLE_PLOT* pSample, int sta
     return status;
 }
 
-int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(CString fileName, int* pOffset) {
+int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
     int     status = STAT_OK;
-    CFile   file;
-    
-    if (file.Open(fileName, CFile::modeRead)) {
+    ifstream file;
+	file.open(fileName, std::fstream::in);
+
+    if (file.is_open()) {
         // FIND 'SCSAT_MEASURE_POWERTRACE' VALUE - SEARCH USING SLIGHTLY OVERLAPPED BLOCKS
         CString dataBlock;
         #define BLOCK_READ_LEN  1000
@@ -346,7 +347,8 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(CString fileName, int* pOffset) 
         DWORD   baseOffset = 0;
         while (traceOffset == 0) {  
             memset(block, 0, sizeof(block));  
-            len = file.Read(block, BLOCK_READ_LEN); 
+            file.read(block, BLOCK_READ_LEN); 
+			len = file.gcount();
             dataBlock = block;
             if ((dataBlock.Find(SCSAT_MEASURE_POWERTRACE) != -1)) {
                 // we found SCSAT_MEASURE_POWERTRACE string, save its offset
@@ -357,11 +359,10 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(CString fileName, int* pOffset) 
             if (len != BLOCK_READ_LEN) break; // we are at the end of file
             
             // go back slightly not to miss SCSAT_MEASURE_POWERTRACE string on block border
-            file.Seek(-(int) strlen(SCSAT_MEASURE_POWERTRACE), CFile::current);
+            file.seekg(-(int) strlen(SCSAT_MEASURE_POWERTRACE), ios_base::cur);
             baseOffset += (DWORD) (BLOCK_READ_LEN - strlen(SCSAT_MEASURE_POWERTRACE));
         }
-        
-        file.Close();
+        file.close();
     }
     else status = STAT_FILE_OPEN_FAIL;
    
