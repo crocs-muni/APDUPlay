@@ -96,44 +96,50 @@ int CCommonFnc::File_GetAvailableFileName(CString baseFile, CString* pFreeFileNa
     return status;
 }
 
-int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
+int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
     return File_SaveMatrixInt(filePath, pBlob, startOffset, endOffset, startFileOffset, bSaveBinary);
 }
 
-int CCommonFnc::File_SaveMatrixInt(CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary) {
+int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary) {
     int     status = STAT_OK;
     int     i;
-	CFile   file; 
-    CString value;
-    CString	values = "";
+	fstream file;
+    string value;
+    string values = "";
     
 #define		NUM_VALUES_PER_WRITE	1000    
     
     if (endOffset == -1) endOffset = pBlob->dwActLen;
     
-    if (file.Open(filePath, CFile::modeReadWrite | CFile::modeCreate | CFile::modeNoTruncate)) {
-        file.Seek(startFileOffset, CFile::current);
+	file.open(filePath, std::fstream::in | std::fstream::out | std::fstream::app);
+
+
+    if (file.is_open()) {
+        file.seekg(startFileOffset, ios_base::cur);
         
         if (bSaveBinary) {
 			// SAVE AS BINARY CHUNK
-			file.Write(pBlob->pData + startOffset, (endOffset - startOffset) * sizeof(int));
+			size_t size = (endOffset - startOffset) * sizeof(int);
+			char* buff = new char[size];
+			memcpy(buff, pBlob->pData + startOffset, size);
+			file.write(buff, size);
         }
         else {
 			for (i = startOffset; i < endOffset; i++) { 
-				value.Format("%d\r\n", pBlob->pData[i]);    
+				//value.Format("%d\r\n", pBlob->pData[i]);
+				value = string_format("%d\r\n", pBlob->pData[i]);
 				values += value;
 	            
 				if ((i % NUM_VALUES_PER_WRITE) == 0) {
-					file.Write((LPCTSTR) values, values.GetLength());
+					file.write((LPCTSTR) values.c_str(), values.length());
 					values = "";
 				}
 			}
 	        
 			// WRITE REMAINING VALUES
-			file.Write((LPCTSTR) values, values.GetLength());
+			file.write((LPCTSTR) values.c_str(), values.length());
 		}
-		
-        file.Close();
+        file.close();
     }
     else {
         status = STAT_FILE_OPEN_FAIL;

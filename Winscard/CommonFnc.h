@@ -7,8 +7,8 @@ class CCommonFnc {
 public:
     static int File_GetAvailableFileName(CString baseFile, CString* pFreeFileName);
     static int File_AppendString(string filePath, string data);
-    static int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
-    static int CCommonFnc::File_SaveMatrixInt(CString filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
+    static int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
+    static int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
 
     static int BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArray, BYTE* pbArrayLen);
     static int BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArray, DWORD* pbArrayLen);
