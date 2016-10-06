@@ -375,47 +375,61 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
     return status;
 }
 
-int CCommonFnc::SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo) {
+int CCommonFnc::SCSAT_EnsureFileHeader(string filePath, SCSAT_MEASURE_INFO* pInfo) {
 	int status = STAT_OK;
 	char iniValue[MAX_INI_VALUE_CHAR];
 
 	// CHECK IF HEADER EXISTS
     BOOL    bNewFormat = FALSE; 
     int     fileLength = 0;
-    CFile	file;
-    if (file.Open(filePath, CFile::modeReadWrite)) {
+	fstream file;
+	file.open(filePath, std::fstream::in | std::fstream::out);
+   
+	if (file.is_open()) {
         char    buffer[100];
         memset(buffer, 0, sizeof(buffer));
-        file.Read(buffer, 100);
-        fileLength = (int) file.GetLength();
-        CString header = buffer; CString part = header.Mid(1, (int) strlen(SCSAT_MEASURE_SECTION));
-        if (part.CompareNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
+        file.read(buffer, 100);
+		file.seekg(0, ios_base::end);
+		fileLength = file.tellg();
+		file.seekg(0, ios_base::beg);
+        string header = buffer; string part = header.substr(1, (int) strlen(SCSAT_MEASURE_SECTION));
+		
+		char *partchar = new char[part.length() + 1];
+		char *SCSAT_MEASURE_SECTION_char = new char[strlen(SCSAT_MEASURE_SECTION) + 1];
+		strcpy(partchar, part.c_str());
+		strcpy(SCSAT_MEASURE_SECTION_char, SCSAT_MEASURE_SECTION);
+		toupper(*partchar);
+		toupper(*SCSAT_MEASURE_SECTION_char);
+		if(strcmp(partchar, SCSAT_MEASURE_SECTION_char) == 0) bNewFormat = TRUE;
+        //if (part.CompareNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
         else bNewFormat = FALSE;
         
     	// WRITE IF NOT 
         if (!bNewFormat) {
-	        CString tmp;
+	        string tmp;
 			if (pInfo->sampleUniqueID == 0) {
 				CCommonFnc::Sample_GenerateSampleUniqueID(&(pInfo->sampleUniqueID));
 			}
             pInfo->formatToString(&tmp);
-	        file.SeekToBegin();
-	        file.Write((LPCTSTR) tmp, tmp.GetLength());
+			file.seekg(0, ios_base::beg);
+			file.seekp(0, ios_base::beg);
+	        file.write((LPCTSTR) tmp.c_str(), tmp.length());
         }
         
-        file.Close();
+        file.close();
     
 		// if the sampleUniqueID is not present
 		
 		if(bNewFormat) {
-			GetPrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_SAMPLEUNIQUEID, "", iniValue, MAX_INI_VALUE_CHAR, filePath);
+			GetPrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_SAMPLEUNIQUEID, "", iniValue, MAX_INI_VALUE_CHAR, filePath.c_str());
 			if (strlen(iniValue) == 0) {
 				if (pInfo->sampleUniqueID == 0) {
 				CCommonFnc::Sample_GenerateSampleUniqueID(&(pInfo->sampleUniqueID));
 			    }
-				CString tmp;
-				tmp.Format("%lld", pInfo->sampleUniqueID);
-                WritePrivateProfileString(SCSAT_MEASURE_SECTION,SCSAT_MEASURE_SAMPLEUNIQUEID,tmp,filePath);
+				string tmp;
+				tmp = string_format("%lld", pInfo->sampleUniqueID);
+				//tmp.AtlUtil::Format("%lld", pInfo->sampleUniqueID);
+                WritePrivateProfileString(SCSAT_MEASURE_SECTION,SCSAT_MEASURE_SAMPLEUNIQUEID, tmp.c_str(), filePath.c_str());
 			
 			}	
 		}

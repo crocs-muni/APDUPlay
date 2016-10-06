@@ -22,7 +22,7 @@ public:
 
     static int SCSAT_SaveSamples(string filePath, SAMPLE_PLOT* pSample, int startOffset = 0, int endOffset = -1);
     static int SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset);
-	static int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
+	static int SCSAT_EnsureFileHeader(string filePath, SCSAT_MEASURE_INFO* pInfo);
 
 	static int Sample_GenerateSampleUniqueID(__int64* id);
     static int Sample_Free(SAMPLE_PLOT* pSample);
