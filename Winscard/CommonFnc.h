@@ -5,17 +5,17 @@
 
 class CCommonFnc {
 public:
-    static int File_GetAvailableFileName(CString baseFile, CString* pFreeFileName);
+    static int File_GetAvailableFileName(string baseFile, string* pFreeFileName);
     static int File_AppendString(string filePath, string data);
     static int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
     static int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
 
-    static int BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArray, BYTE* pbArrayLen);
-    static int BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArray, DWORD* pbArrayLen);
-    static int BYTE_ConvertFromHexNumToByte(CString hexaString, BYTE* pByte);
-    static int BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, CString* pHexaString);
+    static int BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray, BYTE* pbArrayLen);
+    static int BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray, DWORD* pbArrayLen);
+    static int BYTE_ConvertFromHexNumToByte(string hexaString, BYTE* pByte);
+    static int BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string* pHexaString);
 
-    static int APDU_ConvertToString(CARDAPDU* pAPDU, CString* pString, BOOL toSendAPDU);
+    static int APDU_ConvertToString(CARDAPDU* pAPDU, string* pString, BOOL toSendAPDU);
 
     static int String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString);
     static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString);

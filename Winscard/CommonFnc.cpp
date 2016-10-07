@@ -67,7 +67,7 @@ int CCommonFnc::File_AppendString(std::string filePath, std::string data) {
 	return status;
 }
 
-int CCommonFnc::File_GetAvailableFileName(CString baseFile, CString* pFreeFileName) {
+int CCommonFnc::File_GetAvailableFileName(string baseFile, string* pFreeFileName) {
     int             status = STAT_OK;
     char            fileName[MAX_PATH];
     char            drive[_MAX_DRIVE];
@@ -77,10 +77,10 @@ int CCommonFnc::File_GetAvailableFileName(CString baseFile, CString* pFreeFileNa
     DWORD           index = 1;
 
     // FIND FIRST FREE INDEX
-    _splitpath_s((LPCTSTR) baseFile, drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
+    _splitpath_s((LPCTSTR) baseFile.c_str(), drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
     index = 1;
-    CString zeroes = "0000";
-    sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes, index, ext);
+    string zeroes = "0000";
+    sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
     while (GetFileAttributes(fileName) != -1) {
         index++;
         if (index < 10) zeroes = "0000";
@@ -88,11 +88,12 @@ int CCommonFnc::File_GetAvailableFileName(CString baseFile, CString* pFreeFileNa
         else if (index < 1000) zeroes = "00";
         else if (index < 10000) zeroes = "0";
         else zeroes = "";
-        sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes, index, ext);
+        sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
     }    
     // INDEX FOUND
-    pFreeFileName->Format("%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes, index, ext);
-    
+    //pFreeFileName->Format("%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
+	*pFreeFileName = string_format("%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR)zeroes.c_str(), index, ext);
+
     return status;
 }
 
@@ -148,7 +149,7 @@ int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int st
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArray, BYTE* pbArrayLen) {
+int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray, BYTE* pbArrayLen) {
     int     status = STAT_OK;
     DWORD   arrayLen = *pbArrayLen;    
     
@@ -159,26 +160,31 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArra
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArray, DWORD* pbArrayLen) {
+int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray, DWORD* pbArrayLen) {
     int         status = STAT_OK;
     DWORD       pos = 0;
     DWORD       pos2 = 0;
-    CString     hexNum;
+    string     hexNum;
     DWORD       num;
     BYTE*       pTempArray = NULL;
     DWORD       tempArrayPos = 0;
 
     // EAT SPACES
-    hexaString.TrimLeft(); hexaString.TrimRight();
+    //hexaString.TrimLeft(); hexaString.TrimRight();
+	hexaString.erase(hexaString.find_last_not_of(" ") + 1);
+	size_t startpos = hexaString.find_first_not_of(" ");
+	if (string::npos != startpos) {
+		hexaString = hexaString.substr(startpos);
+	}
     hexaString += " ";
-    hexaString.GetLength();
+    hexaString.length();
 
     if (status == STAT_OK) {
-        pTempArray = new BYTE[hexaString.GetLength()];
-        memset(pTempArray, 0, hexaString.GetLength());
+        pTempArray = new BYTE[hexaString.length()];
+        memset(pTempArray, 0, hexaString.length());
 
         pos = pos2 = 0;
-        while ((pos = hexaString.Find(' ', pos2)) != -1) {
+        /*while ((pos = hexaString.Find(' ', pos2)) != -1) {
             hexNum = hexaString.Mid(pos2, pos - pos2);
             hexNum.TrimLeft(); hexNum.TrimRight();
             if (hexNum.GetLength() > 0) {
@@ -190,7 +196,24 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArra
                 tempArrayPos++;
             }
             pos2 = pos + 1;
-        }
+        }*/
+		while ((pos = hexaString.find(' ', pos2)) != string::npos) {
+			hexNum = hexaString.substr((pos2, pos - pos2));
+			hexNum.erase(hexNum.find_last_not_of(" ") + 1);
+			size_t startpos2 = hexNum.find_first_not_of(" ");
+			if (string::npos != startpos2) {
+				hexNum = hexNum.substr(startpos2);
+			}
+			if (hexNum.length() > 0) {
+				num = strtol((LPCTSTR)hexNum.c_str(), NULL, 16);
+
+				if (num == 0xFF) pTempArray[tempArrayPos] = 0xFF;
+				else pTempArray[tempArrayPos] = (BYTE)num & 0xFF;
+
+				tempArrayPos++;
+			}
+			pos2 = pos + 1;
+		}
 
         if (tempArrayPos > *pbArrayLen) {
             status = STAT_NOT_ENOUGHT_MEMORY;
@@ -206,8 +229,8 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(CString hexaString, BYTE* pArra
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexNumToByte(CString hexNum, BYTE* pByte) {
-    DWORD num = strtol((LPCTSTR) hexNum, NULL, 16);
+int CCommonFnc::BYTE_ConvertFromHexNumToByte(string hexNum, BYTE* pByte) {
+    DWORD num = strtol((LPCTSTR) hexNum.c_str(), NULL, 16);
 
     if (num == 0xFF) *pByte = 0xFF;
     else *pByte = (BYTE) num & 0xFF;
@@ -215,17 +238,18 @@ int CCommonFnc::BYTE_ConvertFromHexNumToByte(CString hexNum, BYTE* pByte) {
     return STAT_OK;
 }
 
-int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, CString* pString, BOOL toSendAPDU) {
+int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string* pString, BOOL toSendAPDU) {
     int         status = STAT_OK;
-    CString     message;
-    CString     ioData;
+    string     message;
+    string     ioData;
     
     if (toSendAPDU) {
         // APDU to SmartCard
         CCommonFnc::BYTE_ConvertFromArrayToHexString(pAPDU->DataIn, pAPDU->lc, &ioData);
         
         // FORMAT: INS CLA P1 P2 LC input_data Le 
-        message.Format("-> %.2x %.2x %.2x %.2x %.2x %s %.2x", pAPDU->cla, pAPDU->ins, pAPDU->p1, pAPDU->p2, pAPDU->lc, (LPCTSTR) ioData, pAPDU->le);
+        //message.Format("-> %.2x %.2x %.2x %.2x %.2x %s %.2x", pAPDU->cla, pAPDU->ins, pAPDU->p1, pAPDU->p2, pAPDU->lc, (LPCTSTR) ioData, pAPDU->le);
+		message = string_format("-> %.2x %.2x %.2x %.2x %.2x %s %.2x", pAPDU->cla, pAPDU->ins, pAPDU->p1, pAPDU->p2, pAPDU->lc, (LPCTSTR)ioData.c_str(), pAPDU->le);
     }
     else {
         // APDU from SmartCard
@@ -233,7 +257,8 @@ int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, CString* pString, BOOL toS
         CCommonFnc::BYTE_ConvertFromArrayToHexString(pAPDU->DataOut, pAPDU->le, &ioData);
         
         // FORMAT: output_data SW
-        message.Format("<- %s %.2x %.2x", (LPCTSTR) ioData, HIGHBYTE(pAPDU->sw), LOWBYTE(pAPDU->sw));
+        //message.Format("<- %s %.2x %.2x", (LPCTSTR) ioData, HIGHBYTE(pAPDU->sw), LOWBYTE(pAPDU->sw));
+		message = string_format("<- %s %.2x %.2x", (LPCTSTR)ioData.c_str(), HIGHBYTE(pAPDU->sw), LOWBYTE(pAPDU->sw));
     }
 
     *pString = message;
@@ -241,20 +266,22 @@ int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, CString* pString, BOOL toS
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, CString* pHexaString) {
+int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string* pHexaString) {
     int         status = STAT_OK;
-    CString     hexNum;
+    string     hexNum;
     DWORD       i;
 
     *pHexaString = "";
     for (i = 0; i < pbArrayLen; i++) {
-        hexNum.Format("%.2x", pArray[i]);
+        //hexNum.Format("%.2x", pArray[i]);
+		hexNum = string_format("%.2x", pArray[i]);
         hexNum += " ";
 
         *pHexaString += hexNum;
     }
 
-    pHexaString->TrimRight(" ");
+    //pHexaString->TrimRight(" ");
+	pHexaString->erase(pHexaString->find_last_not_of(" ") + 1);
 
     return status;
 }
