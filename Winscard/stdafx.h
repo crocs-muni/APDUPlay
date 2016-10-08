@@ -117,7 +117,7 @@ typedef list<APDU_SINGLE_RULE>   lasr;
 
 
 typedef struct _APDU_RULE {
-    CString ruleName;
+    string ruleName;
     int     usage;
     int     direction;      // apdu direction, 1... input apdu, 0...output apdu 
     lasr    matchRules;    
@@ -149,9 +149,9 @@ typedef list<PTR>           lptr;
 
 typedef struct _SCSAT04_CONFIG {
     BOOL            bRedirect;
-    CString         IP;
-    CString         port;
-    CString         cfgScript;
+    string         IP;
+    string         port;
+    string         cfgScript;
     BYTE            measureApdu[255];    
     BYTE            measureApduLen;     // number of used bytes from measureApdu array
     int             measureApduByteCounter;     // number of incoming apdu bytes before the measurement is run - part of get params 1 xx 0 command
@@ -191,8 +191,8 @@ typedef struct _WINSCARD_CONFIG {
     BOOL    bLOG_EXCHANGED_APDU;
     BOOL    bMODIFY_APDU_BY_RULES;
     BOOL    bLOG_FUNCTIONS_CALLS;
-    CString sREADER_ORDERED_FIRST;
-	CString sLOG_BASE_PATH;
+    string sREADER_ORDERED_FIRST;
+	string sLOG_BASE_PATH;
     
     _WINSCARD_CONFIG(void) {
         clear();
@@ -453,9 +453,9 @@ class SAMPLE_PLOT {
 public:
     INT_DATA_BLOB   dataBlob;
     INT_DATA_BLOB   microshiftsDataBlob;
-    CString         dataFilePath;    
+    string          dataFilePath;    
     INT_DATA_BLOB   busBlob;
-    CString         busFilePath;
+    string          busFilePath;
     int             sampleFileIndex;  // used only when data/busFilePath is constructed as 'dataoutXX.dat'
     DWORD           flags;
     BOOL            bShow;
