@@ -67,8 +67,8 @@ static WINSCARDAPI \1 (WINAPI *Original_\2)
 #pragma warning(disable:4996)   
 
 #define RULE_FILE           "winscard_rules.txt"
-CString WINSCARD_RULES_LOG = "winscard_rules_log.txt";
-CString WINSCARD_LOG = "winscard_log.txt";
+string WINSCARD_RULES_LOG = "winscard_rules_log.txt";
+string WINSCARD_LOG =       "winscard_log.txt";
 
 
 #define SCSAT_SOCKET_TIMEOUT            5
@@ -137,7 +137,7 @@ void DumpMemory( LPCBYTE location, DWORD length ) {
     WriteFile( hOut, delim, lstrlen(delim), &written, NULL );
     WriteFile( hOut, crlf, lstrlen(crlf), &written, NULL );
 /**/    
-	CString message;
+	string message;
 	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) location, length, &message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, "\r\n");
@@ -160,11 +160,12 @@ WINSCARDAPI LONG WINAPI SCardEstablishContext(
     IN  LPCVOID pvReserved2,
     OUT LPSCARDCONTEXT phContext
 ){
-    CString message;
-    message.Format("SCardEstablishContext() called\n");
+    string message;
+	message = string_format("SCardEstablishContext() called\n");
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     LONG status = (*Original_SCardEstablishContext)(dwScope,pvReserved1,pvReserved2,phContext);
-    message.Format("-> hContext:0x%x\n", *phContext);
+    //message.Format("-> hContext:0x%x\n", *phContext);
+	message = string_format("-> hContext:0x%x\n", *phContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return status;
 }
@@ -177,8 +178,8 @@ static WINSCARDAPI LONG (WINAPI *Original_SCardReleaseContext)(
 WINSCARDAPI LONG WINAPI SCardReleaseContext(
     IN      SCARDCONTEXT hContext
 ){
-    CString message;
-    message.Format("SCardReleaseContext(hContext:0x%x) called\n", hContext);
+    string message;
+	message = string_format("SCardReleaseContext(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardReleaseContext)(hContext);
 }
@@ -191,8 +192,8 @@ static WINSCARDAPI LONG (WINAPI *Original_SCardIsValidContext)(
 WINSCARDAPI LONG WINAPI SCardIsValidContext(
     IN      SCARDCONTEXT hContext
 ){
-    CString message;
-    message.Format("SCardIsValidContext(hContext:0x%x) called\n", hContext);
+    string message;
+	message = string_format("SCardIsValidContext(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardIsValidContext)(hContext);
 }
@@ -247,8 +248,8 @@ WINSCARDAPI LONG WINAPI SCardListCardsA(
     OUT     LPSTR mszCards,
     IN OUT  LPDWORD pcchCards
 ){
-    CString message;
-    message.Format("SCardListCardsA(hContext:0x%x) called\n", hContext);
+    string message;
+	message = string_format("SCardListCardsA(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardListCardsA)(hContext,pbAtr,rgquidInterfaces,cguidInterfaceCount,mszCards,pcchCards);
 }
@@ -271,8 +272,8 @@ WINSCARDAPI LONG WINAPI SCardListCardsW(
     OUT     LPWSTR mszCards,
     IN OUT  LPDWORD pcchCards
 ){
-    CString message;
-    message.Format("SCardListCardsW(hContext:0x%x) called\n", hContext);
+    string message;
+	message = string_format("SCardListCardsW(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardListCardsW)(hContext,pbAtr,rgquidInterfaces,cguidInterfaceCount,mszCards,pcchCards);
 }
@@ -710,8 +711,8 @@ WINSCARDAPI LONG WINAPI SCardLocateCardsA(
     IN OUT  LPSCARD_READERSTATEA rgReaderStates,
     IN      DWORD cReaders
 ){
-    CString message;
-    message.Format("SCardLocateCardsA(%s,0x%x) called\n", mszCards, hContext);
+    string message;
+    message = string_format("SCardLocateCardsA(%s,0x%x) called\n", mszCards, hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardLocateCardsA)(hContext,mszCards,rgReaderStates,cReaders);
 }
@@ -730,8 +731,8 @@ WINSCARDAPI LONG WINAPI SCardLocateCardsW(
     IN OUT  LPSCARD_READERSTATEW rgReaderStates,
     IN      DWORD cReaders
 ){
-    CString message;
-    message.Format("SCardLocateCardsW(%S,0x%x) called\n", mszCards, hContext);
+    string message;
+    message = string_format("SCardLocateCardsW(%S,0x%x) called\n", mszCards, hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardLocateCardsW)(hContext,mszCards,rgReaderStates,cReaders);
 }
@@ -752,8 +753,8 @@ WINSCARDAPI LONG WINAPI SCardLocateCardsByATRA(
     IN OUT  LPSCARD_READERSTATEA rgReaderStates,
     IN      DWORD cReaders
 ){
-    CString message;
-    message.Format("SCardLocateCardsByATRA(hContext:0x%x) called\n", hContext);
+    string message;
+    message = string_format("SCardLocateCardsByATRA(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardLocateCardsByATRA)(hContext,rgAtrMasks,cAtrs,rgReaderStates,cReaders);
 }
@@ -774,8 +775,8 @@ WINSCARDAPI LONG WINAPI SCardLocateCardsByATRW(
     IN OUT  LPSCARD_READERSTATEW rgReaderStates,
     IN      DWORD cReaders
 ){
-    CString message;
-    message.Format("SCardLocateCardsByATRW(hContext:0x%x) called\n", hContext);
+    string message;
+    message = string_format("SCardLocateCardsByATRW(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardLocateCardsByATRW)(hContext,rgAtrMasks,cAtrs,rgReaderStates,cReaders);
 }
@@ -854,8 +855,8 @@ WINSCARDAPI LONG WINAPI SCardConnectA(
 
 
     LONG status = (*Original_SCardConnectA)(hContext,szReader,dwShareMode,dwPreferredProtocols,phCard,pdwActiveProtocol);
-    CString message;
-    message.Format("SCardConnectA(hContext:0x%x,%s,hCard:0x%x) called\n", hContext,szReader,*phCard);
+    string message;
+	message = string_format("SCardConnectA(hContext:0x%x,%s,hCard:0x%x) called\n", hContext,szReader,*phCard);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return status;
 }
@@ -875,8 +876,8 @@ WINSCARDAPI LONG WINAPI SCardReconnect(
     IN      DWORD dwInitialization,
     OUT     LPDWORD pdwActiveProtocol
 ){
-    CString message;
-    message.Format("SCardReconnect(hCard:0x%x) called\n", hCard);
+    string message;
+    message = string_format("SCardReconnect(hCard:0x%x) called\n", hCard);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardReconnect)(hCard,dwShareMode,dwPreferredProtocols,dwInitialization,pdwActiveProtocol);
 }
@@ -934,8 +935,8 @@ WINSCARDAPI LONG WINAPI SCardState(
     OUT LPBYTE pbAtr,
     IN OUT LPDWORD pcbAtrLen
 ){
-    CString message;
-    message.Format("SCardState(hCard:0x%x) called\n", hCard);
+    string message;
+    message = string_format("SCardState(hCard:0x%x) called\n", hCard);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardState)(hCard,pdwState,pdwProtocol,pbAtr,pcbAtrLen);
 }
@@ -960,8 +961,8 @@ WINSCARDAPI LONG WINAPI SCardStatusW(
     OUT LPBYTE pbAtr,
     IN OUT LPDWORD pcbAtrLen
 ){
-    CString message;
-    message.Format("SCardStatusW(hCard:0x%x) called\n", hCard);
+    string message;
+    message = string_format("SCardStatusW(hCard:0x%x) called\n", hCard);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     return (*Original_SCardStatusW)(hCard,szReaderName,pcchReaderLen,pdwState,pdwProtocol,pbAtr,pcbAtrLen);
 }
@@ -1141,8 +1142,8 @@ WINSCARDAPI LONG WINAPI SCardConnectW(
     LPDWORD pdwActiveProtocol)
 {
     LONG    status = SCARD_S_SUCCESS;
-    CString message;
-    message.Format("SCardConnectW(hContext:0x%x, %S) called\n", hContext, szReader);
+    string message;
+    message = string_format("SCardConnectW(hContext:0x%x, %S) called\n", hContext, szReader);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
     // RESET APDU IN BYTE COUNTER
@@ -1150,24 +1151,25 @@ WINSCARDAPI LONG WINAPI SCardConnectW(
 
     // RESET CARD
     if (theApp.m_scsat04Config.bRedirect && (theApp.m_scsat04Config.pSocket != NULL)) {
-        CString     message;
+        string message;
         theApp.m_scsat04Config.pSocket->SendLine("get reset 1000");
         std::string l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-        message.Format("\n:: %s", l.c_str());
-        message.Replace("\n", " ");
+        message = string_format("\n:: %s", l.c_str());
+        //message.Replace("\n", " ");
+		message.erase(remove(message.begin(), message.end(), '\r'), message.end());
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         
         // PREPARE FOR MEASUREMENT
-        message.Format("get params 1 %d %d", theApp.m_scsat04Config.measureApduByteCounter, theApp.m_scsat04Config.measureApduByteDelay);
-        theApp.m_scsat04Config.pSocket->SendLine((LPCTSTR) message);
+        message = string_format("get params 1 %d %d", theApp.m_scsat04Config.measureApduByteCounter, theApp.m_scsat04Config.measureApduByteDelay);
+        theApp.m_scsat04Config.pSocket->SendLine((LPCTSTR) message.c_str());
         l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-        message.Format(":: %s", l.c_str());
+        message = string_format(":: %s", l.c_str());
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         
-        message.Format("post sampling %d", theApp.m_scsat04Config.numSamples);
-        theApp.m_scsat04Config.pSocket->SendLine((LPCTSTR) message);
+        message = string_format("post sampling %d", theApp.m_scsat04Config.numSamples);
+        theApp.m_scsat04Config.pSocket->SendLine((LPCTSTR) message.c_str());
         l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-        message.Format(":: %s", l.c_str());
+        message = string_format(":: %s", l.c_str());
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         
         // PREPARE FOR MEASUREMENT READING IN FUTURE
@@ -1183,7 +1185,7 @@ WINSCARDAPI LONG WINAPI SCardConnectW(
         status = (*Original_SCardConnectW)(hContext,szReader,dwShareMode,dwPreferredProtocols,phCard,pdwActiveProtocol);
     }
     
-    message.Format("-> hCard:0x%x\n", *phCard);
+    message = string_format("-> hCard:0x%x\n", *phCard);
     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     
     return status;
@@ -1198,8 +1200,8 @@ WINSCARDAPI LONG WINAPI SCardFreeMemory(
     IN SCARDCONTEXT hContext,
     IN LPCVOID pvMem)
 {
-    CString message;
-    message.Format("SCardFreeMemory(hContext:0x%x) called\n", hContext);
+    string message;
+    message = string_format("SCardFreeMemory(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
     LONG    status = SCARD_S_SUCCESS;
@@ -1246,8 +1248,8 @@ WINSCARDAPI LONG WINAPI SCardListReadersW(
     OUT     LPWSTR mszReaders,
     IN OUT  LPDWORD pcchReaders) 
 {
-    CString message;
-    message.Format("SCardListReadersW(hContext:0x%x) called\n", hContext);
+    string message;
+    message = string_format("SCardListReadersW(hContext:0x%x) called\n", hContext);
     if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
    
     LONG    status = SCARD_S_SUCCESS;
@@ -1317,8 +1319,8 @@ WINSCARDAPI LONG WINAPI SCardListReadersW(
             // REODERING OF READERS WILL BE PERFORMED
             
             // TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
-            for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength(); i++) {
-                if (memcmp((LPCTSTR) theApp.m_winscardConfig.sREADER_ORDERED_FIRST, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength() * sizeof(WCHAR)) == 0) {
+            for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
+                if (memcmp((LPCTSTR) theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR)) == 0) {
                     // PREFFERED READER FOUND
             
                     WCHAR*   readers = new WCHAR[*pcchReaders];
@@ -1327,9 +1329,9 @@ WINSCARDAPI LONG WINAPI SCardListReadersW(
 
                     DWORD   offset = 0;
                     // PREFFERED FIRST
-                    memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength() * sizeof(WCHAR));
-                    readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength()] = 0;
-                    offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength() + 1;
+                    memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR));
+                    readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
+                    offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
                     // ORIGINAL PREDECESOR SECOND
                     memcpy(readers + offset, mszReaders, i * sizeof(WCHAR));
                     offset += i;
@@ -1346,7 +1348,7 @@ WINSCARDAPI LONG WINAPI SCardListReadersW(
     }
     
     lcs::iterator   iter;
-    CString         availableReaders = _T("-> Found readers: ");
+    string         availableReaders = _T("-> Found readers: ");
     for (iter = readersList.begin(); iter != readersList.end(); iter++) {
         availableReaders += *iter;
         availableReaders += _T(", ");
@@ -1434,8 +1436,8 @@ WINSCARDAPI LONG WINAPI SCardListReadersA(
             // REODERING OF READERS WILL BE PERFORMED
             
             // TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
-            for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength(); i++) {
-                if (memcmp((LPCTSTR) theApp.m_winscardConfig.sREADER_ORDERED_FIRST, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength()) == 0) {
+            for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
+                if (memcmp((LPCTSTR) theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()) == 0) {
                     // PREFFERED READER FOUND
             
                     char*   readers = new char[*pcchReaders];
@@ -1444,9 +1446,9 @@ WINSCARDAPI LONG WINAPI SCardListReadersA(
 
                     DWORD   offset = 0;
                     // PREFFERED FIRST
-                    memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength());
-                    readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength()] = 0;
-                    offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.GetLength() + 1;
+                    memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length());
+                    readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
+                    offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
                     // ORIGINAL PREDECESOR SECOND
                     memcpy(readers + offset, mszReaders, i);
                     offset += i;
@@ -1464,7 +1466,7 @@ WINSCARDAPI LONG WINAPI SCardListReadersA(
     }
 
     lcs::iterator   iter;
-    CString         availableReaders = _T("-> Found readers: ");
+    string         availableReaders = _T("-> Found readers: ");
     for (iter = readersList.begin(); iter != readersList.end(); iter++) {
         availableReaders += *iter;
         availableReaders += _T(", ");
@@ -1549,7 +1551,7 @@ WINSCARDAPI LONG WINAPI SCardTransmit(
     char  sendBuffer[300];  
     clock_t elapsedCard;
     clock_t elapsedLibrary;
-    CString     message;
+    string     message;
 
 	elapsedLibrary = -clock();
     if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
@@ -1575,10 +1577,11 @@ WINSCARDAPI LONG WINAPI SCardTransmit(
     theApp.apduInList.push_front(apduBuff);
 
     if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
-        message.Format("\nIncoming rules applied for apduCounter %d: \n", apduCounter);
+        message = string_format("\nIncoming rules applied for apduCounter %d: \n", apduCounter);
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) pbSendBuffer, cbSendLength, &message);
-        message.Insert(0, "   "); message += "\n";
+        //message.Insert(0, "   "); message += "\n";
+		message.insert(0, "   "); message += "\n";
         if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     }
 
@@ -1589,7 +1592,8 @@ WINSCARDAPI LONG WINAPI SCardTransmit(
     if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
         if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules((BYTE*) sendBuffer, &cbSendLength, INPUT_APDU);
         CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) sendBuffer, cbSendLength, &message);
-        message.Insert(0, "   "); message += "\n";
+        //message.Insert(0, "   "); message += "\n";
+		message.insert(0, "   "); message += "\n";
         if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     }
     
@@ -1698,15 +1702,17 @@ WINSCARDAPI LONG WINAPI SCardTransmit(
     theApp.apduOutList.push_front(apduBuff);
 
     if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
-        message.Format("\nOutgoing rules applied for apduCounter %d: \n", apduCounter);
+        message = string_format("\nOutgoing rules applied for apduCounter %d: \n", apduCounter);
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
-        message.Insert(0, "   "); message += "\n";
+        //message.Insert(0, "   "); message += "\n";
+		message.insert(0, "   "); message += "\n";
         if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         // APPLY OUTGOING RULES
         if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules(pbRecvBuffer, pcbRecvLength, OUTPUT_APDU);
         CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
-        message.Insert(0, "   "); message += "\n";
+        //message.Insert(0, "   "); message += "\n";
+		message.insert(0, "   "); message += "\n";
         if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     }      
     
@@ -1716,12 +1722,12 @@ WINSCARDAPI LONG WINAPI SCardTransmit(
     if (theApp.m_scsat04Config.bRedirect && !(theApp.m_scsat04Config.sampleReaded) && (theApp.m_processedApduByteCounter >= theApp.m_scsat04Config.measureApduByteCounter)) {
         // DOWNLOAD DATA FROM MEASUREMENT (IF ANY) 
         if (theApp.m_scsat04Config.pSocket != NULL) {
-            CString message;
-            message.Format("get powertrace 0 %d", theApp.m_scsat04Config.readRatio);
-            theApp.m_scsat04Config.pSocket->SendLine((LPCTSTR) message);
+            string message;
+            message = string_format("get powertrace 0 %d", theApp.m_scsat04Config.readRatio);
+            theApp.m_scsat04Config.pSocket->SendLine((LPCTSTR) message.c_str());
             theApp.m_scsat04Config.baseReadOffset = 0;
 
-            CString sampleFilePath;
+            string sampleFilePath;
             theApp.SCSAT_CreateAndReceiveSamples(&(theApp.m_scsat04Config), &sampleFilePath);
             
             // PREVENT FUTHER READING
@@ -1735,7 +1741,7 @@ WINSCARDAPI LONG WINAPI SCardTransmit(
 
     elapsedLibrary += clock();
     if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-        message.Format("responseTimeLibrary:%d#\r\n",elapsedLibrary);
+        message = string_format("responseTimeLibrary:%d#\r\n",elapsedLibrary);
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "...............................................\r\n");
     }
@@ -2540,27 +2546,27 @@ BOOL CWinscardApp::InitInstance()
 }
 
 int CWinscardApp::ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig) {
-    CString     message;
+    string     message;
     
     std::string sIP(pSCSATConfig->IP);
-    pSCSATConfig->pSocket = new SocketClient(sIP, atoi(pSCSATConfig->port));
+    pSCSATConfig->pSocket = new SocketClient(sIP, atoi(pSCSATConfig->port.c_str()));
     string l = pSCSATConfig->pSocket->ReceiveLine(SCSAT_SOCKET_TIMEOUT);
-    message.Format("\n> SCSAT connect ... %s", l.c_str());
+    message = string_format("\n> SCSAT connect ... %s", l.c_str());
     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
     // INIT SCSAT CONNECTION
     pSCSATConfig->pSocket->SendLine("get init 1000");
     l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-    message.Format("\n:: %s", l.c_str());
+    message = string_format("\n:: %s", l.c_str());
     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
     
     return STAT_OK;
 }
 
-int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, CString* pNewFilePath) {
+int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string* pNewFilePath) {
     int             status = STAT_OK;
-    CString         message;
-    CString         sampleFilePath;
+    string         message;
+    string         sampleFilePath;
     SCSAT_MEASURE_INFO  measureInfo;
 
     
@@ -2568,7 +2574,7 @@ int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, CS
     measureInfo.baseOffset = m_scsat04Config.baseReadOffset;
     measureInfo.frequency = (m_scsat04Config.readRatio == 0) ? SCSAT_MAX_SAMPLING_FREQUENCY : (SCSAT_MAX_SAMPLING_FREQUENCY / m_scsat04Config.readRatio);
     
-    sampleFilePath.Format("dataout.datx");
+    sampleFilePath = string_format("dataout.datx");
     CCommonFnc::File_GetAvailableFileName(sampleFilePath, &sampleFilePath);
     
     // WRITE MEASUREMENT
@@ -2585,10 +2591,10 @@ int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, CS
     measureInfo.numSamples = pReceivedSample->dataBlob.dwActLen;
 
     // store number of written samples
-    CString tmp;
-    tmp.Format("%d", measureInfo.numSamples);
+    string tmp;
+    tmp = string_format("%d", measureInfo.numSamples);
     CCommonFnc::SCSAT_EnsureFileHeader(sampleFilePath, &measureInfo);
-    WritePrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_NUMSAMPLES, tmp, sampleFilePath);
+    WritePrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_NUMSAMPLES, tmp.c_str(), sampleFilePath.c_str());
     
     // WRITE MEASUREMENT INFO INTO FILE 
 	CCommonFnc::SCSAT_SaveSamples(sampleFilePath, pReceivedSample);
@@ -2641,7 +2647,7 @@ int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
                 // IF ALL MATCH THEN APPLY CHANGE RULES
                 if (bAllMatch) {
                     // LOG ACTON
-                    CString message; message.Format("   rule applied: %s\n", iter->ruleName);
+                    string message; message = string_format("   rule applied: %s\n", iter->ruleName);
                     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
                 
                     for (iter2 = iter->actionRules.begin(); iter2 != iter->actionRules.end(); iter2++) {
@@ -2710,17 +2716,18 @@ int CWinscardApp::GetApduFromHistory(BYTE* buffer, int history, int apduDirectio
 
 LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
     LONG        status = 0;
-    CString     message;
-    CString     value;    
+    string     message;
+    string     value;    
     
     if (pSCSATConfig->pSocket != NULL) {
         try {
             // FORMAT APDU STRING
             CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) pbSendBuffer, cbSendLength, &value);
-            message.Format("%s %s", SCSAT_GET_APDU, value);
-            string l((LPCSTR) message);
+            message = string_format("%s %s", SCSAT_GET_APDU, value);
+            string l((LPCSTR) message.c_str());
             pSCSATConfig->pSocket->SendLine(l);
-            message.Insert(0, "\n::-> ");
+            //message.Insert(0, "\n::-> ");
+			message.insert(0, "\n::-> ");
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             
             // SLEEP LONGER, IF MORE DATA WILL BE RETURNED BY SYSTEM 00 0c 00 00 xx CALL            
@@ -2732,17 +2739,34 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
             
             // OBTAIN RESPONSE, PARSE BACK 
             l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-            message.Format("\n::<- %s", l.c_str());
-            message.Replace("\n", " ");
+            message = string_format("\n::<- %s", l.c_str());
+            //message.Replace("\n", " ");
+			replace(message.begin(), message.end(), '\n', ' ');
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             
             // CHECK IF RESPONSE IS CORRECT
-            CString response = l.c_str();
-            response.MakeLower();
-            if (response.Find(SCSAT_GET_APDU_FAIL) == -1) {
+            string response = l.c_str();
+            //response.MakeLower();
+			char c; int i = 0;
+			while (response[i])
+			{
+				c = response[i];
+				putchar(tolower(c));
+				i++;
+			}
+            if (response.find(SCSAT_GET_APDU_FAIL) == string::npos) {
                 // RESPONSE CORRECT
-                value = response.Mid(response.Find("\n") + 1);
-                CString tempVal = value.Left(value.Find("\n")-1);
+				int position = response.find("\n");
+	            if (position == string::npos) {
+					position = -1;
+	            }
+		        value = response.substr(position + 1, string::npos);
+				
+				string tempVal = "";
+				if (position - 1 > 0) {
+					//string tempVal = value.Left(value.Find("\n")-1);
+					tempVal = value.substr(0, position - 1); // <--------------- OTAZKA
+				}   
                 value = tempVal;
                 // NOTE: pbRecvBuffer IS ASSUMED TO HAVE 260B
                 *pcbRecvLength = 260;
@@ -2757,12 +2781,12 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
             }
         }
         catch (const char* s) {
-            message.Format("\nSCSAT_SCardTransmit(), SendLine(%s), fail with (%s)", message, s);
+            message = string_format("\nSCSAT_SCardTransmit(), SendLine(%s), fail with (%s)", message, s);
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             status = SCARD_F_UNKNOWN_ERROR;
         } 
         catch (...) {
-            message.Format("\nSCSAT_SCardTransmit(), SendLine(%s), fail with (unhandled exception)", message);
+            message = string_format("\nSCSAT_SCardTransmit(), SendLine(%s), fail with (unhandled exception)", message);
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             status = SCARD_F_UNKNOWN_ERROR;
         }
@@ -2771,88 +2795,88 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
     return status;
 }
 
-int CWinscardApp::LoadRule(CString ruleName, CString filePath) {
+int CWinscardApp::LoadRule(string ruleName, string filePath) {
     int     status = STAT_OK;
     char    buffer[10000];
     DWORD   cBuffer = 10000;
-    CString valueName;
-    CString rulePart;
-    CString ruleString;
-    CString elemName;
-    CString subValue;
-    CString help;
+    string valueName;
+    string rulePart;
+    string ruleString;
+    string elemName;
+    string subValue;
+    string help;
     APDU_RULE   rule;
     APDU_SINGLE_RULE    singleRule;
     
-    if (ruleName.CompareNoCase("WINSCARD") == 0) {
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "AUTO_REQUEST_DATA", "", buffer, cBuffer, filePath)) > 0) {
+    if (compareNoCase(ruleName.c_str(), "WINSCARD") == 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "AUTO_REQUEST_DATA", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bAUTO_REQUEST_DATA = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "FORCE_CONNECT_SHARED_MODE", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "FORCE_CONNECT_SHARED_MODE", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bFORCE_CONNECT_SHARED_MODE = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "FORCE_APDU_NONZERO_INPUT_DATA", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "FORCE_APDU_NONZERO_INPUT_DATA", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "LOG_EXCHANGED_APDU", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "LOG_EXCHANGED_APDU", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bLOG_EXCHANGED_APDU = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "LOG_BASE_PATH", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "LOG_BASE_PATH", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.sLOG_BASE_PATH = buffer;
         } 
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "MODIFY_APDU_BY_RULES", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "MODIFY_APDU_BY_RULES", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bMODIFY_APDU_BY_RULES = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "LOG_FUNCTIONS_CALLS", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "LOG_FUNCTIONS_CALLS", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bLOG_FUNCTIONS_CALLS = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "READER_ORDERED_FIRST", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "READER_ORDERED_FIRST", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.sREADER_ORDERED_FIRST = buffer;
         }
         
     }
         
-    if (ruleName.CompareNoCase("SCSAT04") == 0) {
+    if (compareNoCase(ruleName.c_str(), "SCSAT04") == 0) {
         // SCSAT04 CONFIGURATION RULE
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "REDIRECT", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "REDIRECT", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.bRedirect = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "IP", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "IP", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.IP = buffer;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "PORT", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "PORT", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.port = buffer;
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "MEASURE_APDU", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "MEASURE_APDU", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
             CCommonFnc::BYTE_ConvertFromHexStringToArray(buffer, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "MEASURE_BYTE_COUNTER", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "MEASURE_BYTE_COUNTER", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.measureApduByteCounter = atoi(buffer);
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "MEASURE_BYTE_DELAY", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "MEASURE_BYTE_DELAY", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.measureApduByteDelay = atoi(buffer);
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "READ_RATIO", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "READ_RATIO", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.readRatio = atoi(buffer);
         }
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "NUM_SAMPLES", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "NUM_SAMPLES", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.numSamples = atoi(buffer);
         }
         
         
         
     }
-    if (ruleName.Left((int)strlen("RULE")).CompareNoCase("RULE") == 0) {
+    if (compareNoCase(ruleName.substr(0, (int)strlen("RULE")).c_str(), "RULE") == 0) {
         // COMMON RULE
     
-        if ((GetPrivateProfileString((LPCTSTR) ruleName, "USAGE", "", buffer, cBuffer, filePath)) > 0) {
+        if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "USAGE", "", buffer, cBuffer, filePath.c_str())) > 0) {
             rule.usage = atoi(buffer);
             
-            if ((GetPrivateProfileString((LPCTSTR) ruleName, "APDUIN", "", buffer, cBuffer, filePath)) > 0) {
+            if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "APDUIN", "", buffer, cBuffer, filePath.c_str())) > 0) {
                 rule.direction = atoi(buffer);
             }
-            if ((GetPrivateProfileString((LPCTSTR) ruleName, "DELAY", "", buffer, cBuffer, filePath)) > 0) {
+            if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "DELAY", "", buffer, cBuffer, filePath.c_str())) > 0) {
                 rule.msDelay = atoi(buffer);
             }
             
@@ -2864,60 +2888,62 @@ int CWinscardApp::LoadRule(CString ruleName, CString filePath) {
             int counter = 1;
             int pos = 0;
             int pos2 = 0;
-            valueName.Format("MATCH%d", counter);
-            while((GetPrivateProfileString(ruleName, valueName, "", buffer, cBuffer, filePath)) > 0) {
+            valueName = string_format("MATCH%d", counter);
+            while((GetPrivateProfileString(ruleName.c_str(), valueName.c_str(), "", buffer, cBuffer, filePath.c_str())) > 0) {
                 ruleString = buffer; ruleString += " ";
                 
                 // FIND HISTORY ELEMENT, WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
-                if ((pos = ruleString.Find("t=")) != -1) {
-                    singleRule.history = atoi(ruleString.Mid(pos + (int) strlen("t=")));
-                    ruleString.Delete(pos, ruleString.Find(";", pos) - pos + 1); // remove from rule string
+                if ((pos = ruleString.find("t=")) != string::npos) {
+                    singleRule.history = atoi(ruleString.substr(pos + (int) strlen("t=")).c_str());
+                    ruleString.erase(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
                 }                    
                 // FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
-                if ((pos = ruleString.Find("in=")) != -1) {
-                    singleRule.apduDirection = atoi(ruleString.Mid(pos + (int) strlen("in=")));
-                    ruleString.Delete(pos, ruleString.Find(";", pos) - pos + 1); // remove from rule string
+                if ((pos = ruleString.find("in=")) != string::npos) {
+                    singleRule.apduDirection = atoi(ruleString.substr(pos + (int) strlen("in=")).c_str());
+                    ruleString.erase(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
                 }                    
 
                 // PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
                 pos2 = 0;
-                while ((pos = ruleString.Find(";", pos2)) != -1) {
-                    rulePart = ruleString.Mid(pos2, pos - pos2 + 1);
+                while ((pos = ruleString.find(";", pos2)) != -1) {
+                    rulePart = ruleString.substr(pos2, pos - pos2 + 1);
                     
-                    elemName = rulePart.Left(rulePart.Find("="));
-                    
-                    if (elemName.CompareNoCase("CLA") == 0) {
+                    //elemName = rulePart.Left(rulePart.Find("="));
+					elemName = rulePart.substr(0, rulePart.find("="));
+
+                    if (compareNoCase(elemName.c_str(), "CLA") == 0) {
                         singleRule.element = CLA_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("INS") == 0) {
+                    if (compareNoCase(elemName.c_str(), "INS") == 0) {
                         singleRule.element = INS_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("P1") == 0) {
+                    if (compareNoCase(elemName.c_str(), "P1") == 0) {
                         singleRule.element = P1_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("P2") == 0) {
+                    if (compareNoCase(elemName.c_str(), "P2") == 0) {
                         singleRule.element = P2_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("LC") == 0) {
+                    if (compareNoCase(elemName.c_str(), "LC") == 0) {
                         singleRule.element = LC_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if ((elemName.Left((int) strlen("DATA"))).CompareNoCase("DATA") == 0) {
+                    if (compareNoCase(elemName.substr(0, (int) strlen("DATA")).c_str(), "DATA") == 0) {
                         // DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
                         // CREATE SEPARATE ELEMENT FOR EACH
-                        int offset = atoi(elemName.Mid(ruleName.FindOneOf("0123456789")));
+                        int offset = atoi(elemName.substr(ruleName.find_first_of("0123456789"), 0).c_str());
                         // GO OVER ALL MATCH DATA
-                        CString data = rulePart.Mid(rulePart.Find("=") + 1);
-                        data.Replace(";", "");
+                        string data = rulePart.substr(rulePart.find("=") + 1);
+                        //data.Replace(";", "");
+						data.erase(remove(data.begin(), data.end(), ';'), data.end());
                         BYTE    dataBuffer[300];
                         DWORD   dataBufferLen = 300;
                         CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
@@ -2935,64 +2961,66 @@ int CWinscardApp::LoadRule(CString ruleName, CString filePath) {
                 }
                             
                 counter++;
-                valueName.Format("MATCH%d", counter);
+                valueName = string_format("MATCH%d", counter);
             }
 
             // LOAD ACTION RULES
             counter = 1;
             pos = 0;
-            if ((GetPrivateProfileString(ruleName, "ACTION", "", buffer, cBuffer, filePath)) > 0) {
+            if ((GetPrivateProfileString(ruleName.c_str(), "ACTION", "", buffer, cBuffer, filePath.c_str())) > 0) {
                 ruleString = buffer; ruleString += " ";
                 // PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
                 singleRule.clear();
                 // FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTARY RULES
-                if ((pos = ruleString.Find("in=")) != -1) {
-                    singleRule.apduDirection = atoi(ruleString.Mid(pos + (int) strlen("in=")));
-                    ruleString.Delete(pos, ruleString.Find(";", pos) - pos + 1); // remove from rule string
+                if ((pos = ruleString.find("in=")) != string::npos) {
+                    singleRule.apduDirection = atoi(ruleString.substr(pos + (int) strlen("in=")).c_str());
+                    //ruleString.Delete(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
+					ruleString.erase(pos, ruleString.find(";", pos) - pos + 1);
                 }                    
                 pos2 = 0;
-                while ((pos = ruleString.Find(";", pos2)) != -1) {
-                    rulePart = ruleString.Mid(pos2, pos - pos2 + 1);
+                while ((pos = ruleString.find(";", pos2)) != string::npos) {
+                    rulePart = ruleString.substr(pos2, pos - pos2 + 1);
                     
-                    elemName = rulePart.Left(rulePart.Find("="));
+                    elemName = rulePart.substr(0, rulePart.find("="));
                     
-                    if (elemName.CompareNoCase("CLA") == 0) {
+                    if (compareNoCase(elemName.c_str(), "CLA") == 0) {
                         singleRule.element = CLA_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("INS") == 0) {
+                    if (compareNoCase(elemName.c_str(), "INS") == 0) {
                         singleRule.element = INS_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("P1") == 0) {
+                    if (compareNoCase(elemName.c_str(), "P1") == 0) {
                         singleRule.element = P1_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("P2") == 0) {
+                    if (compareNoCase(elemName.c_str(), "P2") == 0) {
                         singleRule.element = P2_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("LC") == 0) {
+                    if (compareNoCase(elemName.c_str(), "LC") == 0) {
                         singleRule.element = LC_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (elemName.CompareNoCase("LE") == 0) {
+                    if (compareNoCase(elemName.c_str(), "LE") == 0) {
                         singleRule.element = LE_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.Mid(rulePart.Find("=")+1, 2), &(singleRule.value));
+                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if ((elemName.Left((int) strlen("DATA"))).CompareNoCase("DATA") == 0) {
+                    if (compareNoCase(elemName.substr(0, (int) strlen("DATA")).c_str(), "DATA") == 0) {
                         // DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
                         // CREATE SEPARATE ELEMENT FOR EACH
-                        int offset = atoi(elemName.Mid(ruleName.FindOneOf("0123456789")));
+                        int offset = atoi(elemName.substr(ruleName.find_first_of("0123456789")).c_str());
                         // GO OVER ALL MATCH DATA
-                        CString data = rulePart.Mid(rulePart.Find("=") + 1);
-                        data.Replace(";", "");
+                        string data = rulePart.substr(rulePart.find("=") + 1);
+                        //data.Replace(";", "");
+						data.erase(remove(data.begin(), data.end(), ';'), data.end());
                         BYTE    dataBuffer[300];
                         DWORD   dataBufferLen = 300;
                         CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
@@ -3026,7 +3054,7 @@ int CWinscardApp::LoadRules() {
     DWORD   cReaded = 0;
     lcs     valuesList;
     lcs::iterator   iter;
-    CString filePath;
+    string filePath;
     
     memset(buffer, 0, cBuffer);
   
@@ -3038,11 +3066,12 @@ int CWinscardApp::LoadRules() {
         filePath = file.GetFilePath();
         file.Close();
         
-        CString message; message.Format("Rules file found: %s\n", filePath);
+        string message; 
+    	message = string_format("Rules file found: %s\n", filePath);
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
         // OBTAIN SECTION NAMES
-        if ((cReaded = GetPrivateProfileString(NULL, NULL, "", buffer, cBuffer, filePath)) != 0) {
+        if ((cReaded = GetPrivateProfileString(NULL, NULL, "", buffer, cBuffer, filePath.c_str())) != 0) {
             // PARSE SECTION NAMES, TRY TO LOAD EACH RULE
             CCommonFnc::String_ParseNullSeparatedArray((BYTE*) buffer, cBuffer, &valuesList);
             
@@ -3058,8 +3087,8 @@ int CWinscardApp::LoadRules() {
         CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Rules file NOT found\n");
     }
 
-	WINSCARD_RULES_LOG.Format("%swinscard_rules_log.txt", m_winscardConfig.sLOG_BASE_PATH);
-	WINSCARD_LOG.Format("%swinscard_log.txt", m_winscardConfig.sLOG_BASE_PATH);
+	WINSCARD_RULES_LOG = string_format("%swinscard_rules_log.txt", m_winscardConfig.sLOG_BASE_PATH);
+	WINSCARD_LOG = string_format("%swinscard_log.txt", m_winscardConfig.sLOG_BASE_PATH);
 	
 
     return status;

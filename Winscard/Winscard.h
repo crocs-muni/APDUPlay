@@ -39,10 +39,10 @@ public:
     lptr    m_wcharAllocatedMemoryList;    
 
     int ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig);
-    int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, CString* pNewFilePath);
+    int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string* pNewFilePath);
     
     
-    int LoadRule(CString ruleName, CString filePath);
+    int LoadRule(string ruleName, string filePath);
     int LoadRules();
     
     int ApplyRules(BYTE* pbSendBuffer, DWORD* pcbSendLength, int direction);
