@@ -289,7 +289,7 @@ int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen,
 int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
-    CString itemName;
+    string itemName;
 
 	pos = 0;
 	itemName = "";
@@ -314,7 +314,7 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs
 int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
-    CString itemName;
+    string itemName;
 
 	pos = 0;
 	itemName = "";
@@ -372,7 +372,7 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
 
     if (file.is_open()) {
         // FIND 'SCSAT_MEASURE_POWERTRACE' VALUE - SEARCH USING SLIGHTLY OVERLAPPED BLOCKS
-        CString dataBlock;
+        string dataBlock;
         #define BLOCK_READ_LEN  1000
         char    block[BLOCK_READ_LEN + 1];    
         DWORD   len = BLOCK_READ_LEN;
@@ -383,9 +383,9 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
             file.read(block, BLOCK_READ_LEN); 
 			len = file.gcount();
             dataBlock = block;
-            if ((dataBlock.Find(SCSAT_MEASURE_POWERTRACE) != -1)) {
+            if ((dataBlock.find(SCSAT_MEASURE_POWERTRACE) != string::npos)) {
                 // we found SCSAT_MEASURE_POWERTRACE string, save its offset
-                *pOffset = baseOffset + dataBlock.Find(SCSAT_MEASURE_POWERTRACE) + strlen(SCSAT_MEASURE_POWERTRACE) + 2; // offset just after POWERTRACE=
+                *pOffset = baseOffset + dataBlock.find(SCSAT_MEASURE_POWERTRACE) + strlen(SCSAT_MEASURE_POWERTRACE) + 2; // offset just after POWERTRACE=
                 break;    
             }
             

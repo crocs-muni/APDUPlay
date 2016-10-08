@@ -73,7 +73,7 @@ string string_format(const std::string& format, Args ... args) {
 	return string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-typedef list<CString>       lcs;
+typedef list<string>       lcs;
 
 #define MAX_APDU_LENGTH     300 
 #define OFFSET_CDATA        5
