@@ -120,10 +120,7 @@ int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int st
         
         if (bSaveBinary) {
 			// SAVE AS BINARY CHUNK
-			size_t size = (endOffset - startOffset) * sizeof(int);
-			char* buff = new char[size];
-			memcpy(buff, pBlob->pData + startOffset, size);
-			file.write(buff, size);
+			file.write((char*)(pBlob->pData + startOffset), (endOffset - startOffset) * sizeof(int));
         }
         else {
 			for (i = startOffset; i < endOffset; i++) { 
@@ -431,6 +428,9 @@ int CCommonFnc::SCSAT_EnsureFileHeader(string filePath, SCSAT_MEASURE_INFO* pInf
         //if (part.CompareNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
         else bNewFormat = FALSE;
         
+		delete[] partchar;
+		delete[] SCSAT_MEASURE_SECTION_char;
+
     	// WRITE IF NOT 
         if (!bNewFormat) {
 	        string tmp;

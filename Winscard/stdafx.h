@@ -80,7 +80,10 @@ int compareNoCase(const char* str1, const char* str2) {
 	strcpy(str2_2, str2);
 	toupper(*str1_2);
 	toupper(*str2_2);
-	return strcmp(str1_2, str2_2);
+	int result = strcmp(str1_2, str2_2);
+	delete[] str1_2;
+	delete[] str2_2;
+	return result;
 }
 
 typedef list<string>       lcs;
@@ -371,61 +374,33 @@ typedef struct _SCSAT_MEASURE_INFO {
 		//commLog.Replace("\r", ""); commLog.Replace("\n", ";");
 
 		//create INI style section
-		//value.Format("[%s]\r\n", SCSAT_MEASURE_SECTION); *pResult = value;
 		*pResult = string_format("[%s]\r\n", SCSAT_MEASURE_SECTION);
-		//value.Format("%s=%lld\r\n", SCSAT_MEASURE_SAMPLEUNIQUEID, sampleUniqueID); *pResult += value;
 		*pResult += string_format("%s=%lld\r\n", SCSAT_MEASURE_SAMPLEUNIQUEID, sampleUniqueID);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_DATETIME, dateTime); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_DATETIME, dateTime);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_CARDATR, cardATR); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_CARDATR, cardATR);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_CARDNAME, cardName); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_CARDNAME, cardName);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_NOTE, note); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_NOTE, note);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_CFGSCRIPT, cfgScript); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_CFGSCRIPT, cfgScript);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_STARTAPDU, startAPDU); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_STARTAPDU, startAPDU);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_COMMLOG, commLog); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_COMMLOG, commLog);
-		//value.Format("%s=%d\r\n", SCSAT_MEASURE_SAMPLINGFREQUENCY, frequency); *pResult += value;
 		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_SAMPLINGFREQUENCY, frequency);
-		//value.Format("%s=%d\r\n", SCSAT_MEASURE_BASEOFFSET, baseOffset); *pResult += value;
 		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_BASEOFFSET, baseOffset);
-		//value.Format("%s=%d\r\n", SCSAT_MEASURE_BASESHIFT, baseShift); *pResult += value;
 		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_BASESHIFT, baseShift);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_SYNDROMS, syndroms); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_SYNDROMS, syndroms);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_MICROSHIFTS, microShifts); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_MICROSHIFTS, microShifts);
-		//value.Format("%s=%d\r\n", SCSAT_MEASURE_NUMSAMPLES, numSamples); *pResult += value;
 		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_NUMSAMPLES, numSamples);
-		//value.Format("[%s_1]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_1]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_APDUDATA, apduData); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_APDUDATA, apduData);
-		//value.Format("%s=%s\r\n", SCSAT_MEASURE_SAVEBINARY, bSaveBinary ? "1" : "0"); *pResult += value;
 		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_SAVEBINARY, bSaveBinary ? "1" : "0");
-		//value.Format("[%s_2]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_2]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_3]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_3]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_4]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_4]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_5]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_5]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_6]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_6]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_7]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_7]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_8]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_8]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_9]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_9]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s_9]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE); *pResult += value;
 		*pResult += string_format("[%s_9]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		//value.Format("[%s]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_SAMPLES, SCSAT_MEASURE_POWERTRACE); *pResult += value;
 		*pResult += string_format("[%s]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_SAMPLES, SCSAT_MEASURE_POWERTRACE);
 		return 0;
 	}
