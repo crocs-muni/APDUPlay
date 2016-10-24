@@ -118,6 +118,19 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
     
 /* ******************************************************************************* */
 
+int compareWithNoCase(const char* str1, const char* str2) {
+	char *str1_2 = new char[strlen(str1)];
+	char *str2_2 = new char[strlen(str2)];
+	strcpy(str1_2, str1);
+	strcpy(str2_2, str2);
+	toupper(*str1_2);
+	toupper(*str2_2);
+	int result = strcmp(str1_2, str2_2);
+	delete[] str1_2;
+	delete[] str2_2;
+	return result;
+}
+
 void DumpMemory( LPCBYTE location, DWORD length ) {
 /*
     DWORD i, written;
@@ -143,9 +156,6 @@ void DumpMemory( LPCBYTE location, DWORD length ) {
 	CCommonFnc::File_AppendString(WINSCARD_LOG, "\r\n");
 
 }
-
-
-
 
 static WINSCARDAPI LONG (WINAPI *Original_SCardEstablishContext)(
     IN  DWORD dwScope,
@@ -2808,7 +2818,7 @@ int CWinscardApp::LoadRule(string ruleName, string filePath) {
     APDU_RULE   rule;
     APDU_SINGLE_RULE    singleRule;
     
-    if (compareNoCase(ruleName.c_str(), "WINSCARD") == 0) {
+    if (compareWithNoCase(ruleName.c_str(), "WINSCARD") == 0) {
         if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "AUTO_REQUEST_DATA", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_winscardConfig.bAUTO_REQUEST_DATA = (atoi(buffer) == 0) ? FALSE : TRUE;
         }
@@ -2836,7 +2846,7 @@ int CWinscardApp::LoadRule(string ruleName, string filePath) {
         
     }
         
-    if (compareNoCase(ruleName.c_str(), "SCSAT04") == 0) {
+    if (compareWithNoCase(ruleName.c_str(), "SCSAT04") == 0) {
         // SCSAT04 CONFIGURATION RULE
         if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "REDIRECT", "", buffer, cBuffer, filePath.c_str())) > 0) {
             m_scsat04Config.bRedirect = (atoi(buffer) == 0) ? FALSE : TRUE;
@@ -2867,7 +2877,7 @@ int CWinscardApp::LoadRule(string ruleName, string filePath) {
         
         
     }
-    if (compareNoCase(ruleName.substr(0, (int)strlen("RULE")).c_str(), "RULE") == 0) {
+    if (compareWithNoCase(ruleName.substr(0, (int)strlen("RULE")).c_str(), "RULE") == 0) {
         // COMMON RULE
     
         if ((GetPrivateProfileString((LPCTSTR) ruleName.c_str(), "USAGE", "", buffer, cBuffer, filePath.c_str())) > 0) {
@@ -2911,32 +2921,32 @@ int CWinscardApp::LoadRule(string ruleName, string filePath) {
                     //elemName = rulePart.Left(rulePart.Find("="));
 					elemName = rulePart.substr(0, rulePart.find("="));
 
-                    if (compareNoCase(elemName.c_str(), "CLA") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "CLA") == 0) {
                         singleRule.element = CLA_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "INS") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "INS") == 0) {
                         singleRule.element = INS_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "P1") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "P1") == 0) {
                         singleRule.element = P1_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "P2") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "P2") == 0) {
                         singleRule.element = P2_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "LC") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "LC") == 0) {
                         singleRule.element = LC_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.substr(0, (int) strlen("DATA")).c_str(), "DATA") == 0) {
+                    if (compareWithNoCase(elemName.substr(0, (int) strlen("DATA")).c_str(), "DATA") == 0) {
                         // DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
                         // CREATE SEPARATE ELEMENT FOR EACH
                         int offset = atoi(elemName.substr(ruleName.find_first_of("0123456789"), 0).c_str());
@@ -2983,37 +2993,37 @@ int CWinscardApp::LoadRule(string ruleName, string filePath) {
                     
                     elemName = rulePart.substr(0, rulePart.find("="));
                     
-                    if (compareNoCase(elemName.c_str(), "CLA") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "CLA") == 0) {
                         singleRule.element = CLA_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "INS") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "INS") == 0) {
                         singleRule.element = INS_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "P1") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "P1") == 0) {
                         singleRule.element = P1_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "P2") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "P2") == 0) {
                         singleRule.element = P2_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "LC") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "LC") == 0) {
                         singleRule.element = LC_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.c_str(), "LE") == 0) {
+                    if (compareWithNoCase(elemName.c_str(), "LE") == 0) {
                         singleRule.element = LE_ELEM;    
                         CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find("=")+1, 2), &(singleRule.value));
                         singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
                     } 
-                    if (compareNoCase(elemName.substr(0, (int) strlen("DATA")).c_str(), "DATA") == 0) {
+                    if (compareWithNoCase(elemName.substr(0, (int) strlen("DATA")).c_str(), "DATA") == 0) {
                         // DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
                         // CREATE SEPARATE ELEMENT FOR EACH
                         int offset = atoi(elemName.substr(ruleName.find_first_of("0123456789")).c_str());

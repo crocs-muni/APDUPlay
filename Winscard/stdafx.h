@@ -73,19 +73,6 @@ string string_format(const std::string& format, Args ... args) {
 	return string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-int compareNoCase(const char* str1, const char* str2) {
-	char *str1_2 = new char[strlen(str1)];
-	char *str2_2 = new char[strlen(str2)];
-	strcpy(str1_2, str1);
-	strcpy(str2_2, str2);
-	toupper(*str1_2);
-	toupper(*str2_2);
-	int result = strcmp(str1_2, str2_2);
-	delete[] str1_2;
-	delete[] str2_2;
-	return result;
-}
-
 typedef list<string>       lcs;
 
 #define MAX_APDU_LENGTH     300 

@@ -425,7 +425,7 @@ int CCommonFnc::SCSAT_EnsureFileHeader(string filePath, SCSAT_MEASURE_INFO* pInf
 		toupper(*partchar);
 		toupper(*SCSAT_MEASURE_SECTION_char);
 		if(strcmp(partchar, SCSAT_MEASURE_SECTION_char) == 0) bNewFormat = TRUE;
-        //if (part.CompareNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
+        //if (part.compareWithNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
         else bNewFormat = FALSE;
         
 		delete[] partchar;
