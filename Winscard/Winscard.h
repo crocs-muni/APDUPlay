@@ -2,7 +2,7 @@
 //
 
 #pragma once
-
+//#include <afxdtctl.h>
 #ifndef __AFXWIN_H__
 	#error "include 'stdafx.h' before including this file for PCH"
 #endif
@@ -39,10 +39,10 @@ public:
     lptr    m_wcharAllocatedMemoryList;    
 
     int ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig);
-    int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string* pNewFilePath);
+    int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath);
     
     
-    int LoadRule(string ruleName, string filePath);
+    int LoadRule(string_type ruleName, string_type filePath);
     int LoadRules();
     
     int ApplyRules(BYTE* pbSendBuffer, DWORD* pcbSendLength, int direction);

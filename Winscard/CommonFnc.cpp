@@ -37,6 +37,20 @@
 #include <math.h>
 #include <memory>
 #include <fstream>
+#include <filesystem>
+
+int compareWithNoCase2(const char_type* str1, const char_type* str2) {
+	char_type *str1_2 = new char_type[type_length(str1)];
+	char_type *str2_2 = new char_type[type_length(str2)];
+	type_copy(str1_2, str1);
+	type_copy(str2_2, str2);
+	toupper(*str1_2);
+	toupper(*str2_2);
+	int result = type_compare(str1_2, str2_2);
+	delete[] str1_2;
+	delete[] str2_2;
+	return result;
+}
 
 /*int CCommonFnc::File_AppendString(CString filePath, CString data) {
     int             status = STAT_OK;
@@ -53,9 +67,9 @@
 
 }*/
 
-int CCommonFnc::File_AppendString(std::string filePath, std::string data) {
+int CCommonFnc::File_AppendString(string_type filePath, string_type data) {
 	int             status = STAT_OK;
-	std::ofstream file;
+	ofstream_type file;
 	file.open(filePath, std::fstream::out | std::fstream::app);
 
 	if (file.is_open()) {
@@ -67,46 +81,54 @@ int CCommonFnc::File_AppendString(std::string filePath, std::string data) {
 	return status;
 }
 
-int CCommonFnc::File_GetAvailableFileName(string baseFile, string* pFreeFileName) {
+int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFreeFileName) {
     int             status = STAT_OK;
-    char            fileName[MAX_PATH];
-    char            drive[_MAX_DRIVE];
-    char            dir[_MAX_DIR];
-    char            fname[_MAX_FNAME];
-    char            ext[_MAX_EXT];
+    char_type            fileName[MAX_PATH];
+	string_type          fileNameStr;
+	char_type            drive[_MAX_DRIVE];
+	char_type            dir[_MAX_DIR];
+	char_type            fname[_MAX_FNAME];
+	char_type            ext[_MAX_EXT];
+	const char_type* help;
     DWORD           index = 1;
 
     // FIND FIRST FREE INDEX
     _splitpath_s((LPCTSTR) baseFile.c_str(), drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
     index = 1;
-    string zeroes = "0000";
-    sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
+	string_type zeroes = _CONV("0000");
+    //sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
+	fileNameStr = string_format(_CONV("%s%s%s%s%d%s"), drive, dir, fname, (LPCTSTR)zeroes.c_str(), index, ext);
+	help = fileNameStr.c_str();
+	type_copy(fileName, help);
     while (GetFileAttributes(fileName) != -1) {
         index++;
-        if (index < 10) zeroes = "0000";
-        else if (index < 100) zeroes = "000";
-        else if (index < 1000) zeroes = "00";
-        else if (index < 10000) zeroes = "0";
-        else zeroes = "";
-        sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
+        if (index < 10) zeroes = _CONV("0000");
+        else if (index < 100) zeroes = _CONV("000");
+        else if (index < 1000) zeroes = _CONV("00");
+        else if (index < 10000) zeroes = _CONV("0");
+        else zeroes = _CONV("");
+        //sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
+		fileNameStr = string_format(_CONV("%s%s%s%s%d%s"), drive, dir, fname, (LPCTSTR)zeroes.c_str(), index, ext);
+		help = fileNameStr.c_str();
+		type_copy(fileName, help);
     }    
     // INDEX FOUND
     //pFreeFileName->Format("%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
-	*pFreeFileName = string_format("%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR)zeroes.c_str(), index, ext);
+	*pFreeFileName = string_format(_CONV("%s%s%s%s%d%s"), drive, dir, fname, (LPCTSTR)zeroes.c_str(), index, ext);
 
     return status;
 }
 
-int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
+int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
     return File_SaveMatrixInt(filePath, pBlob, startOffset, endOffset, startFileOffset, bSaveBinary);
 }
 
-int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary) {
+int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary) {
     int     status = STAT_OK;
     int     i;
-	fstream file;
-    string value;
-    string values = "";
+	fstream_type file;
+	string_type value;
+	string_type values = _CONV("");
     
 #define		NUM_VALUES_PER_WRITE	1000    
     
@@ -116,21 +138,21 @@ int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int st
 
 
     if (file.is_open()) {
-        file.seekg(startFileOffset, ios_base::cur);
+        file.seekg(startFileOffset, std::ios_base::cur);
         
         if (bSaveBinary) {
 			// SAVE AS BINARY CHUNK
-			file.write((char*)(pBlob->pData + startOffset), (endOffset - startOffset) * sizeof(int));
+			file.write((LPTSTR)(pBlob->pData + startOffset), (endOffset - startOffset) * sizeof(int));
         }
         else {
 			for (i = startOffset; i < endOffset; i++) { 
 				//value.Format("%d\r\n", pBlob->pData[i]);
-				value = string_format("%d\r\n", pBlob->pData[i]);
+				value = string_format(_CONV("%d\r\n"), pBlob->pData[i]);
 				values += value;
 	            
 				if ((i % NUM_VALUES_PER_WRITE) == 0) {
 					file.write((LPCTSTR) values.c_str(), values.length());
-					values = "";
+					values = _CONV("");
 				}
 			}
 	        
@@ -146,7 +168,7 @@ int CCommonFnc::File_SaveMatrixInt(string filePath, INT_DATA_BLOB* pBlob, int st
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray, BYTE* pbArrayLen) {
+int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen) {
     int     status = STAT_OK;
     DWORD   arrayLen = *pbArrayLen;    
     
@@ -157,23 +179,23 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray, DWORD* pbArrayLen) {
+int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, DWORD* pbArrayLen) {
     int         status = STAT_OK;
     DWORD       pos = 0;
     DWORD       pos2 = 0;
-    string     hexNum;
+	string_type     hexNum;
     DWORD       num;
     BYTE*       pTempArray = NULL;
     DWORD       tempArrayPos = 0;
 
     // EAT SPACES
     //hexaString.TrimLeft(); hexaString.TrimRight();
-	hexaString.erase(hexaString.find_last_not_of(" ") + 1);
-	size_t startpos = hexaString.find_first_not_of(" ");
-	if (string::npos != startpos) {
+	hexaString.erase(hexaString.find_last_not_of(_CONV(" ")) + 1);
+	size_t startpos = hexaString.find_first_not_of(_CONV(" "));
+	if (string_type::npos != startpos) {
 		hexaString = hexaString.substr(startpos);
 	}
-    hexaString += " ";
+    hexaString += _CONV(" ");
     hexaString.length();
 
     if (status == STAT_OK) {
@@ -194,15 +216,15 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray
             }
             pos2 = pos + 1;
         }*/
-		while ((pos = hexaString.find(' ', pos2)) != string::npos) {
+		while ((pos = hexaString.find(' ', pos2)) != string_type::npos) {
 			hexNum = hexaString.substr((pos2, pos - pos2));
-			hexNum.erase(hexNum.find_last_not_of(" ") + 1);
-			size_t startpos2 = hexNum.find_first_not_of(" ");
-			if (string::npos != startpos2) {
+			hexNum.erase(hexNum.find_last_not_of(_CONV(" ")) + 1);
+			size_t startpos2 = hexNum.find_first_not_of(_CONV(" "));
+			if (string_type::npos != startpos2) {
 				hexNum = hexNum.substr(startpos2);
 			}
 			if (hexNum.length() > 0) {
-				num = strtol((LPCTSTR)hexNum.c_str(), NULL, 16);
+				num = type_to_int((LPCTSTR)hexNum.c_str(), NULL, 16);
 
 				if (num == 0xFF) pTempArray[tempArrayPos] = 0xFF;
 				else pTempArray[tempArrayPos] = (BYTE)num & 0xFF;
@@ -226,8 +248,8 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string hexaString, BYTE* pArray
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexNumToByte(string hexNum, BYTE* pByte) {
-    DWORD num = strtol((LPCTSTR) hexNum.c_str(), NULL, 16);
+int CCommonFnc::BYTE_ConvertFromHexNumToByte(string_type hexNum, BYTE* pByte) {
+    DWORD num = type_to_int((LPCTSTR) hexNum.c_str(), NULL, 16);
 
     if (num == 0xFF) *pByte = 0xFF;
     else *pByte = (BYTE) num & 0xFF;
@@ -235,10 +257,10 @@ int CCommonFnc::BYTE_ConvertFromHexNumToByte(string hexNum, BYTE* pByte) {
     return STAT_OK;
 }
 
-int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string* pString, BOOL toSendAPDU) {
+int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string_type* pString, BOOL toSendAPDU) {
     int         status = STAT_OK;
-    string     message;
-    string     ioData;
+	string_type     message;
+	string_type     ioData;
     
     if (toSendAPDU) {
         // APDU to SmartCard
@@ -246,7 +268,7 @@ int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string* pString, BOOL toSe
         
         // FORMAT: INS CLA P1 P2 LC input_data Le 
         //message.Format("-> %.2x %.2x %.2x %.2x %.2x %s %.2x", pAPDU->cla, pAPDU->ins, pAPDU->p1, pAPDU->p2, pAPDU->lc, (LPCTSTR) ioData, pAPDU->le);
-		message = string_format("-> %.2x %.2x %.2x %.2x %.2x %s %.2x", pAPDU->cla, pAPDU->ins, pAPDU->p1, pAPDU->p2, pAPDU->lc, (LPCTSTR)ioData.c_str(), pAPDU->le);
+		message = string_format(_CONV("-> %.2x %.2x %.2x %.2x %.2x %s %.2x"), pAPDU->cla, pAPDU->ins, pAPDU->p1, pAPDU->p2, pAPDU->lc, (LPCTSTR)ioData.c_str(), pAPDU->le);
     }
     else {
         // APDU from SmartCard
@@ -255,7 +277,7 @@ int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string* pString, BOOL toSe
         
         // FORMAT: output_data SW
         //message.Format("<- %s %.2x %.2x", (LPCTSTR) ioData, HIGHBYTE(pAPDU->sw), LOWBYTE(pAPDU->sw));
-		message = string_format("<- %s %.2x %.2x", (LPCTSTR)ioData.c_str(), HIGHBYTE(pAPDU->sw), LOWBYTE(pAPDU->sw));
+		message = string_format(_CONV("<- %s %.2x %.2x"), (LPCTSTR)ioData.c_str(), HIGHBYTE(pAPDU->sw), LOWBYTE(pAPDU->sw));
     }
 
     *pString = message;
@@ -263,22 +285,22 @@ int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string* pString, BOOL toSe
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string* pHexaString) {
+int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string_type* pHexaString) {
     int         status = STAT_OK;
-    string     hexNum;
+	string_type     hexNum;
     DWORD       i;
 
-    *pHexaString = "";
+    *pHexaString = _CONV("");
     for (i = 0; i < pbArrayLen; i++) {
         //hexNum.Format("%.2x", pArray[i]);
-		hexNum = string_format("%.2x", pArray[i]);
-        hexNum += " ";
+		hexNum = string_format(_CONV("%.2x"), pArray[i]);
+        hexNum += _CONV(" ");
 
         *pHexaString += hexNum;
     }
 
     //pHexaString->TrimRight(" ");
-	pHexaString->erase(pHexaString->find_last_not_of(" ") + 1);
+	pHexaString->erase(pHexaString->find_last_not_of(_CONV(" ")) + 1);
 
     return status;
 }
@@ -286,17 +308,17 @@ int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen,
 int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
-    string itemName;
+	string_type itemName;
 
 	pos = 0;
-	itemName = "";
+	itemName = _CONV("");
 	
 	if (arraySize > 0) {
 		while (pos <= (arraySize-1)) {	// -1 belong to special end zero
 			if (array[pos] == '\0') {	// end of one item
-				if (itemName != "") pValueString->push_back(itemName);
+				if (itemName != _CONV("")) pValueString->push_back(itemName);
 
-				itemName = "";
+				itemName = _CONV("");
 			} 
 			else itemName += array[pos];
 
@@ -311,17 +333,17 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs
 int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
-    string itemName;
+	string_type itemName;
 
 	pos = 0;
-	itemName = "";
+	itemName = _CONV("");
 	
 	if (arraySize > 0) {
 		while (pos <= (arraySize-1)) {	// -1 belong to special end zero
 			if (array[pos] == '\0') {	// end of one item
-				if (itemName != _T("")) pValueString->push_back(itemName);
+				if (itemName != _CONV("")) pValueString->push_back(itemName);
 
-				itemName = _T("");
+				itemName = _CONV("");
 			} 
 			else itemName += array[pos];
 
@@ -333,13 +355,13 @@ int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lc
     return status;
 }
 
-int CCommonFnc::SCSAT_SaveSamples(string filePath, SAMPLE_PLOT* pSample, int startOffset, int endOffset) {
+int CCommonFnc::SCSAT_SaveSamples(string_type filePath, SAMPLE_PLOT* pSample, int startOffset, int endOffset) {
     int     status = STAT_OK;
     
-    MoveFile(filePath.c_str(), (filePath + ".bak").c_str());
-    DeleteFile(filePath.c_str());
+    MoveFile((LPCTSTR) filePath.c_str(), (LPCTSTR) (filePath + _CONV(".bak")).c_str());
+    DeleteFile((LPCTSTR) filePath.c_str());
     // SAVE HEADER
-    string tmp;
+	string_type tmp;
     pSample->measureInfo.formatToString(&tmp);
     CCommonFnc::File_AppendString(filePath, tmp);
     
@@ -349,29 +371,29 @@ int CCommonFnc::SCSAT_SaveSamples(string filePath, SAMPLE_PLOT* pSample, int sta
             // store number of written samples
             if (endOffset == -1) endOffset = pSample->dataBlob.dwActLen;
             pSample->measureInfo.numSamples = endOffset - startOffset + 2;
-			tmp = string_format("%d", pSample->measureInfo.numSamples);
+			tmp = string_format(_CONV("%d"), pSample->measureInfo.numSamples);
             //tmp.Format("%d", pSample->measureInfo.numSamples);
-            WritePrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_NUMSAMPLES, tmp.c_str(), filePath.c_str());
+            WritePrivateProfileString(SCSAT_MEASURE_SECTION.c_str(), SCSAT_MEASURE_NUMSAMPLES.c_str(), (LPCTSTR) tmp.c_str(), (LPCTSTR) filePath.c_str());
         }      
     }
     
     if (status == STAT_OK) {
-        DeleteFile((filePath + ".bak").c_str());
+        DeleteFile((LPCTSTR) (filePath + _CONV(".bak")).c_str());
     }
 
     return status;
 }
 
-int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
+int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string_type fileName, int* pOffset) {
     int     status = STAT_OK;
-    ifstream file;
+    ifstream_type file;
 	file.open(fileName, std::fstream::in);
 
     if (file.is_open()) {
         // FIND 'SCSAT_MEASURE_POWERTRACE' VALUE - SEARCH USING SLIGHTLY OVERLAPPED BLOCKS
-        string dataBlock;
+		string_type dataBlock;
         #define BLOCK_READ_LEN  1000
-        char    block[BLOCK_READ_LEN + 1];    
+		char_type block[BLOCK_READ_LEN + 1];
         DWORD   len = BLOCK_READ_LEN;
         DWORD   traceOffset = 0;
         DWORD   baseOffset = 0;
@@ -380,17 +402,17 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
             file.read(block, BLOCK_READ_LEN); 
 			len = file.gcount();
             dataBlock = block;
-            if ((dataBlock.find(SCSAT_MEASURE_POWERTRACE) != string::npos)) {
+            if ((dataBlock.find(SCSAT_MEASURE_POWERTRACE) != string_type::npos)) {
                 // we found SCSAT_MEASURE_POWERTRACE string, save its offset
-                *pOffset = baseOffset + dataBlock.find(SCSAT_MEASURE_POWERTRACE) + strlen(SCSAT_MEASURE_POWERTRACE) + 2; // offset just after POWERTRACE=
+                *pOffset = baseOffset + dataBlock.find(SCSAT_MEASURE_POWERTRACE) + (int)SCSAT_MEASURE_POWERTRACE.length() + 2; // offset just after POWERTRACE=
                 break;    
             }
             
             if (len != BLOCK_READ_LEN) break; // we are at the end of file
             
             // go back slightly not to miss SCSAT_MEASURE_POWERTRACE string on block border
-            file.seekg(-(int) strlen(SCSAT_MEASURE_POWERTRACE), ios_base::cur);
-            baseOffset += (DWORD) (BLOCK_READ_LEN - strlen(SCSAT_MEASURE_POWERTRACE));
+            file.seekg(-(int) SCSAT_MEASURE_POWERTRACE.length(), std::ios_base::cur);
+            baseOffset += (DWORD) (BLOCK_READ_LEN - (int)SCSAT_MEASURE_POWERTRACE.length());
         }
         file.close();
     }
@@ -399,48 +421,38 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string fileName, int* pOffset) {
     return status;
 }
 
-int CCommonFnc::SCSAT_EnsureFileHeader(string filePath, SCSAT_MEASURE_INFO* pInfo) {
+int CCommonFnc::SCSAT_EnsureFileHeader(string_type filePath, SCSAT_MEASURE_INFO* pInfo) {
 	int status = STAT_OK;
-	char iniValue[MAX_INI_VALUE_CHAR];
+	char_type iniValue[MAX_INI_VALUE_CHAR];
 
 	// CHECK IF HEADER EXISTS
     BOOL    bNewFormat = FALSE; 
     int     fileLength = 0;
-	fstream file;
+	fstream_type file;
 	file.open(filePath, std::fstream::in | std::fstream::out);
    
 	if (file.is_open()) {
-        char    buffer[100];
+		char_type buffer[100];
         memset(buffer, 0, sizeof(buffer));
         file.read(buffer, 100);
-		file.seekg(0, ios_base::end);
-		fileLength = file.tellg();
-		file.seekg(0, ios_base::beg);
-        string header = buffer; string part = header.substr(1, (int) strlen(SCSAT_MEASURE_SECTION));
-		
-		char *partchar = new char[part.length() + 1];
-		char *SCSAT_MEASURE_SECTION_char = new char[strlen(SCSAT_MEASURE_SECTION) + 1];
-		strcpy(partchar, part.c_str());
-		strcpy(SCSAT_MEASURE_SECTION_char, SCSAT_MEASURE_SECTION);
-		toupper(*partchar);
-		toupper(*SCSAT_MEASURE_SECTION_char);
-		if(strcmp(partchar, SCSAT_MEASURE_SECTION_char) == 0) bNewFormat = TRUE;
+		file.seekg(0, std::ios_base::end);
+		//fileLength = file.tellg();
+		file.seekg(0, std::ios_base::beg);
+		string_type header = buffer; string_type part = header.substr(1, (int)SCSAT_MEASURE_SECTION.length());
+		if (compareWithNoCase2(SCSAT_MEASURE_SECTION.c_str(), part.c_str()) == 0) bNewFormat = TRUE;
         //if (part.compareWithNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
         else bNewFormat = FALSE;
-        
-		delete[] partchar;
-		delete[] SCSAT_MEASURE_SECTION_char;
 
     	// WRITE IF NOT 
         if (!bNewFormat) {
-	        string tmp;
+			string_type tmp;
 			if (pInfo->sampleUniqueID == 0) {
 				CCommonFnc::Sample_GenerateSampleUniqueID(&(pInfo->sampleUniqueID));
 			}
             pInfo->formatToString(&tmp);
-			file.seekg(0, ios_base::beg);
-			file.seekp(0, ios_base::beg);
-	        file.write((LPCTSTR) tmp.c_str(), tmp.length());
+			file.seekg(0, std::ios_base::beg);
+			file.seekp(0, std::ios_base::beg);
+	        file.write(tmp.c_str(), tmp.length());
         }
         
         file.close();
@@ -448,15 +460,15 @@ int CCommonFnc::SCSAT_EnsureFileHeader(string filePath, SCSAT_MEASURE_INFO* pInf
 		// if the sampleUniqueID is not present
 		
 		if(bNewFormat) {
-			GetPrivateProfileString(SCSAT_MEASURE_SECTION, SCSAT_MEASURE_SAMPLEUNIQUEID, "", iniValue, MAX_INI_VALUE_CHAR, filePath.c_str());
-			if (strlen(iniValue) == 0) {
+			GetPrivateProfileString(SCSAT_MEASURE_SECTION.c_str(), SCSAT_MEASURE_SAMPLEUNIQUEID.c_str(), _CONV(""), iniValue, MAX_INI_VALUE_CHAR, (LPCTSTR) filePath.c_str());
+			if (type_length(iniValue) == 0) {
 				if (pInfo->sampleUniqueID == 0) {
 				CCommonFnc::Sample_GenerateSampleUniqueID(&(pInfo->sampleUniqueID));
 			    }
-				string tmp;
-				tmp = string_format("%lld", pInfo->sampleUniqueID);
+				string_type tmp;
+				tmp = string_format(_CONV("%lld"), pInfo->sampleUniqueID);
 				//tmp.AtlUtil::Format("%lld", pInfo->sampleUniqueID);
-                WritePrivateProfileString(SCSAT_MEASURE_SECTION,SCSAT_MEASURE_SAMPLEUNIQUEID, tmp.c_str(), filePath.c_str());
+                WritePrivateProfileString(SCSAT_MEASURE_SECTION.c_str(),SCSAT_MEASURE_SAMPLEUNIQUEID.c_str(), tmp.c_str(), filePath.c_str());
 			
 			}	
 		}

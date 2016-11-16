@@ -38,6 +38,31 @@ Altered by P. Svenda
 
 #include <string>
 
+/*#ifndef UNICODE
+#define UNICODE
+#endif
+
+#ifdef UNICODE
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+#endif*/
+
+#if defined (UNICODE) && defined (_WIN32)
+typedef std::wstring string_type;
+typedef std::wifstream ifstream_type;
+typedef std::wofstream ofstream_type;
+typedef std::wfstream fstream_type;
+typedef wchar_t char_type;
+#define _CONV(x) L ##x
+#else 
+typedef std::string string_type;
+typedef std::ifstream ifstream_type;
+typedef std::ofstream ofstream_type;
+typedef std::fstream fstream_type;
+typedef char char_type;
+#define _CONV(x) x
+#endif
 
 enum TypeSocket {BlockingSocket, NonBlockingSocket};
 
@@ -50,23 +75,23 @@ public:
 
   int recvtimeout(SOCKET s, char *buf, int len, int timeout);
 
-  std::string ReceiveLine(int timeout = 0);
-  std::string ReceiveBytes();
+  string_type ReceiveLine(int timeout = 0);
+  string_type ReceiveBytes();
 
-  std::string ReceiveResponse(std::string endSeq, int timeout);
-  int ReceiveLineToFile(std::string filePath, int timeout, int* pWrittenValues = NULL);
+  string_type ReceiveResponse(string_type endSeq, int timeout);
+  int ReceiveLineToFile(string_type filePath, int timeout, int* pWrittenValues = NULL);
   int ReceiveLineToMemory(INT_DATA_BLOB* pData, int timeout, int bytesPerSample = 2);
 
   void   Close();
 
   // The parameter of SendLine is not a const reference
   // because SendLine modifes the std::string passed.
-  void   SendLine (std::string);
+  void   SendLine (string_type);
 
   // The parameter of SendBytes is a const reference
   // because SendBytes does not modify the std::string passed 
   // (in contrast to SendLine).
-  void   SendBytes(const std::string&);
+  void   SendBytes(const string_type&);
 
 protected:
   friend class SocketServer;
@@ -88,7 +113,7 @@ private:
 
 class SocketClient : public Socket {
 public:
-  SocketClient(const std::string& host, int port);
+  SocketClient(const string_type& host, int port);
 };
 
 

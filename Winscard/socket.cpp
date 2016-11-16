@@ -128,8 +128,8 @@ int Socket::recvtimeout(SOCKET s, char *buf, int len, int timeout)
     return recv(s, buf, len, 0);
 }
 
-std::string Socket::ReceiveBytes() {
-  std::string ret;
+string_type Socket::ReceiveBytes() {
+  string_type ret;
   char buf[1024];
  
  for ( ; ; ) {
@@ -143,7 +143,7 @@ std::string Socket::ReceiveBytes() {
   int rv = recv (s_, buf, arg, 0);
   if (rv <= 0)
    break;
-  std::string t;
+  string_type t;
   t.assign (buf, rv);
   ret += t;
  }
@@ -220,8 +220,8 @@ int Socket::ReceiveLineToMemory(INT_DATA_BLOB* pData, int timeout, int bytesPerS
 }
 
 
-std::string Socket::ReceiveLine(int timeout) {
-  std::string ret;
+string_type Socket::ReceiveLine(int timeout) {
+  string_type ret;
   int         status = 0;
    while (1) {
      char r;
@@ -248,14 +248,14 @@ std::string Socket::ReceiveLine(int timeout) {
    }
 }
 
-std::string Socket::ReceiveResponse(std::string endSeq, int timeout) {
-  std::string ret;
-  std::string line;
+string_type Socket::ReceiveResponse(string_type endSeq, int timeout) {
+  string_type ret;
+  string_type line;
   
   // FIRST LINE READ EVERY TIME (SHOULD BE THERE)  
   line = ReceiveLine();
   // end when zero line found or endSeq character
-  while (line != "" && line.find(endSeq) == string::npos) {
+  while (line != "" && line.find(endSeq) == string_type::npos) {
     ret += line;
     line = ReceiveLine(timeout);
   }
@@ -264,8 +264,8 @@ std::string Socket::ReceiveResponse(std::string endSeq, int timeout) {
   return ret;  
 }
 
-int Socket::ReceiveLineToFile(std::string filePath, int timeout, int* pWrittenValues) {
-  std::string ret;
+int Socket::ReceiveLineToFile(string_type filePath, int timeout, int* pWrittenValues) {
+  string_type ret;
   int         status = 0;
   int         retStat = 0;  
   FILE        *file; 
@@ -376,12 +376,12 @@ int Socket::ReceiveLineToFile(std::string filePath, int timeout, int* pWrittenVa
     return status;
 }
 
-void Socket::SendLine(std::string s) {
+void Socket::SendLine(string_type s) {
   s += '\n';
   send(s_,s.c_str(),(int) s.length(),0);
 }
 
-void Socket::SendBytes(const std::string& s) {
+void Socket::SendBytes(const string_type& s) {
   send(s_,s.c_str(),(int) s.length(),0);
 }
 
@@ -429,8 +429,8 @@ Socket* SocketServer::Accept() {
   return r;
 }
 
-SocketClient::SocketClient(const std::string& host, int port) : Socket() {
-  std::string error;
+SocketClient::SocketClient(const string_type& host, int port) : Socket() {
+  string_type error;
 
 
   hostent *he;

@@ -30,28 +30,31 @@
 
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS	// some CString constructors will be explicit
 
-#include <afxwin.h>         // MFC core and standard components
-#include <afxext.h>         // MFC extensions
+//#include <afxwin.h>         // MFC core and standard components
+//#include <afxext.h>         // MFC extensions
 
 #ifndef _AFX_NO_OLE_SUPPORT
-#include <afxole.h>         // MFC OLE classes
-#include <afxodlgs.h>       // MFC OLE dialog classes
-#include <afxdisp.h>        // MFC Automation classes
+//#include <afxole.h>         // MFC OLE classes
+//#include <afxodlgs.h>       // MFC OLE dialog classes
+//#include <afxdisp.h>        // MFC Automation classes
 #endif // _AFX_NO_OLE_SUPPORT
 
 #ifndef _AFX_NO_DB_SUPPORT
-#include <afxdb.h>			// MFC ODBC database classes
+//#include <afxdb.h>			// MFC ODBC database classes
 #endif // _AFX_NO_DB_SUPPORT
 
 #ifndef _AFX_NO_DAO_SUPPORT
-#include <afxdao.h>			// MFC DAO database classes
+//#include <afxdao.h>			// MFC DAO database classes
 #endif // _AFX_NO_DAO_SUPPORT
 
+#ifdef _WIN32
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdtctl.h>		// MFC support for Internet Explorer 4 Common Controls
 #endif
+#endif
+
 #ifndef _AFX_NO_AFXCMN_SUPPORT
-#include <afxcmn.h>			// MFC support for Windows Common Controls
+//#include <afxcmn.h>			// MFC support for Windows Common Controls
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include "..\Shared\status.h"
@@ -59,21 +62,23 @@
 #include "socket.h"
 
 #include <list>
-using namespace std;
+//using namespace std;
+
+typedef void* PTR;
 
 #pragma warning(disable : 4996) // for Visual Studio: Microsoft renamed std::snprintf to _snprintf
-// this should remove the warnings
+                                // this should remove the warnings
 
 //This function is used to format std::string with arguments like with printf
 template<typename ... Args>
-string string_format(const std::string& format, Args ... args) {
+string_type string_format(const string_type& format, Args ... args) {
 	size_t size = snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
-	unique_ptr<char[]> buf(new char[size]);
+	std::unique_ptr<char_type[]> buf(new char_type[size]);
 	snprintf(buf.get(), size, format.c_str(), args ...);
-	return string(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
+	return string_type(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-typedef list<string>       lcs;
+typedef std::list<string_type>       lcs;
 
 #define MAX_APDU_LENGTH     300 
 #define OFFSET_CDATA        5
@@ -82,7 +87,7 @@ typedef struct _APDU_BUFFER {
     BYTE    buffer[MAX_APDU_LENGTH];
 } APDU_BUFFER;
 
-typedef list<APDU_BUFFER>    lab;
+typedef std::list<APDU_BUFFER>    lab;
 
 
 #define INPUT_APDU      1
@@ -113,11 +118,11 @@ typedef struct _APDU_SINGLE_RULE {
     }
 } APDU_SINGLE_RULE;
 
-typedef list<APDU_SINGLE_RULE>   lasr;
+typedef std::list<APDU_SINGLE_RULE>   lasr;
 
 
 typedef struct _APDU_RULE {
-    string ruleName;
+	string_type ruleName;
     int     usage;
     int     direction;      // apdu direction, 1... input apdu, 0...output apdu 
     lasr    matchRules;    
@@ -129,7 +134,7 @@ typedef struct _APDU_RULE {
     }
     void clear() {
         msDelay = 0;
-        ruleName = "";
+        ruleName = _CONV("");
         usage = 0;
         direction = INPUT_APDU;
         lasr::iterator   iter;
@@ -142,16 +147,16 @@ typedef struct _APDU_RULE {
     }
 } APDU_RULE;
 
-typedef list<APDU_RULE>     lar;
+typedef std::list<APDU_RULE>     lar;
    
-typedef list<PTR>           lptr;
+typedef std::list<PTR>           lptr;
 
 
 typedef struct _SCSAT04_CONFIG {
     BOOL            bRedirect;
-    string         IP;
-    string         port;
-    string         cfgScript;
+	string_type     IP;
+	string_type     port;
+	string_type     cfgScript;
     BYTE            measureApdu[255];    
     BYTE            measureApduLen;     // number of used bytes from measureApdu array
     int             measureApduByteCounter;     // number of incoming apdu bytes before the measurement is run - part of get params 1 xx 0 command
@@ -168,9 +173,9 @@ typedef struct _SCSAT04_CONFIG {
 
     void clear() {
         bRedirect = FALSE;
-        IP = "";
-        port = "";
-        cfgScript = "";
+        IP = _CONV("");
+        port = _CONV("");
+        cfgScript = _CONV("");
         memset(measureApdu, 0, sizeof(measureApdu));
         measureApduLen = 0;
         measureApduByteCounter = 0;
@@ -191,8 +196,8 @@ typedef struct _WINSCARD_CONFIG {
     BOOL    bLOG_EXCHANGED_APDU;
     BOOL    bMODIFY_APDU_BY_RULES;
     BOOL    bLOG_FUNCTIONS_CALLS;
-    string sREADER_ORDERED_FIRST;
-	string sLOG_BASE_PATH;
+    string_type sREADER_ORDERED_FIRST;
+	string_type sLOG_BASE_PATH;
     
     _WINSCARD_CONFIG(void) {
         clear();
@@ -209,8 +214,8 @@ typedef struct _WINSCARD_CONFIG {
         bLOG_EXCHANGED_APDU = TRUE;   // DEFAULT: FALSE, SET TO TRUE IF LOGGING OF APDU DATA IS REQUIRED
         bMODIFY_APDU_BY_RULES = TRUE;   // DEFAULT: FALSE, SET TO TRUE . 
         bLOG_FUNCTIONS_CALLS = TRUE;   // DEFAULT: FALSE, SET TO TRUE . 
-        sREADER_ORDERED_FIRST = "";
-		sLOG_BASE_PATH = "";
+        sREADER_ORDERED_FIRST = _CONV("");
+		sLOG_BASE_PATH = _CONV("");
 #else
     // DEFAULT RELEASE VERSION FOR COMMON USAGE WITHOUT LOGGING
         bAUTO_REQUEST_DATA = FALSE;           // DEFAULT: FALSE, SET TO TRUE IF APPLICATION IS NOT ABLE TO HANDLE GET DATA (00 0c 00 00 lc) COMMAND ON ITS OWN 
@@ -249,73 +254,74 @@ __inline volatile unsigned long long read_tsc(void)
 #endif
 
 #endif
-#define     SCSAT_MEASURE_SECTION               "SCSAT_MEASURE_BASIC"
-#define     SCSAT_MEASURE_SECTION_EXT           "SCSAT_MEASURE_EXT"
-#define     SCSAT_MEASURE_SECTION_SAMPLES       "SCSAT_MEASURE_SAMPLES"
-#define     SCSAT_MEASURE_DATETIME              "DATETIME"
-#define     SCSAT_MEASURE_CARDATR               "CARDATR"
-#define     SCSAT_MEASURE_CARDNAME              "CARDNAME"
-#define     SCSAT_MEASURE_NOTE                  "NOTE"
-#define     SCSAT_MEASURE_COMMLOG               "COMMLOG"
-#define     SCSAT_MEASURE_CFGSCRIPT             "CFGSCRIPT"
-#define     SCSAT_MEASURE_STARTAPDU             "STARTAPDU"
-#define     SCSAT_MEASURE_SAMPLINGFREQUENCY     "SAMPLINGFREQUENCY"
-#define     SCSAT_MEASURE_BASEOFFSET            "BASEOFFSET"
-#define     SCSAT_MEASURE_BASESHIFT             "BASESHIFT"
-#define     SCSAT_MEASURE_SYNDROMS              "SYNDROMS"
-#define     SCSAT_MEASURE_MICROSHIFTS           "MICROSHIFTS"    
-#define     SCSAT_MEASURE_POWERTRACE            "POWERTRACE"    
-#define     SCSAT_MEASURE_NUMSAMPLES            "NUMSAMPLES"
 
-#define     SCSAT_MAX_SAMPLING_FREQUENCY        100
-#define     SCSAT_SOCKET_SHORT_TIMEOUT      3
+static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
+static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");
+static string_type SCSAT_MEASURE_SECTION_SAMPLES = _CONV("SCSAT_MEASURE_SAMPLES");
+static string_type SCSAT_MEASURE_DATETIME = _CONV("DATETIME");
+static string_type SCSAT_MEASURE_CARDATR = _CONV("CARDATR");
+static string_type SCSAT_MEASURE_CARDNAME = _CONV("CARDNAME");
+static string_type SCSAT_MEASURE_NOTE = _CONV("NOTE");
+static string_type SCSAT_MEASURE_COMMLOG = _CONV("COMMLOG");
+static string_type SCSAT_MEASURE_CFGSCRIPT = _CONV("CFGSCRIPT");
+static string_type SCSAT_MEASURE_STARTAPDU = _CONV("STARTAPDU");
+static string_type SCSAT_MEASURE_SAMPLINGFREQUENCY = _CONV("SAMPLINGFREQUENCY");
+static string_type SCSAT_MEASURE_BASEOFFSET = _CONV("BASEOFFSET");
+static string_type SCSAT_MEASURE_BASESHIFT = _CONV("BASESHIFT");
+static string_type SCSAT_MEASURE_SYNDROMS = _CONV("SYNDROMS");
+static string_type SCSAT_MEASURE_MICROSHIFTS = _CONV("MICROSHIFTS");
+static string_type SCSAT_MEASURE_POWERTRACE = _CONV("POWERTRACE");
+static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
 
-#define     SCSAT_GET_APDU                  "get apdu"
-#define     SCSAT_GET_APDU_FAIL             "get apdu fail"
-#define     SCSAT_GET_RESET                 "get reset"
+#define SCSAT_MAX_SAMPLING_FREQUENCY 100
+#define SCSAT_SOCKET_SHORT_TIMEOUT 3
 
-#define     SCSAT_MEASURE_SECTION               "SCSAT_MEASURE_BASIC"
-#define     SCSAT_MEASURE_SECTION_EXT           "SCSAT_MEASURE_EXT"
-#define     SCSAT_MEASURE_SECTION_EXT1          "SCSAT_MEASURE_EXT_1"
-#define     SCSAT_MEASURE_SECTION_EXT2          "SCSAT_MEASURE_EXT_2"
-#define     SCSAT_MEASURE_SECTION_EXT3          "SCSAT_MEASURE_EXT_3"
-#define     SCSAT_MEASURE_SECTION_EXT4          "SCSAT_MEASURE_EXT_4"
-#define     SCSAT_MEASURE_SECTION_EXT5          "SCSAT_MEASURE_EXT_5"
-#define     SCSAT_MEASURE_SECTION_EXT6          "SCSAT_MEASURE_EXT_6"
-#define     SCSAT_MEASURE_SECTION_EXT7          "SCSAT_MEASURE_EXT_7"
-#define     SCSAT_MEASURE_SECTION_EXT8          "SCSAT_MEASURE_EXT_8"
+static string_type SCSAT_GET_APDU = _CONV("get apdu");
+static string_type SCSAT_GET_APDU_FAIL = _CONV("get apdu fail");
+static string_type SCSAT_GET_RESET = _CONV("get reset");
 
-#define     SCSAT_MEASURE_SECTION_SAMPLES       "SCSAT_MEASURE_SAMPLES"
-#define     SCSAT_MEASURE_DATETIME              "DATETIME"
-#define     SCSAT_MEASURE_CARDATR               "CARDATR"
-#define     SCSAT_MEASURE_CARDNAME              "CARDNAME"
-#define     SCSAT_MEASURE_NOTE                  "NOTE"
-#define     SCSAT_MEASURE_COMMLOG               "COMMLOG"
-#define     SCSAT_MEASURE_CFGSCRIPT             "CFGSCRIPT"
-#define     SCSAT_MEASURE_STARTAPDU             "STARTAPDU"
-#define     SCSAT_MEASURE_SAMPLINGFREQUENCY     "SAMPLINGFREQUENCY"
-#define     SCSAT_MEASURE_BASEOFFSET            "BASEOFFSET"
-#define     SCSAT_MEASURE_BASESHIFT             "BASESHIFT"
-#define     SCSAT_MEASURE_SYNDROMS              "SYNDROMS"
-#define     SCSAT_MEASURE_MICROSHIFTS           "MICROSHIFTS"    
-#define     SCSAT_MEASURE_POWERTRACE            "POWERTRACE"    
-#define     SCSAT_MEASURE_NUMSAMPLES            "NUMSAMPLES"
-#define     SCSAT_MEASURE_SAMPLEUNIQUEID        "SAMPLEUNIQUEID"
-#define     SCSAT_MEASURE_APDUDATA              "APDUDATA"  
-#define		SCSAT_MEASURE_SAVEBINARY			"SAVEBINARY"
+//static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
+//static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");
+static string_type SCSAT_MEASURE_SECTION_EXT1 = _CONV("SCSAT_MEASURE_EXT_1");
+static string_type SCSAT_MEASURE_SECTION_EXT2 = _CONV("SCSAT_MEASURE_EXT_2");
+static string_type SCSAT_MEASURE_SECTION_EXT3 = _CONV("SCSAT_MEASURE_EXT_3");
+static string_type SCSAT_MEASURE_SECTION_EXT4 = _CONV("SCSAT_MEASURE_EXT_4");
+static string_type SCSAT_MEASURE_SECTION_EXT5 = _CONV("SCSAT_MEASURE_EXT_5");
+static string_type SCSAT_MEASURE_SECTION_EXT6 = _CONV("SCSAT_MEASURE_EXT_6");
+static string_type SCSAT_MEASURE_SECTION_EXT7 = _CONV("SCSAT_MEASURE_EXT_7");
+static string_type SCSAT_MEASURE_SECTION_EXT8 = _CONV("SCSAT_MEASURE_EXT_8");
+
+//static string_type SCSAT_MEASURE_SECTION_SAMPLES = _CONV("SCSAT_MEASURE_SAMPLES");
+//static string_type SCSAT_MEASURE_DATETIME = _CONV("DATETIME");
+//static string_type SCSAT_MEASURE_CARDATR = _CONV("CARDATR");
+//static string_type SCSAT_MEASURE_CARDNAME = _CONV("CARDNAME");
+//static string_type SCSAT_MEASURE_NOTE = _CONV("NOTE");
+//static string_type SCSAT_MEASURE_COMMLOG = _CONV("COMMLOG");
+//static string_type SCSAT_MEASURE_CFGSCRIPT = _CONV("CFGSCRIPT");
+//static string_type SCSAT_MEASURE_STARTAPDU = _CONV("STARTAPDU");
+//static string_type SCSAT_MEASURE_SAMPLINGFREQUENCY = _CONV("SAMPLINGFREQUENCY");
+//static string_type SCSAT_MEASURE_BASEOFFSET = _CONV("BASEOFFSET");
+//static string_type SCSAT_MEASURE_BASESHIFT = _CONV("BASESHIFT");
+//static string_type SCSAT_MEASURE_SYNDROMS = _CONV("SYNDROMS");
+//static string_type SCSAT_MEASURE_MICROSHIFTS = _CONV("MICROSHIFTS");
+//static string_type SCSAT_MEASURE_POWERTRACE = _CONV("POWERTRACE");
+//static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
+static string_type SCSAT_MEASURE_SAMPLEUNIQUEID = _CONV("SAMPLEUNIQUEID");
+static string_type SCSAT_MEASURE_APDUDATA = _CONV("APDUDATA");
+static string_type SCSAT_MEASURE_SAVEBINARY = _CONV("SAVEBINARY");
 
 
 typedef struct _SCSAT_MEASURE_INFO {
-    string     dateTime;
-	string     cardATR;
-	string     cardName;
-	string     cfgScript;
-	string     commLog;
-	string     syndroms;       // classified syndroms format into single line string 
-	string     microShifts;    // synchronization microShifts for subparts of trace format into single line string
-	string     note;           // user supplied note
-	string     startAPDU;
-	string     apduData;       // substring of startAPDU
+	string_type     dateTime;
+	string_type     cardATR;
+	string_type     cardName;
+	string_type     cfgScript;
+	string_type     commLog;
+	string_type     syndroms;       // classified syndroms format into single line string 
+	string_type     microShifts;    // synchronization microShifts for subparts of trace format into single line string
+	string_type     note;           // user supplied note
+	string_type     startAPDU;
+	string_type     apduData;       // substring of startAPDU
     int         frequency;
     int         baseOffset;
     int         baseShift;
@@ -328,28 +334,28 @@ typedef struct _SCSAT_MEASURE_INFO {
         clear();
     }
     void clear() {
-        cardATR = "";
-        cardName = "";
+        cardATR = _CONV("");
+        cardName = _CONV("");
         clearMeasure();
 		sampleUniqueID=0;
     }
     void clearMeasure() {
-        dateTime = "";
-        cfgScript = "";
-        startAPDU = "";
-		apduData = "";
-        commLog = "";
-        syndroms = "";
-        microShifts = "";
-        note = "";
+        dateTime = _CONV("");
+        cfgScript = _CONV("");
+        startAPDU = _CONV("");
+		apduData = _CONV("");
+        commLog = _CONV("");
+        syndroms = _CONV("");
+        microShifts = _CONV("");
+        note = _CONV("");
         frequency = 0;
         baseOffset = 0;
         baseShift = 0;
         numSamples = 0;
         baseLevel = -1;
     }
-	int formatToString(std::string* pResult) {
-		std::string value;
+int formatToString(string_type* pResult) {
+		string_type value;
 		// remove all endlines and replace by ';' in multiline strings
 		
 		cfgScript.erase(remove(cfgScript.begin(), cfgScript.end(), '\r'), cfgScript.end());
@@ -361,37 +367,37 @@ typedef struct _SCSAT_MEASURE_INFO {
 		//commLog.Replace("\r", ""); commLog.Replace("\n", ";");
 
 		//create INI style section
-		*pResult = string_format("[%s]\r\n", SCSAT_MEASURE_SECTION);
-		*pResult += string_format("%s=%lld\r\n", SCSAT_MEASURE_SAMPLEUNIQUEID, sampleUniqueID);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_DATETIME, dateTime);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_CARDATR, cardATR);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_CARDNAME, cardName);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_NOTE, note);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_CFGSCRIPT, cfgScript);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_STARTAPDU, startAPDU);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_COMMLOG, commLog);
-		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_SAMPLINGFREQUENCY, frequency);
-		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_BASEOFFSET, baseOffset);
-		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_BASESHIFT, baseShift);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_SYNDROMS, syndroms);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_MICROSHIFTS, microShifts);
-		*pResult += string_format("%s=%d\r\n", SCSAT_MEASURE_NUMSAMPLES, numSamples);
-		*pResult += string_format("[%s_1]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_APDUDATA, apduData);
-		*pResult += string_format("%s=%s\r\n", SCSAT_MEASURE_SAVEBINARY, bSaveBinary ? "1" : "0");
-		*pResult += string_format("[%s_2]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_3]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_4]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_5]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_6]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_7]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_8]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_9]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s_9]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format("[%s]\r\n%s=\r\n", SCSAT_MEASURE_SECTION_SAMPLES, SCSAT_MEASURE_POWERTRACE);
+		*pResult = string_format(_CONV("[%s]\r\n"), SCSAT_MEASURE_SECTION);
+		*pResult += string_format(_CONV("%s=%lld\r\n"), SCSAT_MEASURE_SAMPLEUNIQUEID, sampleUniqueID);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_DATETIME, dateTime);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_CARDATR, cardATR);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_CARDNAME, cardName);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_NOTE, note);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_CFGSCRIPT, cfgScript);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_STARTAPDU, startAPDU);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_COMMLOG, commLog);
+		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_SAMPLINGFREQUENCY, frequency);
+		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_BASEOFFSET, baseOffset);
+		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_BASESHIFT, baseShift);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_SYNDROMS, syndroms);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_MICROSHIFTS, microShifts);
+		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_NUMSAMPLES, numSamples);
+		*pResult += string_format(_CONV("[%s_1]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_APDUDATA, apduData);
+		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_SAVEBINARY, bSaveBinary ? "1" : "0");
+		*pResult += string_format(_CONV("[%s_2]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_3]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_4]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_5]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_6]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_7]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_8]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_9]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s_9]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
+		*pResult += string_format(_CONV("[%s]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_SAMPLES, SCSAT_MEASURE_POWERTRACE);
 		return 0;
 	}
-	void copy(_SCSAT_MEASURE_INFO* pTemplate) {
+void copy(_SCSAT_MEASURE_INFO* pTemplate) {
 		cardATR = pTemplate->cardATR;
 		cardName = pTemplate->cardName;
 		dateTime = pTemplate->dateTime;
@@ -425,9 +431,9 @@ class SAMPLE_PLOT {
 public:
     INT_DATA_BLOB   dataBlob;
     INT_DATA_BLOB   microshiftsDataBlob;
-    string          dataFilePath;    
+	string_type     dataFilePath;
     INT_DATA_BLOB   busBlob;
-    string          busFilePath;
+	string_type     busFilePath;
     int             sampleFileIndex;  // used only when data/busFilePath is constructed as 'dataoutXX.dat'
     DWORD           flags;
     BOOL            bShow;
@@ -436,8 +442,8 @@ public:
 
 public:
     SAMPLE_PLOT(void) {
-        dataFilePath = "";
-        busFilePath = "";
+        dataFilePath = _CONV("");
+        busFilePath = _CONV("");
         bShow = TRUE;
         flags = 0;
         sampleFileIndex = -1;
