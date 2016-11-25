@@ -93,7 +93,7 @@ int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFr
     DWORD           index = 1;
 
     // FIND FIRST FREE INDEX
-    _splitpath_s((LPCTSTR) baseFile.c_str(), drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
+	type_path_split(baseFile.c_str(), drive, _MAX_DRIVE, dir, _MAX_DIR, fname, _MAX_FNAME, ext, _MAX_EXT);
     index = 1;
 	string_type zeroes = _CONV("0000");
     //sprintf_s(fileName, MAX_PATH, "%s%s%s%s%d%s", drive, dir, fname, (LPCTSTR) zeroes.c_str(), index, ext);
