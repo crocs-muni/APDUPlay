@@ -30,6 +30,15 @@
 #include "Socket.h"
 #include <errno.h>
 
+#if defined (UNICODE) && defined (_WIN32)
+typedef FILE*(*m)(const char_type*, const char_type*);
+static m type_fopen = _wfopen;
+#else 
+typedef FILE*(*m)(const char_type*, const char_type*);
+typedef errno_t(*n)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t);
+static m type_fopen = fopen;
+#endif
+
 using namespace std;
 
 #pragma warning(disable:4996)
@@ -144,7 +153,7 @@ string_type Socket::ReceiveBytes() {
   if (rv <= 0)
    break;
   string_type t;
-  t.assign (buf, rv);
+  t.assign ((char_type*)buf, rv/sizeof(char_type));
   ret += t;
  }
  
@@ -231,13 +240,13 @@ string_type Socket::ReceiveLine(int timeout) {
      
      switch(status) {
        case 0: // not connected anymore;
-         return "";
+         return _CONV("");
        case -1:
           if (errno == EAGAIN) {
              return ret;
           } else {
             // not connected anymore
-           return "";
+           return _CONV("");
          }
        case -2: // timeout
          return ret;   
@@ -255,7 +264,7 @@ string_type Socket::ReceiveResponse(string_type endSeq, int timeout) {
   // FIRST LINE READ EVERY TIME (SHOULD BE THERE)  
   line = ReceiveLine();
   // end when zero line found or endSeq character
-  while (line != "" && line.find(endSeq) == string_type::npos) {
+  while (line != _CONV("") && line.find(endSeq) == string_type::npos) {
     ret += line;
     line = ReceiveLine(timeout);
   }
@@ -277,7 +286,7 @@ int Socket::ReceiveLineToFile(string_type filePath, int timeout, int* pWrittenVa
 
     if (pWrittenValues != NULL) *pWrittenValues = 0;
   
-    if ((file = fopen((LPCTSTR) filePath.c_str(), "a")) != NULL) { 
+    if ((file = type_fopen((LPCTSTR) filePath.c_str(), _CONV("a"))) != NULL) {
         unsigned char    data = 0;
         char    dataStr[10];
         int     endState = 0;
@@ -378,11 +387,11 @@ int Socket::ReceiveLineToFile(string_type filePath, int timeout, int* pWrittenVa
 
 void Socket::SendLine(string_type s) {
   s += '\n';
-  send(s_,s.c_str(),(int) s.length(),0);
+  send(s_, (char*) s.c_str(),(int) s.length()*sizeof(char_type), 0);
 }
 
 void Socket::SendBytes(const string_type& s) {
-  send(s_,s.c_str(),(int) s.length(),0);
+  send(s_, (char*)s.c_str(), (int)s.length() * sizeof(char_type), 0);
 }
 
 SocketServer::SocketServer(int port, int connections, TypeSocket type) {
@@ -430,11 +439,14 @@ Socket* SocketServer::Accept() {
 }
 
 SocketClient::SocketClient(const string_type& host, int port) : Socket() {
-  string_type error;
+  std::string error;
 
+  char *str = new char[1024];;
+  wcstombs(str, host.c_str(), host.length());
+  std::cout << str;
 
   hostent *he;
-  if ((he = gethostbyname(host.c_str())) == 0) {
+  if ((he = gethostbyname(str)) == 0) {
     error = strerror(errno);
     throw error;
   }
