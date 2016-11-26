@@ -5,6 +5,7 @@
  */
 package parser;
 
+import parser.settings.ABDUSettings;
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
@@ -49,24 +50,8 @@ public class ABDUParser {
     }
     
     public void printData() {
-        packets.entrySet().forEach((entry) -> {
-            File file = new File(settings.getOutputDirectory());
-            file.mkdirs();
-            entry.getValue().simplifyNodes();
-            try (PrintWriter writer = new PrintWriter(file.getAbsolutePath() + "/" + entry.getKey() + "_transmitted.dot", "UTF-8")) {
-                entry.getValue().printTransmitted(writer);
-            }
-            catch (Exception ex) {
-                logger.error(ex.getMessage());
-            }
-            
-            try (PrintWriter writer = new PrintWriter(file.getAbsolutePath() + "/" + entry.getKey() + "_received.dot", "UTF-8")) {
-                entry.getValue().printReceived(writer);
-            }
-            catch (Exception ex) {
-                logger.error(ex.getMessage());
-            }
-        });
+        ABDUWriter abduWriter = new ABDUWriter(settings, logger);
+        abduWriter.write(packets.values());
     }
     
     private Pair processLine(String line) {
