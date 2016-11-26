@@ -8,19 +8,24 @@ typedef size_t(*f)(const char_type*);
 typedef char_type*(*g)(char_type*, const char_type*);
 typedef int(*k)(const char_type*, const char_type*);
 typedef long (*l)(const char_type*, char_type**, int);
+typedef errno_t(*n)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t);
 static f type_length = wcslen;
 static g type_copy = wcscpy;
 static k type_compare = wcscmp;
 static l type_to_int = wcstol;
+static n type_path_split = _wsplitpath_s;
 #else 
 typedef size_t(*f)(const char_type*);
 typedef char_type*(*g)(char_type*, const char_type*);
 typedef int(*k)(const char_type*, const char_type*);
 typedef long(*l)(const char_type*, char_type**, int);
+typedef errno_t(*n)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t);
 static f type_length = strlen;
 static g type_copy = strcpy;
 static k type_compare = strcmp;
 static l type_to_int = strtol;
+static n type_path_split = _splitpath_s;
+typedef FILE*(*m)(const char_type*, const char_type*);
 #endif
 
 class CCommonFnc {

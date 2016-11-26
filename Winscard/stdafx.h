@@ -66,15 +66,24 @@
 
 typedef void* PTR;
 
+#if defined (UNICODE) && defined (_WIN32)
+typedef int(*s)(char_type*, size_t,const char_type*, ...);
+static s type_snprint = _snwprintf;
+#else 
+typedef int(*s)(char_type*, size_t, const char_type*, ...);
+static s type_snprint = snprintf;
+#endif
+
+
 #pragma warning(disable : 4996) // for Visual Studio: Microsoft renamed std::snprintf to _snprintf
                                 // this should remove the warnings
 
 //This function is used to format std::string with arguments like with printf
 template<typename ... Args>
 string_type string_format(const string_type& format, Args ... args) {
-	size_t size = snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+	size_t size = type_snprint(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
 	std::unique_ptr<char_type[]> buf(new char_type[size]);
-	snprintf(buf.get(), size, format.c_str(), args ...);
+	type_snprint(buf.get(), size, format.c_str(), args ...);
 	return string_type(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 

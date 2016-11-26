@@ -12,7 +12,7 @@ int nothing()
 		return FALSE;
 	}
 	
-	dlerror();    // Clear any existing error
+	dlerror();    // Clear any existing errorz
 	
 	Original_SCardEstablishContext = (LONG(__stdcall *)(
 		IN  DWORD dwScope,
