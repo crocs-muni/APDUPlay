@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package parser.settings;
+package parser.output;
 
 /**
  *
@@ -14,4 +14,6 @@ public class ABDUOutputType {
     public static final int FLOW    = 0x2;
     public static final int PACKETS = 0x4;
     public static final int ALL     = -1;
+    
+    public static final int[] TYPES = { NODES, FLOW, PACKETS};
 }

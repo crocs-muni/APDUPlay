@@ -19,7 +19,7 @@ public class ABDUNode {
     
     private byte[] data;
     private ABDUNode parent;
-    private Map<Byte, ABDUNode> childNodes;
+    private final Map<Byte, ABDUNode> childNodes;
     private int count;
     
     public final int identifier;
@@ -58,13 +58,12 @@ public class ABDUNode {
             throw new IllegalArgumentException("Index out of range of data array");
         }
         
-        byte[] subArray = Arrays.copyOfRange(data, index, data.length);
+        byte[] subArray = Arrays.copyOfRange(data, 0, index);
         ABDUNode node = new ABDUNode(subArray);
-        node.childNodes = childNodes;
         
-        data = Arrays.copyOfRange(data, 0, index);
-        childNodes = new HashMap<>();
-        addChild(node);
+        parent.addChild(node);
+        data = Arrays.copyOfRange(data, index, data.length);
+        node.addChild(this);
     }
     
     public void addChild(ABDUNode node) {

@@ -5,10 +5,9 @@
  */
 package parser;
 
+import parser.output.ABDUWriter;
 import parser.settings.ABDUSettings;
 import java.io.File;
-import java.io.PrintWriter;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,8 +22,8 @@ import javax.xml.bind.DatatypeConverter;
 public class ABDUParser {
     private final ABDULogger logger;
     private final ABDUSettings settings;
-    private final Map<Short, ABDUTree> packets;
-    private short lastProcessedPacket;
+    private final Map<String, ABDUTree> packets;
+    private String lastProcessedPacket;
     
     /**
      * Creates new instance of parser
@@ -35,7 +34,6 @@ public class ABDUParser {
         this.settings = settings;
         this.logger = logger;
         this.packets = new HashMap<>();
-        lastProcessedPacket = -1;
     }
     
     public void parseFile(String path) {
@@ -84,10 +82,9 @@ public class ABDUParser {
     }
     
     private void handleTransmittedData(byte[] data) {
-        byte[] packetHeader = Arrays.copyOfRange(data, 0, 2);
-        byte[] packetData = Arrays.copyOfRange(data, 2, data.length);
-        ByteBuffer wrapped = ByteBuffer.wrap(packetHeader);
-        short header = wrapped.getShort();
+        byte[] packetHeader = Arrays.copyOfRange(data, 0, settings.getHeaderLength());
+        byte[] packetData = Arrays.copyOfRange(data, settings.getHeaderLength(), data.length);
+        String header = DatatypeConverter.printHexBinary(packetHeader);
         
         ABDUTree existingTree = packets.get(header);
         if (existingTree == null) {

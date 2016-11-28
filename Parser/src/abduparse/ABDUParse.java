@@ -7,7 +7,7 @@ package abduparse;
 
 import parser.ABDULogger;
 import parser.ABDUParser;
-import parser.settings.ABDUOutputType;
+import parser.output.ABDUOutputType;
 import parser.settings.ABDUSettings;
 
 /**
@@ -27,8 +27,9 @@ public class ABDUParse {
         ABDUSettings settings = new ABDUSettings();
         settings.setOutputDirectory("output");
         settings.setSeparatePackets(false);
-        settings.setsimpleNodes(false);
-        settings.setOutputTypeMask(ABDUOutputType.NODES);
+        settings.setsimpleNodes(true);
+        settings.setOutputTypeMask(ABDUOutputType.ALL);
+        settings.setHeaderLength(4);
         
         ABDUParser parser = new ABDUParser(settings, new ABDULogger());
         parser.parseFile(args[0]);

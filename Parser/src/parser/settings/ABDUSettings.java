@@ -14,6 +14,7 @@ public class ABDUSettings {
     private boolean separatePackets;
     private boolean simpleNodes;
     private int outputTypeMask;
+    private int headerLength;
     
     public void setOutputDirectory(String outputDir) {
         outputDirectory = outputDir;
@@ -45,5 +46,13 @@ public class ABDUSettings {
     
     public int getOutputTypeMask() {
         return outputTypeMask;
+    }
+    
+    public void setHeaderLength(int length) {
+        headerLength = length;
+    }
+    
+    public int getHeaderLength() {
+        return headerLength;
     }
 }
