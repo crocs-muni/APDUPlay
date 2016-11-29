@@ -11,10 +11,20 @@ package parser;
  */
 public class ABDULogger {
     
+    /**
+     * Logs message as an error
+     * 
+     * @param message message to log
+     */
     public void error(String message) {
         
     }
     
+    /**
+     * Logs message as a warning
+     * 
+     * @param message message to log
+     */
     public void warning(String message) {
         
     }

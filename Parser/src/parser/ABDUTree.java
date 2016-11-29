@@ -27,6 +27,12 @@ public class ABDUTree {
     public final String header;
     public final List<Pair<ABDUNode, ABDUNode>> streamPairs;
     
+    /**
+     * Creates new instance of ABDUTree which represents packets data stream as a tree
+     * 
+     * @param header    packet header
+     * @param data      packet data
+     */
     public ABDUTree(byte[] header, byte[] data) {
         ByteBuffer wrapped = ByteBuffer.wrap(header);
         this.header = DatatypeConverter.printHexBinary(header);
@@ -38,11 +44,21 @@ public class ABDUTree {
         init();
     }
     
+    /**
+     * Merges byte stream into this packet tree
+     * 
+     * @param stream byte stream to merge
+     */
     public void merge(byte[] stream) {
         lastTransmittedNode = merge(root, stream);
         packetsCount++;
     }
     
+    /**
+     * Adds received data into this packet tree
+     * 
+     * @param data byte stream do add
+     */
     public void addReceivedData(byte[] data) {
         ABDUNode node = merge(receivedRoot, data);
         if (node != null && lastTransmittedNode != null) {
@@ -51,10 +67,18 @@ public class ABDUTree {
         }
     }
     
+    /**
+     * Gets number of packets processed by this tree
+     * 
+     * @return number of processed packets
+     */
     public int getPacketsCount() {
         return packetsCount;
     }
     
+    /**
+     * Divides tree nodes with multiple bytes to nodes with exactly 1 byte (except root/header node)
+     */
     public void simplifyNodes() {
         simplifyNodes(root);
         simplifyNodes(receivedRoot);

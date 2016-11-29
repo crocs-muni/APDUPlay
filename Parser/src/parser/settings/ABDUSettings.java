@@ -32,7 +32,7 @@ public class ABDUSettings {
         return separatePackets;
     }
     
-    public void setsimpleNodes(boolean val) {
+    public void setSimpleNodes(boolean val) {
         simpleNodes = val;
     }
     

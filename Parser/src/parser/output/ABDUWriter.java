@@ -35,11 +35,22 @@ public class ABDUWriter {
     private final ABDUSettings settings;
     private final ABDULogger logger;
     
+    /**
+     * Creates new instance of ABDUWriter
+     * 
+     * @param settings
+     * @param logger
+     */
     public ABDUWriter(ABDUSettings settings, ABDULogger logger) {
         this.settings = settings;
         this.logger = logger;
     }
     
+    /**
+     * Writes packets into a file
+     * 
+     * @param packets packets to write
+     */
     public void write(Collection<ABDUTree> packets) {
         File file = new File(settings.getOutputDirectory());
         file.mkdirs();

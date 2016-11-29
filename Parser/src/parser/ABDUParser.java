@@ -27,6 +27,7 @@ public class ABDUParser {
     
     /**
      * Creates new instance of parser
+     * 
      * @param settings
      * @param logger
      */
@@ -36,6 +37,11 @@ public class ABDUParser {
         this.packets = new HashMap<>();
     }
     
+    /**
+     * Parses specified file
+     * 
+     * @param path absolute or relative path to file
+     */
     public void parseFile(String path) {
         try (Scanner scanner =  new Scanner(new File(path))){
             while(scanner.hasNextLine()) {
@@ -47,6 +53,9 @@ public class ABDUParser {
         }
     }
     
+    /**
+     * Writes stored data
+     */
     public void printData() {
         ABDUWriter abduWriter = new ABDUWriter(settings, logger);
         abduWriter.write(packets.values());
