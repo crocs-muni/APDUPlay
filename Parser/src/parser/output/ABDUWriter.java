@@ -93,6 +93,7 @@ public class ABDUWriter {
             if (outputFunctions.get(i).hasTransmittedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_transmitted(%d).dot", directoryPath, i), "UTF-8")) {
                     writer.println("digraph packets {");
+                    printRankDir(writer);
                     for (ABDUTree tree : packets) {
                         outputFunctions.get(i).invokeTransmitted(tree, writer);
                     }
@@ -106,6 +107,7 @@ public class ABDUWriter {
             if (outputFunctions.get(i).hasReceivedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_received(%d).dot",directoryPath, i), "UTF-8")) {
                     writer.println("digraph packets {");
+                    printRankDir(writer);
                     for (ABDUTree tree : packets) {
                         outputFunctions.get(i).invokeReceived(tree, writer);
                     }
@@ -127,6 +129,7 @@ public class ABDUWriter {
                 if (outputFunctions.get(i).hasTransmittedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%d_transmitted(%s).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph transmitted {");
+                        printRankDir(writer);
                         printTransmitted(tree, writer);
                         writer.println("}");
                     }
@@ -138,6 +141,7 @@ public class ABDUWriter {
                 if (outputFunctions.get(i).hasReceivedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%d_received(%s).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph received {");
+                        printRankDir(writer);
                         printTransmitted(tree, writer);
                         writer.println("}");
                     }
@@ -152,7 +156,7 @@ public class ABDUWriter {
     private void printPackets(ABDUTree tree, PrintWriter writer) {
         writer.println(String.format("\t%d[label=\"%s\"]", tree.root.identifier, DatatypeConverter.printHexBinary(tree.root.getData())));
         
-        Map<String, List<String>> streams = new HashMap<>();
+        Map<String, Map<String, Integer>> streams = new HashMap<>();
         tree.streamPairs.forEach((nodes) -> {
             byte[] transmitted = getDataFromLeafNode(nodes.getKey());
             byte[] received = getDataFromLeafNode(nodes.getValue());
@@ -160,13 +164,14 @@ public class ABDUWriter {
             String transmittedStr = DatatypeConverter.printHexBinary(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
             String transmittedReceived = DatatypeConverter.printHexBinary(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
-            List<String> val = streams.get(transmittedStr);
+            Map<String, Integer> val = streams.get(transmittedStr);
             if (val != null) {
-                val.add(transmittedReceived);
+                int time = val.get(transmittedReceived);
+                val.put(transmittedReceived, time + 1);
             } else {
-                LinkedList<String> values = new LinkedList<>();
-                values.add(transmittedReceived);
-                streams.put(transmittedStr, values);
+                val = new HashMap<>();
+                val.put(transmittedReceived, 1);
+                streams.put(transmittedStr, val);
             }
         });
         
@@ -176,10 +181,10 @@ public class ABDUWriter {
             writer.println(String.format("\t%d[label=\"%s\"]", transmittedNode.identifier, (item.getKey())));
             writer.println(String.format("\t%d -> %d;", tree.root.identifier, transmittedNode.identifier));
             
-            item.getValue().forEach((received) -> {
+            item.getValue().forEach((received, time) -> {
                 ABDUNode receivedNode = new ABDUNode(null);
                 writer.println(String.format("\t%d[label=\"%s\"]", receivedNode.identifier, received));
-                writer.println(String.format("\t%d -> %d;", transmittedNode.identifier, receivedNode.identifier));
+                writer.println(String.format("\t%d -> %d [label=\"[time=%d]\"];", transmittedNode.identifier, receivedNode.identifier, time));
             });
             
         });
@@ -292,5 +297,11 @@ public class ABDUWriter {
         
         writer.println(labels.toString());
         writer.println(String.format("\t%s;", graph.substring(0, graph.length() - 4)));
+    }
+    
+    private void printRankDir(PrintWriter writer) {
+        if (settings.getRankDir() != null) {
+            writer.println(String.format("\trankdir=%s", settings.getRankDir()));
+        }
     }
 }

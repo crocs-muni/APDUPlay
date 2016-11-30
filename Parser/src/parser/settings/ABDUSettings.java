@@ -11,6 +11,7 @@ package parser.settings;
  */
 public class ABDUSettings {
     private String outputDirectory;
+    private String rankDir;
     private boolean separatePackets;
     private boolean simpleNodes;
     private int outputTypeMask;
@@ -54,5 +55,13 @@ public class ABDUSettings {
     
     public int getHeaderLength() {
         return headerLength;
+    }
+    
+    public void setRankDir(String val) {
+        rankDir = val;
+    }
+    
+    public String getRankDir() {
+        return rankDir;
     }
 }

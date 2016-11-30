@@ -30,6 +30,7 @@ public class ABDUParse {
         settings.setSimpleNodes(true);
         settings.setOutputTypeMask(ABDUOutputType.ALL);
         settings.setHeaderLength(4);
+        settings.setRankDir("LR");
         
         ABDUParser parser = new ABDUParser(settings, new ABDULogger());
         parser.parseFile(args[0]);
