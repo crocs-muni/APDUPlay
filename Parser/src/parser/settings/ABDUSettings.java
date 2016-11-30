@@ -12,6 +12,7 @@ package parser.settings;
 public class ABDUSettings {
     private String outputDirectory;
     private String rankDir;
+    private String bytesSeparator;
     private boolean separatePackets;
     private boolean simpleNodes;
     private int outputTypeMask;
@@ -63,5 +64,13 @@ public class ABDUSettings {
     
     public String getRankDir() {
         return rankDir;
+    }
+    
+    public void setBytesSeparator(String val) {
+        bytesSeparator = val;
+    }
+    
+    public String getBytesSeparator() {
+        return bytesSeparator;
     }
 }

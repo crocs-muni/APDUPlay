@@ -14,13 +14,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Stack;
-import javax.xml.bind.DatatypeConverter;
 import parser.ABDULogger;
 import parser.ABDUNode;
 import parser.ABDUTree;
@@ -127,7 +125,7 @@ public class ABDUWriter {
                 tree.simplifyNodes();
                 
                 if (outputFunctions.get(i).hasTransmittedFunction()) {
-                    try (PrintWriter writer = new PrintWriter(String.format("%s/%d_transmitted(%s).dot", directoryPath, tree.header, i), "UTF-8")) {
+                    try (PrintWriter writer = new PrintWriter(String.format("%s/%s_transmitted(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph transmitted {");
                         printRankDir(writer);
                         printTransmitted(tree, writer);
@@ -139,7 +137,7 @@ public class ABDUWriter {
                 }
 
                 if (outputFunctions.get(i).hasReceivedFunction()) {
-                    try (PrintWriter writer = new PrintWriter(String.format("%s/%d_received(%s).dot", directoryPath, tree.header, i), "UTF-8")) {
+                    try (PrintWriter writer = new PrintWriter(String.format("%s/%s_received(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph received {");
                         printRankDir(writer);
                         printTransmitted(tree, writer);
@@ -154,15 +152,15 @@ public class ABDUWriter {
     }
     
     private void printPackets(ABDUTree tree, PrintWriter writer) {
-        writer.println(String.format("\t%d[label=\"%s\"]", tree.root.identifier, DatatypeConverter.printHexBinary(tree.root.getData())));
+        writer.println(String.format("\t%d[label=\"%s\"]", tree.root.identifier, toHexBinaryString(tree.root.getData())));
         
         Map<String, Map<String, Integer>> streams = new HashMap<>();
         tree.streamPairs.forEach((nodes) -> {
             byte[] transmitted = getDataFromLeafNode(nodes.getKey());
             byte[] received = getDataFromLeafNode(nodes.getValue());
             
-            String transmittedStr = DatatypeConverter.printHexBinary(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
-            String transmittedReceived = DatatypeConverter.printHexBinary(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
+            String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
+            String transmittedReceived = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
             Map<String, Integer> val = streams.get(transmittedStr);
             if (val != null) {
@@ -260,7 +258,7 @@ public class ABDUWriter {
         queue.add(node);
         while(!queue.isEmpty()) {
             node = queue.remove();
-            writer.println(String.format("\t%d [label=\"%s\"]", node.identifier, DatatypeConverter.printHexBinary(node.getData())));
+            writer.println(String.format("\t%d [label=\"%s\"]", node.identifier, toHexBinaryString(node.getData())));
             queue.addAll(node.getChildNodes());
         }
     }
@@ -276,7 +274,7 @@ public class ABDUWriter {
             for (int i = 0; i < nodes.size(); i++) {
                 node = nodes.get(i);
                 childNodes.addAll(node.getChildNodes());
-                String val = DatatypeConverter.printHexBinary(node.getData());
+                String val = toHexBinaryString(node.getData());
                 Integer count = map.get(val);
                 if (count != null) {
                     map.put(val, count + node.getCount());
@@ -303,5 +301,19 @@ public class ABDUWriter {
         if (settings.getRankDir() != null) {
             writer.println(String.format("\trankdir=%s", settings.getRankDir()));
         }
+    }
+    
+    private String toHexBinaryString(byte[] bytes) {
+        StringBuilder str = new StringBuilder();
+        String separator = settings.getBytesSeparator();
+        if (separator == null) {
+            separator = "";
+        }
+        
+        for(byte b : bytes) {
+            str.append(String.format("%02X%s", b, separator));
+        }
+        
+        return str.toString().trim();
     }
 }

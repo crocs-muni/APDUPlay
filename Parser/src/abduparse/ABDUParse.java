@@ -31,6 +31,7 @@ public class ABDUParse {
         settings.setOutputTypeMask(ABDUOutputType.ALL);
         settings.setHeaderLength(4);
         settings.setRankDir("LR");
+        settings.setBytesSeparator(" ");
         
         ABDUParser parser = new ABDUParser(settings, new ABDULogger());
         parser.parseFile(args[0]);
