@@ -22,6 +22,7 @@ import java.util.Stack;
 import parser.ABDULogger;
 import parser.ABDUNode;
 import parser.ABDUTree;
+import parser.settings.graph.ABDUGraphSettings;
 
 /**
  *
@@ -91,7 +92,7 @@ public class ABDUWriter {
             if (outputFunctions.get(i).hasTransmittedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_transmitted(%d).dot", directoryPath, i), "UTF-8")) {
                     writer.println("digraph packets {");
-                    printRankDir(writer);
+                    printGraphSettings(writer);
                     for (ABDUTree tree : packets) {
                         outputFunctions.get(i).invokeTransmitted(tree, writer);
                     }
@@ -105,7 +106,7 @@ public class ABDUWriter {
             if (outputFunctions.get(i).hasReceivedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_received(%d).dot",directoryPath, i), "UTF-8")) {
                     writer.println("digraph packets {");
-                    printRankDir(writer);
+                    printGraphSettings(writer);
                     for (ABDUTree tree : packets) {
                         outputFunctions.get(i).invokeReceived(tree, writer);
                     }
@@ -127,7 +128,7 @@ public class ABDUWriter {
                 if (outputFunctions.get(i).hasTransmittedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%s_transmitted(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph transmitted {");
-                        printRankDir(writer);
+                        printGraphSettings(writer);
                         printTransmitted(tree, writer);
                         writer.println("}");
                     }
@@ -139,7 +140,7 @@ public class ABDUWriter {
                 if (outputFunctions.get(i).hasReceivedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%s_received(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph received {");
-                        printRankDir(writer);
+                        printGraphSettings(writer);
                         printTransmitted(tree, writer);
                         writer.println("}");
                     }
@@ -152,7 +153,7 @@ public class ABDUWriter {
     }
     
     private void printPackets(ABDUTree tree, PrintWriter writer) {
-        writer.println(String.format("\t%d[label=\"%s\"]", tree.root.identifier, toHexBinaryString(tree.root.getData())));
+        writer.println(String.format("\t%d [label=\"%s\"];", tree.root.identifier, toHexBinaryString(tree.root.getData())));
         
         Map<String, Map<String, Integer>> streams = new HashMap<>();
         tree.streamPairs.forEach((nodes) -> {
@@ -176,12 +177,12 @@ public class ABDUWriter {
         streams.entrySet().forEach((item) -> {
             // To generate identifier
             ABDUNode transmittedNode = new ABDUNode(null);
-            writer.println(String.format("\t%d[label=\"%s\"]", transmittedNode.identifier, (item.getKey())));
+            writer.println(String.format("\t%d [label=\"%s\"];", transmittedNode.identifier, (item.getKey())));
             writer.println(String.format("\t%d -> %d;", tree.root.identifier, transmittedNode.identifier));
             
             item.getValue().forEach((received, time) -> {
                 ABDUNode receivedNode = new ABDUNode(null);
-                writer.println(String.format("\t%d[label=\"%s\"]", receivedNode.identifier, received));
+                writer.println(String.format("\t%d [label=\"%s\"];", receivedNode.identifier, received));
                 writer.println(String.format("\t%d -> %d [label=\"[time=%d]\"];", transmittedNode.identifier, receivedNode.identifier, time));
             });
             
@@ -258,7 +259,7 @@ public class ABDUWriter {
         queue.add(node);
         while(!queue.isEmpty()) {
             node = queue.remove();
-            writer.println(String.format("\t%d [label=\"%s\"]", node.identifier, toHexBinaryString(node.getData())));
+            writer.println(String.format("\t%d [label=\"%s\"];", node.identifier, toHexBinaryString(node.getData())));
             queue.addAll(node.getChildNodes());
         }
     }
@@ -297,9 +298,19 @@ public class ABDUWriter {
         writer.println(String.format("\t%s;", graph.substring(0, graph.length() - 4)));
     }
     
-    private void printRankDir(PrintWriter writer) {
-        if (settings.getRankDir() != null) {
-            writer.println(String.format("\trankdir=%s", settings.getRankDir()));
+    private void printGraphSettings(PrintWriter writer) {
+        ABDUGraphSettings graphSettings = settings.getGraphSettings();
+        
+        if (graphSettings.getRankDir() != null) {
+            writer.println(String.format("\trankdir=%s;", graphSettings.getRankDir()));
+        }
+        
+        if (graphSettings.getSize() != null) {
+            writer.println(String.format("\tsize=\"%s\";", graphSettings.getSize()));
+        }
+        
+        if (graphSettings.getNodeAttributes() != null) {
+            writer.println(String.format("\tnode [%s];", graphSettings.getNodeAttributes()));
         }
     }
     

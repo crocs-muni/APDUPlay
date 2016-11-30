@@ -9,6 +9,7 @@ import parser.ABDULogger;
 import parser.ABDUParser;
 import parser.output.ABDUOutputType;
 import parser.settings.ABDUSettings;
+import parser.settings.graph.ABDUGraphSettings;
 
 /**
  *
@@ -30,8 +31,11 @@ public class ABDUParse {
         settings.setSimpleNodes(true);
         settings.setOutputTypeMask(ABDUOutputType.ALL);
         settings.setHeaderLength(4);
-        settings.setRankDir("LR");
         settings.setBytesSeparator(" ");
+        
+        ABDUGraphSettings graphSettings = settings.getGraphSettings();
+        graphSettings.setRankDir("LR");
+        graphSettings.setNodeAttributes("color=lightblue2, style=filled");
         
         ABDUParser parser = new ABDUParser(settings, new ABDULogger());
         parser.parseFile(args[0]);
