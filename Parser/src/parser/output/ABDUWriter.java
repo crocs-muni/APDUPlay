@@ -304,16 +304,21 @@ public class ABDUWriter {
     }
     
     private String toHexBinaryString(byte[] bytes) {
-        StringBuilder str = new StringBuilder();
         String separator = settings.getBytesSeparator();
         if (separator == null) {
             separator = "";
         }
         
+        StringBuilder str = new StringBuilder(bytes.length * (separator.length() + 2));
         for(byte b : bytes) {
             str.append(String.format("%02X%s", b, separator));
         }
         
-        return str.toString().trim();
+        // remove last separator
+        if (str.length() > 0) {
+            str.setLength(str.length() - separator.length());
+        }
+        
+        return str.toString();
     }
 }
