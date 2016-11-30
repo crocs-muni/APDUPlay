@@ -443,7 +443,6 @@ SocketClient::SocketClient(const string_type& host, int port) : Socket() {
 
   char *str = new char[1024];;
   wcstombs(str, host.c_str(), host.length());
-  std::cout << str;
 
   hostent *he;
   if ((he = gethostbyname(str)) == 0) {
