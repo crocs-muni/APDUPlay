@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package parser;
+package parser.data;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import javafx.util.Pair;
 import javax.xml.bind.DatatypeConverter;
 
 /**
@@ -20,12 +19,12 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class ABDUTree {
     private int packetsCount;
-    private ABDUNode lastTransmittedNode;
+    private ABDUPacket lastPacket;
     
     public final ABDUNode receivedRoot;
     public final ABDUNode root;
     public final String header;
-    public final List<Pair<ABDUNode, ABDUNode>> streamPairs;
+    public final List<ABDUPacket> streamPackets;
     
     /**
      * Creates new instance of ABDUTree which represents packets data stream as a tree
@@ -40,7 +39,7 @@ public class ABDUTree {
         ABDUNode node = new ABDUNode(data);
         root.addChild(node);
         receivedRoot = new ABDUNode(wrapped.array());
-        streamPairs = new LinkedList<>();
+        streamPackets = new LinkedList<>();
         init();
     }
     
@@ -50,7 +49,9 @@ public class ABDUTree {
      * @param stream byte stream to merge
      */
     public void merge(byte[] stream) {
-        lastTransmittedNode = merge(root, stream);
+        ABDUNode node = merge(root, stream);
+        lastPacket = new ABDUPacket(node);
+        streamPackets.add(lastPacket);
         packetsCount++;
     }
     
@@ -61,9 +62,15 @@ public class ABDUTree {
      */
     public void addReceivedData(byte[] data) {
         ABDUNode node = merge(receivedRoot, data);
-        if (node != null && lastTransmittedNode != null) {
-            streamPairs.add(new Pair(lastTransmittedNode, node));
-            lastTransmittedNode = null;
+        if (node != null && lastPacket != null) {
+            lastPacket.setReceivedLeafNode(node);
+        }
+    }
+    
+    public void setAdditionalInfoForLastPacket(int responseTime, int ac) {
+        if (lastPacket != null) {
+            lastPacket.setResponseTime(responseTime);
+            lastPacket.setAc(ac);
         }
     }
     
@@ -88,8 +95,8 @@ public class ABDUTree {
         receivedRoot.setCount(0);
         packetsCount = 1;
         
-        // must have a child
-        lastTransmittedNode = root.getChildNodes().iterator().next();
+        lastPacket = new ABDUPacket(root.getChildNodes().iterator().next());
+        streamPackets.add(lastPacket);
     }
     
     private void simplifyNodes(ABDUNode node) {

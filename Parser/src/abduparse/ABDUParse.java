@@ -28,7 +28,7 @@ public class ABDUParse {
         ABDUSettings settings = new ABDUSettings();
         settings.setOutputDirectory("output");
         settings.setSeparatePackets(false);
-        settings.setSimpleNodes(true);
+        settings.setSimpleNodes(false);
         settings.setOutputTypeMask(ABDUOutputType.ALL);
         settings.setHeaderLength(4);
         settings.setBytesSeparator(" ");

@@ -7,7 +7,7 @@ package parser.output;
 
 import java.io.PrintWriter;
 import java.util.function.BiConsumer;
-import parser.ABDUTree;
+import parser.data.ABDUTree;
 
 /**
  *

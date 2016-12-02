@@ -5,6 +5,7 @@
  */
 package parser;
 
+import parser.data.ABDUTree;
 import parser.output.ABDUWriter;
 import parser.settings.ABDUSettings;
 import java.io.File;
@@ -20,6 +21,7 @@ import javax.xml.bind.DatatypeConverter;
  * @author Andrej
  */
 public class ABDUParser {
+    private int ac;
     private final ABDULogger logger;
     private final ABDUSettings settings;
     private final Map<String, ABDUTree> packets;
@@ -35,6 +37,7 @@ public class ABDUParser {
         this.settings = settings;
         this.logger = logger;
         this.packets = new HashMap<>();
+        ac = 1;
     }
     
     /**
@@ -81,6 +84,10 @@ public class ABDUParser {
                 break;
             case "received":
                 handleReceivedData(DatatypeConverter.parseHexBinary(normalizeHexString(pair.getValue().toString())));
+                break;
+            case "responseTime":
+                handleResponseTime(pair.getValue().toString());
+                break;
             default:
                 break;
         }
@@ -114,5 +121,13 @@ public class ABDUParser {
         }
         
         tree.addReceivedData(data);
+    }
+    
+    private void handleResponseTime(String time) {
+        time = time.replaceAll("[^0-9]","");
+        ABDUTree tree = packets.get(lastProcessedPacket);
+        
+        // Sets also ac
+        tree.setAdditionalInfoForLastPacket(Integer.parseInt(time), ac++);
     }
 }

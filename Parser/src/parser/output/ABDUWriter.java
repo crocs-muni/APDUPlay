@@ -14,14 +14,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Stack;
 import parser.ABDULogger;
-import parser.ABDUNode;
-import parser.ABDUTree;
+import parser.data.ABDUNode;
+import parser.data.ABDUPacket;
+import parser.data.ABDUTree;
 import parser.settings.graph.ABDUGraphSettings;
 
 /**
@@ -155,21 +157,27 @@ public class ABDUWriter {
     private void printPackets(ABDUTree tree, PrintWriter writer) {
         writer.println(String.format("\t%d [label=\"%s\"];", tree.root.identifier, toHexBinaryString(tree.root.getData())));
         
-        Map<String, Map<String, Integer>> streams = new HashMap<>();
-        tree.streamPairs.forEach((nodes) -> {
-            byte[] transmitted = getDataFromLeafNode(nodes.getKey());
-            byte[] received = getDataFromLeafNode(nodes.getValue());
+        Map<String, Map<String, List<ABDUPacket>>> streams = new HashMap<>();
+        tree.streamPackets.forEach((packet) -> {
+            byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
+            byte[] received = getDataFromLeafNode(packet.getReceivedLeafNode());
             
             String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
-            String transmittedReceived = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
+            String receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
-            Map<String, Integer> val = streams.get(transmittedStr);
+            Map<String, List<ABDUPacket>> val = streams.get(transmittedStr);
             if (val != null) {
-                int time = val.get(transmittedReceived);
-                val.put(transmittedReceived, time + 1);
+                List<ABDUPacket> p = val.get(receivedStr);
+                if (p == null) {
+                    p = new LinkedList<>();
+                    val.put(receivedStr, p);
+                }
+                p.add(packet);
             } else {
                 val = new HashMap<>();
-                val.put(transmittedReceived, 1);
+                List<ABDUPacket> p = new LinkedList<>();
+                p.add(packet);
+                val.put(receivedStr, p);
                 streams.put(transmittedStr, val);
             }
         });
@@ -177,13 +185,16 @@ public class ABDUWriter {
         streams.entrySet().forEach((item) -> {
             // To generate identifier
             ABDUNode transmittedNode = new ABDUNode(null);
-            writer.println(String.format("\t%d [label=\"%s\"];", transmittedNode.identifier, (item.getKey())));
-            writer.println(String.format("\t%d -> %d;", tree.root.identifier, transmittedNode.identifier));
+            writer.println(String.format("\t%d [label=\"%s\"];", transmittedNode.identifier, item.getKey()));
             
-            item.getValue().forEach((received, time) -> {
+            item.getValue().forEach((received, packets) -> {
                 ABDUNode receivedNode = new ABDUNode(null);
                 writer.println(String.format("\t%d [label=\"%s\"];", receivedNode.identifier, received));
-                writer.println(String.format("\t%d -> %d [label=\"[time=%d]\"];", transmittedNode.identifier, receivedNode.identifier, time));
+                
+                packets.forEach((packet) -> {
+                    writer.println(String.format("\t%d -> %d [label=\"[ac=%d]\"];", tree.root.identifier, transmittedNode.identifier, packet.getAc()));
+                    writer.println(String.format("\t%d -> %d [label=\"[ac=%d, time=%d]\"];", transmittedNode.identifier, receivedNode.identifier, packet.getAc(), packet.getResponseTime()));
+                });
             });
             
         });
