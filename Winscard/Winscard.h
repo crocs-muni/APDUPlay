@@ -19,6 +19,10 @@
 // See Winscard.cpp for the implementation of this class
 //
 
+#ifdef __linux__
+	class CWinApp {};
+#endif
+
 class CWinscardApp : public CWinApp
 {
 public:

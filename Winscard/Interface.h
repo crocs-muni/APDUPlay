@@ -1131,8 +1131,11 @@ SCard LONG __stdcall SCardDlgExtendedError(void) {
 
 CWinscardApp::~CWinscardApp()
 {
-	FreeLibrary(hOriginal);
-
+	#ifdef __linux
+		dlclose(hOriginal);
+	#else
+	    FreeLibrary(hOriginal);
+	#endif
 	// Reference to WINSCARD_LOG will fail with access to 0xfeefee (global CString WINSCARD_LOG does not exists at the time of dll release (strange))
 	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\r\n");
 
@@ -1786,11 +1789,11 @@ SCard LONG __stdcall SCardTransmit(
 }
 
 #if __linux__
-typedef void (*q)(void *restrict, const char *restrict);
-static q load_func = dlsym;
+	typedef void (*q)(void *restrict, const char *restrict);
+	static q load_func = dlsym;
 #else 
-typedef FARPROC(__stdcall *q) (HMODULE, LPCSTR);
-static q load_func = GetProcAddress;
+	typedef FARPROC(__stdcall *q) (HMODULE, LPCSTR);
+	static q load_func = GetProcAddress;
 #endif
 
 int initialize()
@@ -2775,7 +2778,6 @@ int initialize()
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardDlgExtendedError procedure address\n"));
 	}
 
-	//dlclose(handle);
 	return TRUE;
 }
 

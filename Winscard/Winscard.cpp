@@ -14,6 +14,9 @@ CWinscardApp::CWinscardApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+	#ifdef __linux__
+		initialize();
+	#endif
 	m_bRulesActive = FALSE;
 	m_processedApduByteCounter = 0;
 }
@@ -546,8 +549,6 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
     
     return status;
 }
-
-
 
 int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
