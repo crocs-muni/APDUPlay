@@ -41,7 +41,8 @@ Please, report any bugs to author <petr@svenda.com>
 #include <stdio.h>
 #define WINSCARDDATA __declspec(dllexport)
 #include <winscard.h>
-#include "winscard.h"
+#include "Winscard.h"
+#include "wintypes.h"
 #include "CommonFnc.h"
 #include <time.h>
 #include "socket.h"
@@ -53,6 +54,22 @@ Please, report any bugs to author <petr@svenda.com>
 #define SCard WINSCARDAPI
 #else 
 #define SCard
+#endif
+
+#ifdef __linux__
+typedef wchar_t WCHAR;
+typedef wchar_t* LPWSTR;
+typedef const wchar_t* LPCWSTR;
+#define TRUE 1
+#define FALSE 0
+#define NULL 0
+#define __stdcall
+#ifndef IN
+#define IN
+#endif
+#ifndef OUT
+#define OUT
+#endif
 #endif
 
 /*

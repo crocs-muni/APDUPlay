@@ -1,6 +1,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include <wintypes.h>
+#include <cstring>
+
 #ifndef HIGHBYTE
     #define HIGHBYTE(x)  x >> 8 
 #endif
