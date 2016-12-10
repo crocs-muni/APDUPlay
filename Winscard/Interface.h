@@ -42,7 +42,6 @@ Please, report any bugs to author <petr@svenda.com>
 #define WINSCARDDATA __declspec(dllexport)
 #include <winscard.h>
 #include "Winscard.h"
-#include "wintypes.h"
 #include "CommonFnc.h"
 #include <time.h>
 #include "socket.h"
@@ -57,6 +56,7 @@ Please, report any bugs to author <petr@svenda.com>
 #endif
 
 #ifdef __linux__
+#include "wintypes.h"
 typedef wchar_t WCHAR;
 typedef wchar_t* LPWSTR;
 typedef const wchar_t* LPCWSTR;
@@ -117,8 +117,13 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 /* ******************************************************************************* */
 
-static HANDLE  hOut = 0;
-static HMODULE hOriginal = 0;
+#ifdef __linux__
+    static void* hOriginal = NULL;
+#else
+    static HANDLE  hOut = 0;
+    static HMODULE hOriginal = 0;
+#endif
+
 
 int apduCounter = 0;
 
@@ -1779,4 +1784,1000 @@ SCard LONG __stdcall SCardTransmit(
 
 	return result;
 }
+
+#if __linux__
+typedef void (*q)(void *restrict, const char *restrict);
+static q load_func = dlsym;
+#else 
+typedef FARPROC(__stdcall *q) (HMODULE, LPCSTR);
+static q load_func = GetProcAddress;
+#endif
+
+int initialize()
+{
+	void *handle;
+	char *error = "";
+	#ifdef __linux__ 
+	    hOriginal = dlopen("libpcsclite.so", RTLD_LAZY);
+    #else 
+	    hOriginal = LoadLibrary(_CONV("original.dll"));
+    #endif 
+	
+	if (!hOriginal) {
+        #if __linux__
+		    error = dlerror()
+        #endif
+		fprintf(stderr, "Failed to load original library %s\n", error);
+		return FALSE;
+	}
+	
+    #if __linux__
+	    dlerror();    // Clear any existing errorz
+    #endif
+
+	Original_SCardTransmit =
+		(long(__stdcall *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		load_func(hOriginal, "SCardTransmit");
+	if ((!Original_SCardTransmit)) {
+        #if __linux__
+			error = dlerror()
+        #endif
+		fprintf(stderr, "Could not find SCardTransmit procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardStatusA =
+		(long(__stdcall *)(SCARDHANDLE hCard, LPSTR szReaderName, LPDWORD pcchReaderLen, LPDWORD pdwState, LPDWORD pdwProtocol, LPBYTE pbAtr, LPDWORD pcbAtrLen))
+		GetProcAddress(hOriginal, "SCardStatusA");
+	if ((!Original_SCardStatusA)) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardStatusA procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardConnectW =
+		(long(__stdcall *)(SCARDCONTEXT hContext, LPCWSTR szReader, DWORD dwShareMode, DWORD dwPreferredProtocols, LPSCARDHANDLE phCard, LPDWORD pdwActiveProtocol))
+		GetProcAddress(hOriginal, "SCardConnectW");
+	if ((!Original_SCardConnectW)) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardConnectW procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardDisconnect =
+		(long(__stdcall *)(SCARDHANDLE hCard, DWORD dwDisposition))
+		GetProcAddress(hOriginal, "SCardDisconnect");
+	if ((!Original_SCardDisconnect)) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardDisconnect procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardFreeMemory =
+		(long(__stdcall *)(SCARDCONTEXT hContext, LPCVOID pvMem))
+		GetProcAddress(hOriginal, "SCardFreeMemory");
+	if ((!Original_SCardFreeMemory)) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardFreeMemory procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListReadersW =
+		(long(__stdcall *)(SCARDCONTEXT hContext, LPCWSTR mszGroups, LPWSTR mszReaders, LPDWORD pcchReaders))
+		GetProcAddress(hOriginal, "SCardListReadersW");
+	if ((!Original_SCardListReadersW)) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListReadersW procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListReadersA =
+		(long(__stdcall *)(SCARDCONTEXT hContext, LPCSTR mszGroups, LPSTR mszReaders, LPDWORD pcchReaders))
+		GetProcAddress(hOriginal, "SCardListReadersA");
+	if ((!Original_SCardListReadersA)) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListReadersA procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardEstablishContext = (LONG(__stdcall *)(
+		IN  DWORD dwScope,
+		IN  LPCVOID pvReserved1,
+		IN  LPCVOID pvReserved2,
+		OUT LPSCARDCONTEXT phContext)) load_func(hOriginal, "SCardEstablishContext");
+	if (!Original_SCardEstablishContext) {
+        #if __linux__
+		    error = dlerror()
+        #endif
+		fprintf(stderr, "Could not find SCardEstablishContext procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardReleaseContext =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext))
+		load_func(hOriginal, "SCardReleaseContext");
+	if (!Original_SCardReleaseContext) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardReleaseContext procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIsValidContext =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext))
+		load_func(hOriginal, "SCardIsValidContext");
+	if (!Original_SCardIsValidContext) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIsValidContext procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListReaderGroupsA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			OUT     LPSTR mszGroups,
+			IN OUT  LPDWORD pcchGroups))
+		load_func(hOriginal, "SCardListReaderGroupsA");
+	if (!Original_SCardListReaderGroupsA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListReaderGroupsA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListReaderGroupsW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			OUT     LPWSTR mszGroups,
+			IN OUT  LPDWORD pcchGroups))
+		load_func(hOriginal, "SCardListReaderGroupsW");
+	if (!Original_SCardListReaderGroupsW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListReaderGroupsW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListReadersA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCSTR mszGroups,
+			OUT     LPSTR mszReaders,
+			IN OUT  LPDWORD pcchReaders))
+		load_func(hOriginal, "SCardListReadersA");
+	if (!Original_SCardListReadersA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListReadersA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListReadersW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCWSTR mszGroups,
+			OUT     LPWSTR mszReaders,
+			IN OUT  LPDWORD pcchReaders))
+		load_func(hOriginal, "SCardListReadersW");
+	if (!Original_SCardListReadersW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListReadersW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListCardsA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCBYTE pbAtr,
+			IN      LPCGUID rgquidInterfaces,
+			IN      DWORD cguidInterfaceCount,
+			OUT     LPSTR mszCards,
+			IN OUT  LPDWORD pcchCards))
+		load_func(hOriginal, "SCardListCardsA");
+	if (!Original_SCardListCardsA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListCardsA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListCardsW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCBYTE pbAtr,
+			IN      LPCGUID rgquidInterfaces,
+			IN      DWORD cguidInterfaceCount,
+			OUT     LPWSTR mszCards,
+			IN OUT  LPDWORD pcchCards))
+		load_func(hOriginal, "SCardListCardsW");
+	if (!Original_SCardListCardsW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListCardsW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListInterfacesA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCSTR szCard,
+			OUT     LPGUID pguidInterfaces,
+			IN OUT  LPDWORD pcguidInterfaces))
+		load_func(hOriginal, "SCardListInterfacesA");
+	if (!Original_SCardListInterfacesA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListInterfacesA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardListInterfacesW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCWSTR szCard,
+			OUT     LPGUID pguidInterfaces,
+			IN OUT  LPDWORD pcguidInterfaces))
+		load_func(hOriginal, "SCardListInterfacesW");
+	if (!Original_SCardListInterfacesW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardListInterfacesW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetProviderIdA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCSTR szCard,
+			OUT     LPGUID pguidProviderId))
+		load_func(hOriginal, "SCardGetProviderIdA");
+	if (!Original_SCardGetProviderIdA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetProviderIdA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetProviderIdW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCWSTR szCard,
+			OUT     LPGUID pguidProviderId))
+		load_func(hOriginal, "SCardGetProviderIdW");
+	if (!Original_SCardGetProviderIdW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetProviderIdW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetCardTypeProviderNameA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szCardName,
+			IN DWORD dwProviderId,
+			OUT LPSTR szProvider,
+			IN OUT LPDWORD pcchProvider))
+		load_func(hOriginal, "SCardGetCardTypeProviderNameA");
+	if (!Original_SCardGetCardTypeProviderNameA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetCardTypeProviderNameA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetCardTypeProviderNameW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szCardName,
+			IN DWORD dwProviderId,
+			OUT LPWSTR szProvider,
+			IN OUT LPDWORD pcchProvider))
+		load_func(hOriginal, "SCardGetCardTypeProviderNameW");
+	if (!Original_SCardGetCardTypeProviderNameW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetCardTypeProviderNameW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIntroduceReaderGroupA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szGroupName))
+		load_func(hOriginal, "SCardIntroduceReaderGroupA");
+	if (!Original_SCardIntroduceReaderGroupA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIntroduceReaderGroupA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIntroduceReaderGroupW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szGroupName))
+		load_func(hOriginal, "SCardIntroduceReaderGroupW");
+	if (!Original_SCardIntroduceReaderGroupW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIntroduceReaderGroupW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardForgetReaderGroupA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szGroupName))
+		load_func(hOriginal, "SCardForgetReaderGroupA");
+	if (!Original_SCardForgetReaderGroupA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardForgetReaderGroupA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardForgetReaderGroupW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szGroupName))
+		load_func(hOriginal, "SCardForgetReaderGroupW");
+	if (!Original_SCardForgetReaderGroupW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardForgetReaderGroupW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIntroduceReaderA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szReaderName,
+			IN LPCSTR szDeviceName))
+		load_func(hOriginal, "SCardIntroduceReaderA");
+	if (!Original_SCardIntroduceReaderA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIntroduceReaderA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIntroduceReaderW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szReaderName,
+			IN LPCWSTR szDeviceName))
+		load_func(hOriginal, "SCardIntroduceReaderW");
+	if (!Original_SCardIntroduceReaderW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIntroduceReaderW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardForgetReaderA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szReaderName))
+		load_func(hOriginal, "SCardForgetReaderA");
+	if (!Original_SCardForgetReaderA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardForgetReaderA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardForgetReaderW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szReaderName))
+		load_func(hOriginal, "SCardForgetReaderW");
+	if (!Original_SCardForgetReaderW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardForgetReaderW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardAddReaderToGroupA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szReaderName,
+			IN LPCSTR szGroupName))
+		load_func(hOriginal, "SCardAddReaderToGroupA");
+	if (!Original_SCardAddReaderToGroupA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardAddReaderToGroupA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardAddReaderToGroupW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szReaderName,
+			IN LPCWSTR szGroupName))
+		load_func(hOriginal, "SCardAddReaderToGroupW");
+	if (!Original_SCardAddReaderToGroupW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardAddReaderToGroupW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardRemoveReaderFromGroupA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szReaderName,
+			IN LPCSTR szGroupName))
+		load_func(hOriginal, "SCardRemoveReaderFromGroupA");
+	if (!Original_SCardRemoveReaderFromGroupA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardRemoveReaderFromGroupA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardRemoveReaderFromGroupW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szReaderName,
+			IN LPCWSTR szGroupName))
+		load_func(hOriginal, "SCardRemoveReaderFromGroupW");
+	if (!Original_SCardRemoveReaderFromGroupW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardRemoveReaderFromGroupW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIntroduceCardTypeA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szCardName,
+			IN LPCGUID pguidPrimaryProvider,
+			IN LPCGUID rgguidInterfaces,
+			IN DWORD dwInterfaceCount,
+			IN LPCBYTE pbAtr,
+			IN LPCBYTE pbAtrMask,
+			IN DWORD cbAtrLen))
+		load_func(hOriginal, "SCardIntroduceCardTypeA");
+	if (!Original_SCardIntroduceCardTypeA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIntroduceCardTypeA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIntroduceCardTypeW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szCardName,
+			IN LPCGUID pguidPrimaryProvider,
+			IN LPCGUID rgguidInterfaces,
+			IN DWORD dwInterfaceCount,
+			IN LPCBYTE pbAtr,
+			IN LPCBYTE pbAtrMask,
+			IN DWORD cbAtrLen))
+		load_func(hOriginal, "SCardIntroduceCardTypeW");
+	if (!Original_SCardIntroduceCardTypeW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardIntroduceCardTypeW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardSetCardTypeProviderNameA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szCardName,
+			IN DWORD dwProviderId,
+			IN LPCSTR szProvider))
+		load_func(hOriginal, "SCardSetCardTypeProviderNameA");
+	if (!Original_SCardSetCardTypeProviderNameA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardSetCardTypeProviderNameA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardSetCardTypeProviderNameW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szCardName,
+			IN DWORD dwProviderId,
+			IN LPCWSTR szProvider))
+		load_func(hOriginal, "SCardSetCardTypeProviderNameW");
+	if (!Original_SCardSetCardTypeProviderNameW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardSetCardTypeProviderNameW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardForgetCardTypeA =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCSTR szCardName))
+		load_func(hOriginal, "SCardForgetCardTypeA");
+	if (!Original_SCardForgetCardTypeA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardForgetCardTypeA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardForgetCardTypeW =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCWSTR szCardName))
+		load_func(hOriginal, "SCardForgetCardTypeW");
+	if (!Original_SCardForgetCardTypeW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardForgetCardTypeW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardFreeMemory =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCVOID pvMem))
+		load_func(hOriginal, "SCardFreeMemory");
+	if (!Original_SCardFreeMemory) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardFreeMemory procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardAccessStartedEvent =
+		(HANDLE(__stdcall *)(void))
+		load_func(hOriginal, "SCardAccessStartedEvent");
+	if (!Original_SCardAccessStartedEvent) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardAccessStartedEvent procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardReleaseStartedEvent =
+		(void(__stdcall *)(void))
+		load_func(hOriginal, "SCardReleaseStartedEvent");
+	if (!Original_SCardReleaseStartedEvent) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardReleaseStartedEvent procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardLocateCardsA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCSTR mszCards,
+			IN OUT  LPSCARD_READERSTATEA rgReaderStates,
+			IN      DWORD cReaders))
+		load_func(hOriginal, "SCardLocateCardsA");
+	if (!Original_SCardLocateCardsA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardLocateCardsA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardLocateCardsW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCWSTR mszCards,
+			IN OUT  LPSCARD_READERSTATEW rgReaderStates,
+			IN      DWORD cReaders))
+		load_func(hOriginal, "SCardLocateCardsW");
+	if (!Original_SCardLocateCardsW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardLocateCardsW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardLocateCardsByATRA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPSCARD_ATRMASK rgAtrMasks,
+			IN      DWORD cAtrs,
+			IN OUT  LPSCARD_READERSTATEA rgReaderStates,
+			IN      DWORD cReaders))
+		load_func(hOriginal, "SCardLocateCardsByATRA");
+	if (!Original_SCardLocateCardsByATRA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardLocateCardsByATRA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardLocateCardsByATRW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPSCARD_ATRMASK rgAtrMasks,
+			IN      DWORD cAtrs,
+			IN OUT  LPSCARD_READERSTATEW rgReaderStates,
+			IN      DWORD cReaders))
+		load_func(hOriginal, "SCardLocateCardsByATRW");
+	if (!Original_SCardLocateCardsByATRW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardLocateCardsByATRW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetStatusChangeA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      DWORD dwTimeout,
+			IN OUT  LPSCARD_READERSTATEA rgReaderStates,
+			IN      DWORD cReaders))
+		load_func(hOriginal, "SCardGetStatusChangeA");
+	if (!Original_SCardGetStatusChangeA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetStatusChangeA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetStatusChangeW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      DWORD dwTimeout,
+			IN OUT  LPSCARD_READERSTATEW rgReaderStates,
+			IN      DWORD cReaders))
+		load_func(hOriginal, "SCardGetStatusChangeW");
+	if (!Original_SCardGetStatusChangeW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetStatusChangeW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardCancel =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext))
+		load_func(hOriginal, "SCardCancel");
+	if (!Original_SCardCancel) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardCancel procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardConnectA =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCSTR szReader,
+			IN      DWORD dwShareMode,
+			IN      DWORD dwPreferredProtocols,
+			OUT     LPSCARDHANDLE phCard,
+			OUT     LPDWORD pdwActiveProtocol))
+		load_func(hOriginal, "SCardConnectA");
+	if (!Original_SCardConnectA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardConnectA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardConnectW =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext,
+			IN      LPCWSTR szReader,
+			IN      DWORD dwShareMode,
+			IN      DWORD dwPreferredProtocols,
+			OUT     LPSCARDHANDLE phCard,
+			OUT     LPDWORD pdwActiveProtocol))
+		load_func(hOriginal, "SCardConnectW");
+	if (!Original_SCardConnectW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardConnectW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardReconnect =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwShareMode,
+			IN      DWORD dwPreferredProtocols,
+			IN      DWORD dwInitialization,
+			OUT     LPDWORD pdwActiveProtocol))
+		load_func(hOriginal, "SCardReconnect");
+	if (!Original_SCardReconnect) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardReconnect procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardDisconnect =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwDisposition))
+		load_func(hOriginal, "SCardDisconnect");
+	if (!Original_SCardDisconnect) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardDisconnect procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardBeginTransaction =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard))
+		load_func(hOriginal, "SCardBeginTransaction");
+	if (!Original_SCardBeginTransaction) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardBeginTransaction procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardEndTransaction =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwDisposition))
+		load_func(hOriginal, "SCardEndTransaction");
+	if (!Original_SCardEndTransaction) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardEndTransaction procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardCancelTransaction =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard))
+		load_func(hOriginal, "SCardCancelTransaction");
+	if (!Original_SCardCancelTransaction) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardCancelTransaction procedure address\n"));
+	}
+
+	Original_SCardState =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			OUT LPDWORD pdwState,
+			OUT LPDWORD pdwProtocol,
+			OUT LPBYTE pbAtr,
+			IN OUT LPDWORD pcbAtrLen))
+		load_func(hOriginal, "SCardState");
+	if (!Original_SCardState) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardState procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardStatusA =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			OUT LPSTR szReaderName,
+			IN OUT LPDWORD pcchReaderLen,
+			OUT LPDWORD pdwState,
+			OUT LPDWORD pdwProtocol,
+			OUT LPBYTE pbAtr,
+			IN OUT LPDWORD pcbAtrLen))
+		load_func(hOriginal, "SCardStatusA");
+	if (!Original_SCardStatusA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardStatusA procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardStatusW =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			OUT LPWSTR szReaderName,
+			IN OUT LPDWORD pcchReaderLen,
+			OUT LPDWORD pdwState,
+			OUT LPDWORD pdwProtocol,
+			OUT LPBYTE pbAtr,
+			IN OUT LPDWORD pcbAtrLen))
+		load_func(hOriginal, "SCardStatusW");
+	if (!Original_SCardStatusW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardStatusW procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardTransmit =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			IN LPCSCARD_IO_REQUEST pioSendPci,
+			IN LPCBYTE pbSendBuffer,
+			IN DWORD cbSendLength,
+			IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+			OUT LPBYTE pbRecvBuffer,
+			IN OUT LPDWORD pcbRecvLength))
+		load_func(hOriginal, "SCardTransmit");
+	if (!Original_SCardTransmit) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardTransmit procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardControl =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwControlCode,
+			IN      LPCVOID lpInBuffer,
+			IN      DWORD nInBufferSize,
+			OUT     LPVOID lpOutBuffer,
+			IN      DWORD nOutBufferSize,
+			OUT     LPDWORD lpBytesReturned))
+		load_func(hOriginal, "SCardControl");
+	if (!Original_SCardControl) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardControl procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetAttrib =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			IN DWORD dwAttrId,
+			OUT LPBYTE pbAttr,
+			IN OUT LPDWORD pcbAttrLen))
+		load_func(hOriginal, "SCardGetAttrib");
+	if (!Original_SCardGetAttrib) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardGetAttrib procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardSetAttrib =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			IN DWORD dwAttrId,
+			IN LPCBYTE pbAttr,
+			IN DWORD cbAttrLen))
+		load_func(hOriginal, "SCardSetAttrib");
+	if (!Original_SCardSetAttrib) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardSetAttrib procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardUIDlgSelectCardA =
+		(LONG(__stdcall *)(
+			LPOPENCARDNAMEA_EX))
+		load_func(hOriginal, "SCardUIDlgSelectCardA");
+	if (!Original_SCardUIDlgSelectCardA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardUIDlgSelectCardA procedure address\n"));
+	}
+
+	Original_SCardUIDlgSelectCardW =
+		(LONG(__stdcall *)(
+			LPOPENCARDNAMEW_EX))
+		load_func(hOriginal, "SCardUIDlgSelectCardW");
+	if (!Original_SCardUIDlgSelectCardW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardUIDlgSelectCardW procedure address\n"));
+	}
+
+	Original_GetOpenCardNameA =
+		(LONG(__stdcall *)(LPOPENCARDNAMEA))
+		load_func(hOriginal, "GetOpenCardNameA");
+	if (!Original_GetOpenCardNameA) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find GetOpenCardNameA procedure address\n"));
+	}
+
+	Original_GetOpenCardNameW =
+		(LONG(__stdcall *)(LPOPENCARDNAMEW))
+		load_func(hOriginal, "GetOpenCardNameW");
+	if (!Original_GetOpenCardNameW) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find GetOpenCardNameW procedure address\n"));
+	}
+
+	Original_SCardDlgExtendedError =
+		(LONG(__stdcall *)(void))
+		load_func(hOriginal, "SCardDlgExtendedError ");
+	if (!Original_SCardDlgExtendedError) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardDlgExtendedError procedure address\n"));
+	}
+
+	//dlclose(handle);
+	return TRUE;
+}
+
+
 #endif

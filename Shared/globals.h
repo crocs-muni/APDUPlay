@@ -1,7 +1,11 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include <wintypes.h>
+
+#ifdef __linux__
+    #include <wintypes.h>
+#endif 
+
 #include <cstring>
 
 #ifndef HIGHBYTE
