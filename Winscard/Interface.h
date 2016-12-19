@@ -247,6 +247,784 @@ SCard LONG __stdcall SCardIsValidContext(
 	return (*Original_SCardIsValidContext)(hContext);
 }
 
+static SCard LONG(__stdcall *Original_SCardCancel)(
+	IN      SCARDCONTEXT hContext
+	);
+
+SCard LONG __stdcall SCardCancel(
+	IN      SCARDCONTEXT hContext
+) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancel called\n"));
+	return (*Original_SCardCancel)(hContext);
+}
+
+static SCard LONG(__stdcall *Original_SCardReconnect)(
+	IN      SCARDHANDLE hCard,
+	IN      DWORD dwShareMode,
+	IN      DWORD dwPreferredProtocols,
+	IN      DWORD dwInitialization,
+	OUT     LPDWORD pdwActiveProtocol
+	);
+
+SCard LONG __stdcall SCardReconnect(
+	IN      SCARDHANDLE hCard,
+	IN      DWORD dwShareMode,
+	IN      DWORD dwPreferredProtocols,
+	IN      DWORD dwInitialization,
+	OUT     LPDWORD pdwActiveProtocol
+) {
+	string_type message;
+	message = string_format(_CONV("SCardReconnect(hCard:0x%x) called\n"), hCard);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	return (*Original_SCardReconnect)(hCard, dwShareMode, dwPreferredProtocols, dwInitialization, pdwActiveProtocol);
+}
+
+static SCard LONG(__stdcall *Original_SCardBeginTransaction)(
+	IN      SCARDHANDLE hCard
+	);
+
+SCard LONG __stdcall SCardBeginTransaction(
+	IN      SCARDHANDLE hCard
+) {
+	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardBeginTransaction called\n"));
+	return (*Original_SCardBeginTransaction)(hCard);
+}
+
+
+static SCard LONG(__stdcall *Original_SCardEndTransaction)(
+	IN      SCARDHANDLE hCard,
+	IN      DWORD dwDisposition
+	);
+
+SCard LONG __stdcall SCardEndTransaction(
+	IN      SCARDHANDLE hCard,
+	IN      DWORD dwDisposition
+) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardEndTransaction called\n"));
+	return (*Original_SCardEndTransaction)(hCard, dwDisposition);
+}
+
+static SCard LONG(__stdcall *Original_SCardControl)(
+	IN      SCARDHANDLE hCard,
+	IN      DWORD dwControlCode,
+	IN      LPCVOID lpInBuffer,
+	IN      DWORD nInBufferSize,
+	OUT     LPVOID lpOutBuffer,
+	IN      DWORD nOutBufferSize,
+	OUT     LPDWORD lpBytesReturned
+	);
+
+SCard LONG __stdcall SCardControl(
+	IN      SCARDHANDLE hCard,
+	IN      DWORD dwControlCode,
+	IN      LPCVOID lpInBuffer,
+	IN      DWORD nInBufferSize,
+	OUT     LPVOID lpOutBuffer,
+	IN      DWORD nOutBufferSize,
+	OUT     LPDWORD lpBytesReturned
+) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardControl called\n"));
+	return (*Original_SCardControl)(hCard, dwControlCode, lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned);
+}
+
+
+static SCard LONG(__stdcall *Original_SCardGetAttrib)(
+	IN SCARDHANDLE hCard,
+	IN DWORD dwAttrId,
+	OUT LPBYTE pbAttr,
+	IN OUT LPDWORD pcbAttrLen
+	);
+
+SCard LONG __stdcall SCardGetAttrib(
+	IN SCARDHANDLE hCard,
+	IN DWORD dwAttrId,
+	OUT LPBYTE pbAttr,
+	IN OUT LPDWORD pcbAttrLen
+) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetAttrib called\n"));
+	return (*Original_SCardGetAttrib)(hCard, dwAttrId, pbAttr, pcbAttrLen);
+}
+
+
+static SCard LONG(__stdcall *Original_SCardSetAttrib)(
+	IN SCARDHANDLE hCard,
+	IN DWORD dwAttrId,
+	IN LPCBYTE pbAttr,
+	IN DWORD cbAttrLen
+	);
+
+SCard LONG __stdcall SCardSetAttrib(
+	IN SCARDHANDLE hCard,
+	IN DWORD dwAttrId,
+	IN LPCBYTE pbAttr,
+	IN DWORD cbAttrLen
+) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardSetAttrib called\n"));
+	return (*Original_SCardSetAttrib)(hCard, dwAttrId, pbAttr, cbAttrLen);
+}
+
+/* ******************************************************************************* */
+
+CWinscardApp::~CWinscardApp()
+{
+	#ifdef __linux
+		dlclose(hOriginal);
+	#else
+	    FreeLibrary(hOriginal);
+	#endif
+	// Reference to WINSCARD_LOG will fail with access to 0xfeefee (global CString WINSCARD_LOG does not exists at the time of dll release (strange))
+	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\r\n");
+
+	if (m_scsat04Config.pSocket != NULL) delete m_scsat04Config.pSocket;
+
+	lptr::iterator  iter;
+	for (iter = m_charAllocatedMemoryList.begin(); iter != m_charAllocatedMemoryList.end(); iter++) {
+		char* ptr = (char*)*iter;
+		if (ptr != NULL) delete[] ptr;
+	}
+	m_charAllocatedMemoryList.clear();
+	for (iter = m_wcharAllocatedMemoryList.begin(); iter != m_wcharAllocatedMemoryList.end(); iter++) {
+		WCHAR* ptr = (WCHAR*)*iter;
+		if (ptr != NULL) delete[] ptr;
+	}
+	m_wcharAllocatedMemoryList.clear();
+}
+
+static SCard LONG(__stdcall *Original_SCardFreeMemory)(
+	IN SCARDCONTEXT hContext,
+	IN LPCVOID pvMem
+	);
+
+SCard LONG __stdcall SCardFreeMemory(
+	IN SCARDCONTEXT hContext,
+	IN LPCVOID pvMem)
+{
+	string_type message;
+	message = string_format(_CONV("SCardFreeMemory(hContext:0x%x) called\n"), hContext);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+	LONG    status = SCARD_S_SUCCESS;
+
+	// TRY TO FIND GIVEN MEMORY REFFERENCE IN LOCAL ALLOCATIONS
+	BOOL            bFound = FALSE;
+	lptr::iterator  iter;
+	for (iter = theApp.m_charAllocatedMemoryList.begin(); iter != theApp.m_charAllocatedMemoryList.end(); iter++) {
+		char* ptr = (char*)*iter;
+		if (ptr != NULL && (ptr == pvMem)) {
+			delete[] ptr;
+			bFound = TRUE;
+
+			theApp.m_charAllocatedMemoryList.erase(iter);
+			break;
+		}
+	}
+	for (iter = theApp.m_wcharAllocatedMemoryList.begin(); iter != theApp.m_wcharAllocatedMemoryList.end(); iter++) {
+		WCHAR* ptr = (WCHAR*)*iter;
+		if (ptr != NULL && (ptr == pvMem)) {
+			delete[] ptr;
+			bFound = TRUE;
+
+			theApp.m_wcharAllocatedMemoryList.erase(iter);
+			break;
+		}
+	}
+	// IF NOT FOUND, PASS TO ORIGINAL LIBRARY
+	if (!bFound) status = (*Original_SCardFreeMemory)(hContext, pvMem);
+
+	return status;
+}
+
+static SCard LONG(__stdcall *Original_SCardDisconnect)(
+	SCARDHANDLE hCard,
+	DWORD dwDisposition
+	);
+
+SCard LONG __stdcall SCardDisconnect(
+	SCARDHANDLE hCard,
+	DWORD dwDisposition)
+{
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardDisconnect called\n"));
+
+	// DISCONNECT FROM CARD
+	if (hCard == HANDLE_VIRTUAL_CARD) {
+		// DO NOTHING
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardDisconnect)(hCard, dwDisposition);
+	}
+}
+
+static SCard LONG(__stdcall *Original_SCardTransmit)(
+	IN SCARDHANDLE hCard,
+	IN LPCSCARD_IO_REQUEST pioSendPci,
+	IN LPCBYTE pbSendBuffer,
+	IN DWORD cbSendLength,
+	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+	OUT LPBYTE pbRecvBuffer,
+	IN OUT LPDWORD pcbRecvLength
+	);
+
+SCard LONG __stdcall SCardTransmit(
+	IN SCARDHANDLE hCard,
+	IN LPCSCARD_IO_REQUEST pioSendPci,
+	IN LPCBYTE pbSendBuffer,
+	IN DWORD cbSendLength,
+	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+	OUT LPBYTE pbRecvBuffer,
+	IN OUT LPDWORD pcbRecvLength
+) {
+
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardTransmit called\n"));
+
+	LONG result = SCARD_S_SUCCESS;
+	//    DWORD written;
+	char_type *txMsg = _CONV("transmitted:");
+	char_type *rxMsg = _CONV("received:");
+	char_type *crlf = _CONV("\r\n");
+	const int bufferLength = 1024;
+	//char_type buffer[bufferLength];
+	string_type buffer;
+	char_type  sendBuffer[300];
+	clock_t elapsedCard;
+	clock_t elapsedLibrary;
+	string_type     message;
+
+	elapsedLibrary = -clock();
+	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
+		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\r\n", hCard);
+		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\r\n"), hCard);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+
+		//sprintf(buffer, "apduCounter:%d#\r\n", apduCounter);
+		buffer = string_format(_CONV("apduCounter:%d#\r\n"), apduCounter);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+
+		//sprintf(buffer, "totalBytesINCounter:%d#\r\n", theApp.m_processedApduByteCounter + 1);
+		buffer = string_format(_CONV("totalBytesINCounter:%d#\r\n"), theApp.m_processedApduByteCounter + 1);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+
+		CCommonFnc::File_AppendString(WINSCARD_LOG, txMsg);
+
+		DumpMemory(pbSendBuffer, cbSendLength);
+	}
+
+
+	// SAVE INCOMING APDU
+	APDU_BUFFER     apduBuff;
+	memset(&apduBuff, 0, sizeof(APDU_BUFFER));
+	memcpy(&apduBuff, pbSendBuffer, cbSendLength);
+	theApp.apduInList.push_front(apduBuff);
+
+	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
+		message = string_format(_CONV("\nIncoming rules applied for apduCounter %d: \n"), apduCounter);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)pbSendBuffer, cbSendLength, &message);
+		//message.Insert(0, "   "); message += "\n";
+		message.insert(0, _CONV("   ")); message += _CONV("\n");
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
+
+	// COPY INPUT DATA
+	memcpy(sendBuffer, pbSendBuffer, cbSendLength);
+
+	// APPLY INCOMING RULES
+	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
+		if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules((BYTE*)sendBuffer, &cbSendLength, INPUT_APDU);
+		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)sendBuffer, cbSendLength, &message);
+		//message.Insert(0, "   "); message += "\n";
+		message.insert(0, _CONV("   ")); message += _CONV("\n");
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
+
+	elapsedCard = -clock();
+
+	// INCREASE COUNTER OF THE BYTES SEND TO CARD - IS USED AS MEASUREMENT TRIGGER LATER
+	theApp.m_processedApduByteCounter += cbSendLength;
+
+	// SCSAT04
+	if (theApp.m_scsat04Config.bRedirect) {
+		// GET PIN COUNTER HACK
+		if (memcmp(pbSendBuffer, PIN_COUNTER_APDU, sizeof(PIN_COUNTER_APDU)) == 0) {
+			pbRecvBuffer[0] = 0x03; pbRecvBuffer[1] = 0x90; pbRecvBuffer[2] = 0x00;
+			*pcbRecvLength = 3;
+
+			//_sleep(1000);
+		}
+		else {
+
+			// FORWARD TO SCSAT04 
+			result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
+
+			// APPEND 90 00 TO RETURN BUFFER IN CASE OF DATA_OUT RETRIEVE COMMAND (IF SCSAT IS NOT RETURNING IT)             
+			if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
+				if (result == SCARD_S_SUCCESS) {
+					if ((pbRecvBuffer[*pcbRecvLength - 2] != 0x90) && (pbRecvBuffer[*pcbRecvLength - 1] != 0x00)) {
+						// 0x90 0x00 IS MISSING
+						pbRecvBuffer[*pcbRecvLength] = 0x90;
+						pbRecvBuffer[*pcbRecvLength + 1] = 0x00;
+						*pcbRecvLength += 2;
+					}
+				}
+			}
+		}
+	}
+	else {
+
+		// If required, then ensure that at least one byte will be send to card
+		if (theApp.m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA) {
+			if (cbSendLength < 6) {
+				// ADD ONE ZERO BYTE
+				sendBuffer[4] = 1;
+				sendBuffer[5] = 0;
+				cbSendLength++;
+			}
+		}
+
+		// SEND DIRECTLY TO LOCAL READER
+		result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
+	}
+
+
+	// HACK - if required, then perform transparently data readout on behalf of reader
+	// RECEIVE RESPONSE DATA, IF ANY 
+	if ((*pcbRecvLength == 2) && theApp.m_winscardConfig.bAUTO_REQUEST_DATA) {
+		// READOUT ALL DATA
+		DWORD   recvOffset = 0;
+		while (((pbRecvBuffer[recvOffset]) == 0x61) || ((pbRecvBuffer[recvOffset]) == 0x6C)) { // 0x61 ... SW_BYTES_REMAINING_00, 0x6C ... SW_CORRECT_LENGTH_00
+																							   // GET DATA APDU
+			sendBuffer[0] = (BYTE)0x00;
+			//sendBuffer[0] = (BYTE) 0xC0;
+			//sendBuffer[0] = (BYTE) 0xA0;
+
+			sendBuffer[1] = (BYTE)0xC0;
+			sendBuffer[2] = (BYTE)0x00;
+			sendBuffer[3] = (BYTE)0x00;
+
+			// HACK TO DEAL WITH CARDS THAT CANNOT HANDLE 254B AND MORE APDUS - if 0x61 0x00 (SW_BYTES_REMAINING_00 with zero remaining bytes is detected, then ask for 254 bytes instead
+			if ((pbRecvBuffer[*pcbRecvLength - 1] & 0xff) == 0)  sendBuffer[4] = (BYTE)254;
+			else sendBuffer[4] = (BYTE)pbRecvBuffer[*pcbRecvLength - 1];
+
+			cbSendLength = 5;
+
+			int tmp = sendBuffer[4] & 0xff; tmp += 2; *pcbRecvLength = tmp;
+			//*pcbRecvLength = sendBuffer[4] & 0xff + 2;
+			result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+			recvOffset = *pcbRecvLength - 2;
+		}
+	}
+
+
+	// SAVE TIME OF CARD RESPONSE
+	elapsedCard += clock();
+	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
+		//sprintf(buffer, "responseTime:%d#\r\n", elapsedCard);
+		buffer = string_format(_CONV("responseTime:%d#\r\n"), elapsedCard);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+
+		//sprintf(buffer, "SCardTransmit result:0x%x#\r\n", result);
+		buffer = string_format(_CONV("SCardTransmit result:0x%x#\r\n"), result);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+	}
+
+	if (result != SCARD_S_SUCCESS) {
+		// CHANGE LENGTH OF RESPONSE TO PREVENT PARSING OF INCORRECT DATA
+		*pcbRecvLength = 0;
+	}
+
+	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
+		CCommonFnc::File_AppendString(WINSCARD_LOG, rxMsg);
+		DumpMemory(pbRecvBuffer, *pcbRecvLength);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, crlf);
+	}
+
+	// SAVE OUTGOING APDU
+	memset(&apduBuff, 0, sizeof(APDU_BUFFER));
+	memcpy(&apduBuff, pbRecvBuffer, *pcbRecvLength);
+	theApp.apduOutList.push_front(apduBuff);
+
+	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
+		message = string_format(_CONV("\nOutgoing rules applied for apduCounter %d: \n"), apduCounter);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
+		//message.Insert(0, "   "); message += "\n";
+		message.insert(0, _CONV("   ")); message += _CONV("\n");
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		// APPLY OUTGOING RULES
+		if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules(pbRecvBuffer, pcbRecvLength, OUTPUT_APDU);
+		CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
+		//message.Insert(0, "   "); message += "\n";
+		message.insert(0, _CONV("   ")); message += _CONV("\n");
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
+
+
+
+	// SCSAT04 - READ MEASUREMENT SAMPLE FROM BOARD IF NOT READED YET AND TRIGGER APPDU WAS REACHED (NUMBER OF BYTES IN)
+	if (theApp.m_scsat04Config.bRedirect && !(theApp.m_scsat04Config.sampleReaded) && (theApp.m_processedApduByteCounter >= theApp.m_scsat04Config.measureApduByteCounter)) {
+		// DOWNLOAD DATA FROM MEASUREMENT (IF ANY) 
+		if (theApp.m_scsat04Config.pSocket != NULL) {
+			//string_type message;
+			message = string_format(_CONV("get powertrace 0 %d"), theApp.m_scsat04Config.readRatio);
+			theApp.m_scsat04Config.pSocket->SendLine(message);
+			theApp.m_scsat04Config.baseReadOffset = 0;
+
+			string_type sampleFilePath;
+			theApp.SCSAT_CreateAndReceiveSamples(&(theApp.m_scsat04Config), &sampleFilePath);
+
+			// PREVENT FUTHER READING
+			theApp.m_scsat04Config.sampleReaded = TRUE;
+		}
+	}
+	// SCSAT04 END
+
+	// increase apdu counter	
+	apduCounter++;
+
+	elapsedLibrary += clock();
+	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
+		message = string_format(_CONV("responseTimeLibrary:%d#\r\n"), elapsedLibrary);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("...............................................\r\n"));
+	}
+
+	return result;
+}
+
+// Here are declared only windows specific functions
+#if defined (WIN32)
+
+static SCard LONG(__stdcall *Original_SCardStatusA)(
+	SCARDHANDLE hCard,
+	LPSTR szReaderName,
+	LPDWORD pcchReaderLen,
+	LPDWORD pdwState,
+	LPDWORD pdwProtocol,
+	LPBYTE pbAtr,
+	LPDWORD pcbAtrLen
+	);
+
+SCard LONG __stdcall SCardStatusA(
+	SCARDHANDLE hCard,
+	LPSTR szReaderName,
+	LPDWORD pcchReaderLen,
+	LPDWORD pdwState,
+	LPDWORD pdwProtocol,
+	LPBYTE pbAtr,
+	LPDWORD pcbAtrLen)
+{
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardStatusA called\n"));
+	return (*Original_SCardStatusA)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+}
+
+static SCard LONG(__stdcall *Original_SCardConnectW)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR szReader,
+	IN      DWORD dwShareMode,
+	IN      DWORD dwPreferredProtocols,
+	OUT     LPSCARDHANDLE phCard,
+	OUT     LPDWORD pdwActiveProtocol
+	);
+
+SCard LONG __stdcall SCardConnectW(
+	SCARDCONTEXT hContext,
+	LPCWSTR szReader,
+	DWORD dwShareMode,
+	DWORD dwPreferredProtocols,
+	LPSCARDHANDLE phCard,
+	LPDWORD pdwActiveProtocol)
+{
+	LONG    status = SCARD_S_SUCCESS;
+	string_type message;
+	message = string_format(_CONV("SCardConnectW(hContext:0x%x, %S) called\n"), hContext, szReader);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+	// RESET APDU IN BYTE COUNTER
+	theApp.m_processedApduByteCounter = 0;
+
+	// RESET CARD
+	if (theApp.m_scsat04Config.bRedirect && (theApp.m_scsat04Config.pSocket != NULL)) {
+		string_type message;
+		theApp.m_scsat04Config.pSocket->SendLine(_CONV("get reset 1000"));
+		string_type l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		message = string_format(_CONV("\n:: %s"), l.c_str());
+		//message.Replace("\n", " ");
+		message.erase(remove(message.begin(), message.end(), '\r'), message.end());
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+		// PREPARE FOR MEASUREMENT
+		message = string_format(_CONV("get params 1 %d %d"), theApp.m_scsat04Config.measureApduByteCounter, theApp.m_scsat04Config.measureApduByteDelay);
+		theApp.m_scsat04Config.pSocket->SendLine(message);
+		l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		message = string_format(_CONV(":: %s"), l.c_str());
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+		message = string_format(_CONV("post sampling %d"), theApp.m_scsat04Config.numSamples);
+		theApp.m_scsat04Config.pSocket->SendLine(message);
+		l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		message = string_format(_CONV(":: %s"), l.c_str());
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+		// PREPARE FOR MEASUREMENT READING IN FUTURE
+		theApp.m_scsat04Config.sampleReaded = FALSE;
+
+		// CREATE VIRTUAL CARD HANDLE
+		*phCard = HANDLE_VIRTUAL_CARD;
+		*pdwActiveProtocol = SCARD_PROTOCOL_T0;
+
+		status = SCARD_S_SUCCESS;
+	}
+	else {
+		status = (*Original_SCardConnectW)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
+	}
+
+	message = string_format(_CONV("-> hCard:0x%x\n"), *phCard);
+	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+	return status;
+}
+
+static SCard LONG(__stdcall *Original_SCardListReadersW)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR mszGroups,
+	OUT     LPWSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
+
+SCard LONG __stdcall SCardListReadersW(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR mszGroups,
+	OUT     LPWSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders)
+{
+	string_type message;
+	message = string_format(_CONV("SCardListReadersW(hContext:0x%x) called\n"), hContext);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+	LONG    status = SCARD_S_SUCCESS;
+	lcs     readersList;
+
+	if (*pcchReaders == SCARD_AUTOALLOCATE) {
+		// NO BUFFER IS SUPPLIED
+
+		// OBTAIN REQUIRED LENGTH FOR REAL READERS
+		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
+			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
+			int     newLen = *pcchReaders + VIRTUAL_READERS_LEN;
+			WCHAR*   readers = new WCHAR[newLen];
+			memset(readers, 0, newLen * sizeof(WCHAR));
+			*pcchReaders = newLen;
+			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
+				// COPY NAME OF VIRTUAL READERS TO END
+				for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
+					readers[i + *pcchReaders] = VIRT_READER_NAME[i];
+				}
+				// ADD TRAILING ZERO
+				*pcchReaders += (DWORD)strlen(VIRT_READER_NAME) + 1;
+				readers[*pcchReaders - 1] = 0;
+				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
+				WCHAR**  temp = (WCHAR**)mszReaders;
+				*temp = readers;
+				CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
+				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
+				theApp.m_wcharAllocatedMemoryList.push_back(readers);
+			}
+		}
+	}
+	else {
+		// BUFFER SUPPLIED
+		// OBTAIN REQUIRED LENGTH FOR REAL READERS
+		DWORD     realLen = *pcchReaders;
+		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
+			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
+				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
+				*pcchReaders = realLen + VIRTUAL_READERS_LEN;
+				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
+			}
+			else {
+				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
+				realLen = *pcchReaders;
+				memset(mszReaders, 0, *pcchReaders * sizeof(WCHAR));
+				if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
+					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
+					if (strlen(VIRT_READER_NAME) > 0) {
+						for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
+							mszReaders[i + realLen] = VIRT_READER_NAME[i];
+						}
+						*pcchReaders = realLen + strlen(VIRT_READER_NAME) + 1;
+					}
+					else { *pcchReaders = realLen; }
+					// ADD TRAILING ZERO
+					mszReaders[*pcchReaders - 1] = 0;
+
+					CCommonFnc::String_ParseNullSeparatedArray(mszReaders, *pcchReaders, &readersList);
+				}
+			}
+		}
+	}
+
+	if (status == STAT_OK && mszReaders != NULL) {
+		if (theApp.m_winscardConfig.sREADER_ORDERED_FIRST != _CONV("")) {
+			// REODERING OF READERS WILL BE PERFORMED
+
+			// TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
+			for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
+				if (memcmp((LPCTSTR)theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR)) == 0) {
+					// PREFFERED READER FOUND
+
+					WCHAR*   readers = new WCHAR[*pcchReaders];
+					memset(readers, 0, *pcchReaders * sizeof(WCHAR));
+					memcpy(readers, mszReaders, *pcchReaders * sizeof(WCHAR));
+
+					DWORD   offset = 0;
+					// PREFFERED FIRST
+					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR));
+					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
+					offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
+					// ORIGINAL PREDECESOR SECOND
+					memcpy(readers + offset, mszReaders, i * sizeof(WCHAR));
+					offset += i;
+					// ORIGINAL SUCCESSOR THIRD - IS THERE FROM INITIAL MEMCPY
+
+					// COPY BACK
+					memcpy(mszReaders, readers, *pcchReaders * sizeof(WCHAR));
+					delete[] readers;
+
+					break;
+				}
+			}
+		}
+	}
+
+	lcs::iterator   iter;
+	string_type         availableReaders = _CONV("-> Found readers: ");
+	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
+		availableReaders += *iter;
+		availableReaders += _CONV(", ");
+	}
+	availableReaders += _CONV("\n");
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
+
+	return status;
+}
+
+static SCard LONG(__stdcall *Original_SCardListReadersA)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCSTR mszGroups,
+	OUT     LPSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
+
+SCard LONG __stdcall SCardListReadersA(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCSTR mszGroups,
+	OUT     LPSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders)
+{
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListReadersA called\n"));
+
+	int  status = SCARD_S_SUCCESS;
+	lcs     readersList;
+
+	if (*pcchReaders == SCARD_AUTOALLOCATE) {
+		// NO BUFFER IS SUPPLIED
+
+		// OBTAIN REQUIRED LENGTH FOR REAL READERS
+		if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
+			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
+			int     newLen = *pcchReaders + VIRTUAL_READERS_LEN + 2;
+			char*   readers = new char[newLen];
+			memset(readers, 0, newLen);
+			*pcchReaders = newLen;
+			if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
+				// COPY NAME OF VIRTUAL READERS TO END
+				memcpy(readers + *pcchReaders, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
+				// ADD TRAILING ZERO
+				*pcchReaders += (DWORD)strlen(VIRT_READER_NAME) + 1;
+				readers[*pcchReaders - 1] = 0;
+				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
+				char**  temp = (char**)mszReaders;
+				*temp = readers;
+				CCommonFnc::String_ParseNullSeparatedArray((BYTE*)readers, *pcchReaders - 1, &readersList);
+				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
+				theApp.m_charAllocatedMemoryList.push_back(readers);
+			}
+		}
+	}
+	else {
+		// BUFFER SUPPLIED
+		// OBTAIN REQUIRED LENGTH FOR REAL READERS
+		DWORD     realLen = *pcchReaders;
+		if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
+			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
+				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
+				*pcchReaders = realLen + VIRTUAL_READERS_LEN;
+				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
+			}
+			else {
+				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
+				realLen = *pcchReaders;
+				if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
+					*pcchReaders = realLen;
+
+					// ADD VIRTUAL READER
+					// COPY NAME OF VIRTUAL READERS TO END
+					memcpy(mszReaders + realLen, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
+					*pcchReaders = realLen + strlen(VIRT_READER_NAME) + 1;
+					// ADD TRAILING ZERO
+					mszReaders[*pcchReaders - 1] = 0;
+					/**/
+					CCommonFnc::String_ParseNullSeparatedArray((BYTE*)mszReaders, *pcchReaders - 1, &readersList);
+				}
+			}
+		}
+	}
+
+	if (status == STAT_OK && mszReaders != NULL) {
+		if (theApp.m_winscardConfig.sREADER_ORDERED_FIRST != _CONV("")) {
+			// REODERING OF READERS WILL BE PERFORMED
+
+			// TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
+			for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
+				if (memcmp((LPCTSTR)theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()) == 0) {
+					// PREFFERED READER FOUND
+
+					char*   readers = new char[*pcchReaders];
+					memset(readers, 0, *pcchReaders);
+					memcpy(readers, mszReaders, *pcchReaders);
+
+					DWORD   offset = 0;
+					// PREFFERED FIRST
+					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length());
+					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
+					offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
+					// ORIGINAL PREDECESOR SECOND
+					memcpy(readers + offset, mszReaders, i);
+					offset += i;
+					// ORIGINAL SUCCESSOR THIRD - IS THERE FROM INITIAL MEMCPY
+
+					// COPY BACK
+					memcpy(mszReaders, readers, *pcchReaders);
+					delete[] readers;
+
+
+					break;
+				}
+			}
+		}
+	}
+
+	lcs::iterator   iter;
+	string_type         availableReaders = _CONV("-> Found readers: ");
+	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
+		availableReaders += *iter;
+		availableReaders += _CONV(", ");
+	}
+	availableReaders += _CONV("\n");
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
+
+	return status;
+}
 
 static SCard LONG(__stdcall *Original_SCardListReaderGroupsA)(
 	IN      SCARDCONTEXT hContext,
@@ -731,22 +1509,6 @@ SCard LONG __stdcall SCardForgetCardTypeW(
 	return (*Original_SCardForgetCardTypeW)(hContext, szCardName);
 }
 
-static SCard HANDLE(__stdcall *Original_SCardAccessStartedEvent)(void);
-
-SCard HANDLE __stdcall SCardAccessStartedEvent(void) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardAccessStartedEvent called\n"));
-	return (*Original_SCardAccessStartedEvent)();
-}
-
-
-static SCard void(__stdcall *Original_SCardReleaseStartedEvent)(void);
-
-SCard void __stdcall SCardReleaseStartedEvent(void) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardReleaseStartedEvent called\n"));
-	return (*Original_SCardReleaseStartedEvent)();
-}
-
-
 static SCard LONG(__stdcall *Original_SCardLocateCardsA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszCards,
@@ -866,19 +1628,6 @@ SCard LONG __stdcall SCardGetStatusChangeW(
 	return (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
 }
 
-
-static SCard LONG(__stdcall *Original_SCardCancel)(
-	IN      SCARDCONTEXT hContext
-	);
-
-SCard LONG __stdcall SCardCancel(
-	IN      SCARDCONTEXT hContext
-) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancel called\n"));
-	return (*Original_SCardCancel)(hContext);
-}
-
-
 static SCard LONG(__stdcall *Original_SCardConnectA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szReader,
@@ -909,172 +1658,6 @@ SCard LONG __stdcall SCardConnectA(
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	return status;
 }
-
-static SCard LONG(__stdcall *Original_SCardReconnect)(
-	IN      SCARDHANDLE hCard,
-	IN      DWORD dwShareMode,
-	IN      DWORD dwPreferredProtocols,
-	IN      DWORD dwInitialization,
-	OUT     LPDWORD pdwActiveProtocol
-	);
-
-SCard LONG __stdcall SCardReconnect(
-	IN      SCARDHANDLE hCard,
-	IN      DWORD dwShareMode,
-	IN      DWORD dwPreferredProtocols,
-	IN      DWORD dwInitialization,
-	OUT     LPDWORD pdwActiveProtocol
-) {
-	string_type message;
-	message = string_format(_CONV("SCardReconnect(hCard:0x%x) called\n"), hCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	return (*Original_SCardReconnect)(hCard, dwShareMode, dwPreferredProtocols, dwInitialization, pdwActiveProtocol);
-}
-
-static SCard LONG(__stdcall *Original_SCardBeginTransaction)(
-	IN      SCARDHANDLE hCard
-	);
-
-SCard LONG __stdcall SCardBeginTransaction(
-	IN      SCARDHANDLE hCard
-) {
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardBeginTransaction called\n"));
-	return (*Original_SCardBeginTransaction)(hCard);
-}
-
-
-static SCard LONG(__stdcall *Original_SCardEndTransaction)(
-	IN      SCARDHANDLE hCard,
-	IN      DWORD dwDisposition
-	);
-
-SCard LONG __stdcall SCardEndTransaction(
-	IN      SCARDHANDLE hCard,
-	IN      DWORD dwDisposition
-) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardEndTransaction called\n"));
-	return (*Original_SCardEndTransaction)(hCard, dwDisposition);
-}
-
-
-static SCard LONG(__stdcall *Original_SCardCancelTransaction)(
-	IN      SCARDHANDLE hCard
-	);
-
-SCard LONG __stdcall SCardCancelTransaction(
-	IN      SCARDHANDLE hCard
-) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancelTransaction called\n"));
-	return (*Original_SCardCancelTransaction)(hCard);
-}
-
-
-static SCard LONG(__stdcall *Original_SCardState)(
-	IN SCARDHANDLE hCard,
-	OUT LPDWORD pdwState,
-	OUT LPDWORD pdwProtocol,
-	OUT LPBYTE pbAtr,
-	IN OUT LPDWORD pcbAtrLen
-	);
-
-SCard LONG __stdcall SCardState(
-	IN SCARDHANDLE hCard,
-	OUT LPDWORD pdwState,
-	OUT LPDWORD pdwProtocol,
-	OUT LPBYTE pbAtr,
-	IN OUT LPDWORD pcbAtrLen
-) {
-	string_type message;
-	message = string_format(_CONV("SCardState(hCard:0x%x) called\n"), hCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	return (*Original_SCardState)(hCard, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
-}
-
-
-static SCard LONG(__stdcall *Original_SCardStatusW)(
-	IN SCARDHANDLE hCard,
-	OUT LPWSTR szReaderName,
-	IN OUT LPDWORD pcchReaderLen,
-	OUT LPDWORD pdwState,
-	OUT LPDWORD pdwProtocol,
-	OUT LPBYTE pbAtr,
-	IN OUT LPDWORD pcbAtrLen
-	);
-
-SCard LONG __stdcall SCardStatusW(
-	IN SCARDHANDLE hCard,
-	OUT LPWSTR szReaderName,
-	IN OUT LPDWORD pcchReaderLen,
-	OUT LPDWORD pdwState,
-	OUT LPDWORD pdwProtocol,
-	OUT LPBYTE pbAtr,
-	IN OUT LPDWORD pcbAtrLen
-) {
-	string_type message;
-	message = string_format(_CONV("SCardStatusW(hCard:0x%x) called\n"), hCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	return (*Original_SCardStatusW)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
-}
-
-static SCard LONG(__stdcall *Original_SCardControl)(
-	IN      SCARDHANDLE hCard,
-	IN      DWORD dwControlCode,
-	IN      LPCVOID lpInBuffer,
-	IN      DWORD nInBufferSize,
-	OUT     LPVOID lpOutBuffer,
-	IN      DWORD nOutBufferSize,
-	OUT     LPDWORD lpBytesReturned
-	);
-
-SCard LONG __stdcall SCardControl(
-	IN      SCARDHANDLE hCard,
-	IN      DWORD dwControlCode,
-	IN      LPCVOID lpInBuffer,
-	IN      DWORD nInBufferSize,
-	OUT     LPVOID lpOutBuffer,
-	IN      DWORD nOutBufferSize,
-	OUT     LPDWORD lpBytesReturned
-) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardControl called\n"));
-	return (*Original_SCardControl)(hCard, dwControlCode, lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned);
-}
-
-
-static SCard LONG(__stdcall *Original_SCardGetAttrib)(
-	IN SCARDHANDLE hCard,
-	IN DWORD dwAttrId,
-	OUT LPBYTE pbAttr,
-	IN OUT LPDWORD pcbAttrLen
-	);
-
-SCard LONG __stdcall SCardGetAttrib(
-	IN SCARDHANDLE hCard,
-	IN DWORD dwAttrId,
-	OUT LPBYTE pbAttr,
-	IN OUT LPDWORD pcbAttrLen
-) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetAttrib called\n"));
-	return (*Original_SCardGetAttrib)(hCard, dwAttrId, pbAttr, pcbAttrLen);
-}
-
-
-static SCard LONG(__stdcall *Original_SCardSetAttrib)(
-	IN SCARDHANDLE hCard,
-	IN DWORD dwAttrId,
-	IN LPCBYTE pbAttr,
-	IN DWORD cbAttrLen
-	);
-
-SCard LONG __stdcall SCardSetAttrib(
-	IN SCARDHANDLE hCard,
-	IN DWORD dwAttrId,
-	IN LPCBYTE pbAttr,
-	IN DWORD cbAttrLen
-) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardSetAttrib called\n"));
-	return (*Original_SCardSetAttrib)(hCard, dwAttrId, pbAttr, cbAttrLen);
-}
-
 
 static SCard LONG(__stdcall *Original_SCardUIDlgSelectCardA)(
 	LPOPENCARDNAMEA_EX
@@ -1129,668 +1712,79 @@ SCard LONG __stdcall SCardDlgExtendedError(void) {
 	return (*Original_SCardDlgExtendedError)();
 }
 
-
-
-/* ******************************************************************************* */
-
-CWinscardApp::~CWinscardApp()
-{
-	#ifdef __linux
-		dlclose(hOriginal);
-	#else
-	    FreeLibrary(hOriginal);
-	#endif
-	// Reference to WINSCARD_LOG will fail with access to 0xfeefee (global CString WINSCARD_LOG does not exists at the time of dll release (strange))
-	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\r\n");
-
-	if (m_scsat04Config.pSocket != NULL) delete m_scsat04Config.pSocket;
-
-	lptr::iterator  iter;
-	for (iter = m_charAllocatedMemoryList.begin(); iter != m_charAllocatedMemoryList.end(); iter++) {
-		char* ptr = (char*)*iter;
-		if (ptr != NULL) delete[] ptr;
-	}
-	m_charAllocatedMemoryList.clear();
-	for (iter = m_wcharAllocatedMemoryList.begin(); iter != m_wcharAllocatedMemoryList.end(); iter++) {
-		WCHAR* ptr = (WCHAR*)*iter;
-		if (ptr != NULL) delete[] ptr;
-	}
-	m_wcharAllocatedMemoryList.clear();
-}
-
-
-
-static SCard LONG(__stdcall *Original_SCardConnectW)(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCWSTR szReader,
-	IN      DWORD dwShareMode,
-	IN      DWORD dwPreferredProtocols,
-	OUT     LPSCARDHANDLE phCard,
-	OUT     LPDWORD pdwActiveProtocol
+static SCard LONG(__stdcall *Original_SCardCancelTransaction)(
+	IN      SCARDHANDLE hCard
 	);
 
-SCard LONG __stdcall SCardConnectW(
-	SCARDCONTEXT hContext,
-	LPCWSTR szReader,
-	DWORD dwShareMode,
-	DWORD dwPreferredProtocols,
-	LPSCARDHANDLE phCard,
-	LPDWORD pdwActiveProtocol)
-{
-	LONG    status = SCARD_S_SUCCESS;
-	string_type message;
-	message = string_format(_CONV("SCardConnectW(hContext:0x%x, %S) called\n"), hContext, szReader);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-	// RESET APDU IN BYTE COUNTER
-	theApp.m_processedApduByteCounter = 0;
-
-	// RESET CARD
-	if (theApp.m_scsat04Config.bRedirect && (theApp.m_scsat04Config.pSocket != NULL)) {
-		string_type message;
-		theApp.m_scsat04Config.pSocket->SendLine(_CONV("get reset 1000"));
-		string_type l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-		message = string_format(_CONV("\n:: %s"), l.c_str());
-		//message.Replace("\n", " ");
-		message.erase(remove(message.begin(), message.end(), '\r'), message.end());
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-		// PREPARE FOR MEASUREMENT
-		message = string_format(_CONV("get params 1 %d %d"), theApp.m_scsat04Config.measureApduByteCounter, theApp.m_scsat04Config.measureApduByteDelay);
-		theApp.m_scsat04Config.pSocket->SendLine(message);
-		l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-		message = string_format(_CONV(":: %s"), l.c_str());
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-		message = string_format(_CONV("post sampling %d"), theApp.m_scsat04Config.numSamples);
-		theApp.m_scsat04Config.pSocket->SendLine(message);
-		l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-		message = string_format(_CONV(":: %s"), l.c_str());
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-		// PREPARE FOR MEASUREMENT READING IN FUTURE
-		theApp.m_scsat04Config.sampleReaded = FALSE;
-
-		// CREATE VIRTUAL CARD HANDLE
-		*phCard = HANDLE_VIRTUAL_CARD;
-		*pdwActiveProtocol = SCARD_PROTOCOL_T0;
-
-		status = SCARD_S_SUCCESS;
-	}
-	else {
-		status = (*Original_SCardConnectW)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
-	}
-
-	message = string_format(_CONV("-> hCard:0x%x\n"), *phCard);
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-	return status;
-}
-
-static SCard LONG(__stdcall *Original_SCardFreeMemory)(
-	IN SCARDCONTEXT hContext,
-	IN LPCVOID pvMem
-	);
-
-SCard LONG __stdcall SCardFreeMemory(
-	IN SCARDCONTEXT hContext,
-	IN LPCVOID pvMem)
-{
-	string_type message;
-	message = string_format(_CONV("SCardFreeMemory(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-	LONG    status = SCARD_S_SUCCESS;
-
-	// TRY TO FIND GIVEN MEMORY REFFERENCE IN LOCAL ALLOCATIONS
-	BOOL            bFound = FALSE;
-	lptr::iterator  iter;
-	for (iter = theApp.m_charAllocatedMemoryList.begin(); iter != theApp.m_charAllocatedMemoryList.end(); iter++) {
-		char* ptr = (char*)*iter;
-		if (ptr != NULL && (ptr == pvMem)) {
-			delete[] ptr;
-			bFound = TRUE;
-
-			theApp.m_charAllocatedMemoryList.erase(iter);
-			break;
-		}
-	}
-	for (iter = theApp.m_wcharAllocatedMemoryList.begin(); iter != theApp.m_wcharAllocatedMemoryList.end(); iter++) {
-		WCHAR* ptr = (WCHAR*)*iter;
-		if (ptr != NULL && (ptr == pvMem)) {
-			delete[] ptr;
-			bFound = TRUE;
-
-			theApp.m_wcharAllocatedMemoryList.erase(iter);
-			break;
-		}
-	}
-	// IF NOT FOUND, PASS TO ORIGINAL LIBRARY
-	if (!bFound) status = (*Original_SCardFreeMemory)(hContext, pvMem);
-
-	return status;
-}
-
-static SCard LONG(__stdcall *Original_SCardListReadersW)(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCWSTR mszGroups,
-	OUT     LPWSTR mszReaders,
-	IN OUT  LPDWORD pcchReaders
-	);
-
-SCard LONG __stdcall SCardListReadersW(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCWSTR mszGroups,
-	OUT     LPWSTR mszReaders,
-	IN OUT  LPDWORD pcchReaders)
-{
-	string_type message;
-	message = string_format(_CONV("SCardListReadersW(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-
-	LONG    status = SCARD_S_SUCCESS;
-	lcs     readersList;
-
-	if (*pcchReaders == SCARD_AUTOALLOCATE) {
-		// NO BUFFER IS SUPPLIED
-
-		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
-			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			int     newLen = *pcchReaders + VIRTUAL_READERS_LEN;
-			WCHAR*   readers = new WCHAR[newLen];
-			memset(readers, 0, newLen * sizeof(WCHAR));
-			*pcchReaders = newLen;
-			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
-				// COPY NAME OF VIRTUAL READERS TO END
-				for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
-					readers[i + *pcchReaders] = VIRT_READER_NAME[i];
-				}
-				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD)strlen(VIRT_READER_NAME) + 1;
-				readers[*pcchReaders - 1] = 0;
-				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
-				WCHAR**  temp = (WCHAR**)mszReaders;
-				*temp = readers;
-				CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
-				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
-				theApp.m_wcharAllocatedMemoryList.push_back(readers);
-			}
-		}
-	}
-	else {
-		// BUFFER SUPPLIED
-		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		DWORD     realLen = *pcchReaders;
-		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
-			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
-				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = realLen + VIRTUAL_READERS_LEN;
-				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
-			}
-			else {
-				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
-				realLen = *pcchReaders;
-				memset(mszReaders, 0, *pcchReaders * sizeof(WCHAR));
-				if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
-					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
-					if (strlen(VIRT_READER_NAME) > 0) {
-						for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
-							mszReaders[i + realLen] = VIRT_READER_NAME[i];
-						}
-						*pcchReaders = realLen + strlen(VIRT_READER_NAME) + 1;
-					}
-					else { *pcchReaders = realLen; }
-					// ADD TRAILING ZERO
-					mszReaders[*pcchReaders - 1] = 0;
-
-					CCommonFnc::String_ParseNullSeparatedArray(mszReaders, *pcchReaders, &readersList);
-				}
-			}
-		}
-	}
-
-	if (status == STAT_OK && mszReaders != NULL) {
-		if (theApp.m_winscardConfig.sREADER_ORDERED_FIRST != _CONV("")) {
-			// REODERING OF READERS WILL BE PERFORMED
-
-			// TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
-			for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
-				if (memcmp((LPCTSTR)theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR)) == 0) {
-					// PREFFERED READER FOUND
-
-					WCHAR*   readers = new WCHAR[*pcchReaders];
-					memset(readers, 0, *pcchReaders * sizeof(WCHAR));
-					memcpy(readers, mszReaders, *pcchReaders * sizeof(WCHAR));
-
-					DWORD   offset = 0;
-					// PREFFERED FIRST
-					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR));
-					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
-					offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
-					// ORIGINAL PREDECESOR SECOND
-					memcpy(readers + offset, mszReaders, i * sizeof(WCHAR));
-					offset += i;
-					// ORIGINAL SUCCESSOR THIRD - IS THERE FROM INITIAL MEMCPY
-
-					// COPY BACK
-					memcpy(mszReaders, readers, *pcchReaders * sizeof(WCHAR));
-					delete[] readers;
-
-					break;
-				}
-			}
-		}
-	}
-
-	lcs::iterator   iter;
-	string_type         availableReaders = _CONV("-> Found readers: ");
-	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
-		availableReaders += *iter;
-		availableReaders += _CONV(", ");
-	}
-	availableReaders += _CONV("\n");
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
-
-	return status;
-}
-
-static SCard LONG(__stdcall *Original_SCardListReadersA)(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCSTR mszGroups,
-	OUT     LPSTR mszReaders,
-	IN OUT  LPDWORD pcchReaders
-	);
-
-SCard LONG __stdcall SCardListReadersA(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCSTR mszGroups,
-	OUT     LPSTR mszReaders,
-	IN OUT  LPDWORD pcchReaders)
-{
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListReadersA called\n"));
-
-	int  status = SCARD_S_SUCCESS;
-	lcs     readersList;
-
-	if (*pcchReaders == SCARD_AUTOALLOCATE) {
-		// NO BUFFER IS SUPPLIED
-
-		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
-			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			int     newLen = *pcchReaders + VIRTUAL_READERS_LEN + 2;
-			char*   readers = new char[newLen];
-			memset(readers, 0, newLen);
-			*pcchReaders = newLen;
-			if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
-				// COPY NAME OF VIRTUAL READERS TO END
-				memcpy(readers + *pcchReaders, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
-				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD)strlen(VIRT_READER_NAME) + 1;
-				readers[*pcchReaders - 1] = 0;
-				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
-				char**  temp = (char**)mszReaders;
-				*temp = readers;
-				CCommonFnc::String_ParseNullSeparatedArray((BYTE*)readers, *pcchReaders - 1, &readersList);
-				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
-				theApp.m_charAllocatedMemoryList.push_back(readers);
-			}
-		}
-	}
-	else {
-		// BUFFER SUPPLIED
-		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		DWORD     realLen = *pcchReaders;
-		if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
-			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
-				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = realLen + VIRTUAL_READERS_LEN;
-				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
-			}
-			else {
-				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
-				realLen = *pcchReaders;
-				if ((status = (*Original_SCardListReadersA)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
-					*pcchReaders = realLen;
-
-					// ADD VIRTUAL READER
-					// COPY NAME OF VIRTUAL READERS TO END
-					memcpy(mszReaders + realLen, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
-					*pcchReaders = realLen + strlen(VIRT_READER_NAME) + 1;
-					// ADD TRAILING ZERO
-					mszReaders[*pcchReaders - 1] = 0;
-					/**/
-					CCommonFnc::String_ParseNullSeparatedArray((BYTE*)mszReaders, *pcchReaders - 1, &readersList);
-				}
-			}
-		}
-	}
-
-	if (status == STAT_OK && mszReaders != NULL) {
-		if (theApp.m_winscardConfig.sREADER_ORDERED_FIRST != _CONV("")) {
-			// REODERING OF READERS WILL BE PERFORMED
-
-			// TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
-			for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
-				if (memcmp((LPCTSTR)theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()) == 0) {
-					// PREFFERED READER FOUND
-
-					char*   readers = new char[*pcchReaders];
-					memset(readers, 0, *pcchReaders);
-					memcpy(readers, mszReaders, *pcchReaders);
-
-					DWORD   offset = 0;
-					// PREFFERED FIRST
-					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length());
-					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
-					offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
-					// ORIGINAL PREDECESOR SECOND
-					memcpy(readers + offset, mszReaders, i);
-					offset += i;
-					// ORIGINAL SUCCESSOR THIRD - IS THERE FROM INITIAL MEMCPY
-
-					// COPY BACK
-					memcpy(mszReaders, readers, *pcchReaders);
-					delete[] readers;
-
-
-					break;
-				}
-			}
-		}
-	}
-
-	lcs::iterator   iter;
-	string_type         availableReaders = _CONV("-> Found readers: ");
-	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
-		availableReaders += *iter;
-		availableReaders += _CONV(", ");
-	}
-	availableReaders += _CONV("\n");
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
-
-	return status;
-}
-
-static SCard LONG(__stdcall *Original_SCardDisconnect)(
-	SCARDHANDLE hCard,
-	DWORD dwDisposition
-	);
-
-SCard LONG __stdcall SCardDisconnect(
-	SCARDHANDLE hCard,
-	DWORD dwDisposition)
-{
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardDisconnect called\n"));
-
-	// DISCONNECT FROM CARD
-	if (hCard == HANDLE_VIRTUAL_CARD) {
-		// DO NOTHING
-		return SCARD_S_SUCCESS;
-	}
-	else {
-		return (*Original_SCardDisconnect)(hCard, dwDisposition);
-	}
-}
-static SCard LONG(__stdcall *Original_SCardStatusA)(
-	SCARDHANDLE hCard,
-	LPSTR szReaderName,
-	LPDWORD pcchReaderLen,
-	LPDWORD pdwState,
-	LPDWORD pdwProtocol,
-	LPBYTE pbAtr,
-	LPDWORD pcbAtrLen
-	);
-
-SCard LONG __stdcall SCardStatusA(
-	SCARDHANDLE hCard,
-	LPSTR szReaderName,
-	LPDWORD pcchReaderLen,
-	LPDWORD pdwState,
-	LPDWORD pdwProtocol,
-	LPBYTE pbAtr,
-	LPDWORD pcbAtrLen)
-{
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardStatusA called\n"));
-	return (*Original_SCardStatusA)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
-}
-
-static SCard LONG(__stdcall *Original_SCardTransmit)(
-	IN SCARDHANDLE hCard,
-	IN LPCSCARD_IO_REQUEST pioSendPci,
-	IN LPCBYTE pbSendBuffer,
-	IN DWORD cbSendLength,
-	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
-	OUT LPBYTE pbRecvBuffer,
-	IN OUT LPDWORD pcbRecvLength
-	);
-
-SCard LONG __stdcall SCardTransmit(
-	IN SCARDHANDLE hCard,
-	IN LPCSCARD_IO_REQUEST pioSendPci,
-	IN LPCBYTE pbSendBuffer,
-	IN DWORD cbSendLength,
-	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
-	OUT LPBYTE pbRecvBuffer,
-	IN OUT LPDWORD pcbRecvLength
+SCard LONG __stdcall SCardCancelTransaction(
+	IN      SCARDHANDLE hCard
 ) {
-
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardTransmit called\n"));
-
-	LONG result = SCARD_S_SUCCESS;
-	//    DWORD written;
-	char_type *txMsg = _CONV("transmitted:");
-	char_type *rxMsg = _CONV("received:");
-	char_type *crlf = _CONV("\r\n");
-	const int bufferLength = 1024;
-	//char_type buffer[bufferLength];
-	string_type buffer;
-	char_type  sendBuffer[300];
-	clock_t elapsedCard;
-	clock_t elapsedLibrary;
-	string_type     message;
-
-	elapsedLibrary = -clock();
-	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\r\n", hCard);
-		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\r\n"), hCard);
-		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
-
-		//sprintf(buffer, "apduCounter:%d#\r\n", apduCounter);
-		buffer = string_format(_CONV("apduCounter:%d#\r\n"), apduCounter);
-		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
-
-		//sprintf(buffer, "totalBytesINCounter:%d#\r\n", theApp.m_processedApduByteCounter + 1);
-		buffer = string_format(_CONV("totalBytesINCounter:%d#\r\n"), theApp.m_processedApduByteCounter + 1);
-		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
-
-		CCommonFnc::File_AppendString(WINSCARD_LOG, txMsg);
-
-		DumpMemory(pbSendBuffer, cbSendLength);
-	}
-
-
-	// SAVE INCOMING APDU
-	APDU_BUFFER     apduBuff;
-	memset(&apduBuff, 0, sizeof(APDU_BUFFER));
-	memcpy(&apduBuff, pbSendBuffer, cbSendLength);
-	theApp.apduInList.push_front(apduBuff);
-
-	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
-		message = string_format(_CONV("\nIncoming rules applied for apduCounter %d: \n"), apduCounter);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)pbSendBuffer, cbSendLength, &message);
-		//message.Insert(0, "   "); message += "\n";
-		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	}
-
-	// COPY INPUT DATA
-	memcpy(sendBuffer, pbSendBuffer, cbSendLength);
-
-	// APPLY INCOMING RULES
-	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
-		if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules((BYTE*)sendBuffer, &cbSendLength, INPUT_APDU);
-		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)sendBuffer, cbSendLength, &message);
-		//message.Insert(0, "   "); message += "\n";
-		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	}
-
-	elapsedCard = -clock();
-
-	// INCREASE COUNTER OF THE BYTES SEND TO CARD - IS USED AS MEASUREMENT TRIGGER LATER
-	theApp.m_processedApduByteCounter += cbSendLength;
-
-	// SCSAT04
-	if (theApp.m_scsat04Config.bRedirect) {
-		// GET PIN COUNTER HACK
-		if (memcmp(pbSendBuffer, PIN_COUNTER_APDU, sizeof(PIN_COUNTER_APDU)) == 0) {
-			pbRecvBuffer[0] = 0x03; pbRecvBuffer[1] = 0x90; pbRecvBuffer[2] = 0x00;
-			*pcbRecvLength = 3;
-
-			//_sleep(1000);
-		}
-		else {
-
-			// FORWARD TO SCSAT04 
-			result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-
-			// APPEND 90 00 TO RETURN BUFFER IN CASE OF DATA_OUT RETRIEVE COMMAND (IF SCSAT IS NOT RETURNING IT)             
-			if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
-				if (result == SCARD_S_SUCCESS) {
-					if ((pbRecvBuffer[*pcbRecvLength - 2] != 0x90) && (pbRecvBuffer[*pcbRecvLength - 1] != 0x00)) {
-						// 0x90 0x00 IS MISSING
-						pbRecvBuffer[*pcbRecvLength] = 0x90;
-						pbRecvBuffer[*pcbRecvLength + 1] = 0x00;
-						*pcbRecvLength += 2;
-					}
-				}
-			}
-		}
-	}
-	else {
-
-		// If required, then ensure that at least one byte will be send to card
-		if (theApp.m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA) {
-			if (cbSendLength < 6) {
-				// ADD ONE ZERO BYTE
-				sendBuffer[4] = 1;
-				sendBuffer[5] = 0;
-				cbSendLength++;
-			}
-		}
-
-		// SEND DIRECTLY TO LOCAL READER
-		result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-	}
-
-
-	// HACK - if required, then perform transparently data readout on behalf of reader
-	// RECEIVE RESPONSE DATA, IF ANY 
-	if ((*pcbRecvLength == 2) && theApp.m_winscardConfig.bAUTO_REQUEST_DATA) {
-		// READOUT ALL DATA
-		DWORD   recvOffset = 0;
-		while (((pbRecvBuffer[recvOffset]) == 0x61) || ((pbRecvBuffer[recvOffset]) == 0x6C)) { // 0x61 ... SW_BYTES_REMAINING_00, 0x6C ... SW_CORRECT_LENGTH_00
-																							   // GET DATA APDU
-			sendBuffer[0] = (BYTE)0x00;
-			//sendBuffer[0] = (BYTE) 0xC0;
-			//sendBuffer[0] = (BYTE) 0xA0;
-
-			sendBuffer[1] = (BYTE)0xC0;
-			sendBuffer[2] = (BYTE)0x00;
-			sendBuffer[3] = (BYTE)0x00;
-
-			// HACK TO DEAL WITH CARDS THAT CANNOT HANDLE 254B AND MORE APDUS - if 0x61 0x00 (SW_BYTES_REMAINING_00 with zero remaining bytes is detected, then ask for 254 bytes instead
-			if ((pbRecvBuffer[*pcbRecvLength - 1] & 0xff) == 0)  sendBuffer[4] = (BYTE)254;
-			else sendBuffer[4] = (BYTE)pbRecvBuffer[*pcbRecvLength - 1];
-
-			cbSendLength = 5;
-
-			int tmp = sendBuffer[4] & 0xff; tmp += 2; *pcbRecvLength = tmp;
-			//*pcbRecvLength = sendBuffer[4] & 0xff + 2;
-			result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
-			recvOffset = *pcbRecvLength - 2;
-		}
-	}
-
-
-	// SAVE TIME OF CARD RESPONSE
-	elapsedCard += clock();
-	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		//sprintf(buffer, "responseTime:%d#\r\n", elapsedCard);
-		buffer = string_format(_CONV("responseTime:%d#\r\n"), elapsedCard);
-		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
-
-		//sprintf(buffer, "SCardTransmit result:0x%x#\r\n", result);
-		buffer = string_format(_CONV("SCardTransmit result:0x%x#\r\n"), result);
-		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
-	}
-
-	if (result != SCARD_S_SUCCESS) {
-		// CHANGE LENGTH OF RESPONSE TO PREVENT PARSING OF INCORRECT DATA
-		*pcbRecvLength = 0;
-	}
-
-	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		CCommonFnc::File_AppendString(WINSCARD_LOG, rxMsg);
-		DumpMemory(pbRecvBuffer, *pcbRecvLength);
-		CCommonFnc::File_AppendString(WINSCARD_LOG, crlf);
-	}
-
-	// SAVE OUTGOING APDU
-	memset(&apduBuff, 0, sizeof(APDU_BUFFER));
-	memcpy(&apduBuff, pbRecvBuffer, *pcbRecvLength);
-	theApp.apduOutList.push_front(apduBuff);
-
-	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
-		message = string_format(_CONV("\nOutgoing rules applied for apduCounter %d: \n"), apduCounter);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-		CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
-		//message.Insert(0, "   "); message += "\n";
-		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-		// APPLY OUTGOING RULES
-		if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules(pbRecvBuffer, pcbRecvLength, OUTPUT_APDU);
-		CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
-		//message.Insert(0, "   "); message += "\n";
-		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	}
-
-
-
-	// SCSAT04 - READ MEASUREMENT SAMPLE FROM BOARD IF NOT READED YET AND TRIGGER APPDU WAS REACHED (NUMBER OF BYTES IN)
-	if (theApp.m_scsat04Config.bRedirect && !(theApp.m_scsat04Config.sampleReaded) && (theApp.m_processedApduByteCounter >= theApp.m_scsat04Config.measureApduByteCounter)) {
-		// DOWNLOAD DATA FROM MEASUREMENT (IF ANY) 
-		if (theApp.m_scsat04Config.pSocket != NULL) {
-			//string_type message;
-			message = string_format(_CONV("get powertrace 0 %d"), theApp.m_scsat04Config.readRatio);
-			theApp.m_scsat04Config.pSocket->SendLine(message);
-			theApp.m_scsat04Config.baseReadOffset = 0;
-
-			string_type sampleFilePath;
-			theApp.SCSAT_CreateAndReceiveSamples(&(theApp.m_scsat04Config), &sampleFilePath);
-
-			// PREVENT FUTHER READING
-			theApp.m_scsat04Config.sampleReaded = TRUE;
-		}
-	}
-	// SCSAT04 END
-
-	// increase apdu counter	
-	apduCounter++;
-
-	elapsedLibrary += clock();
-	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		message = string_format(_CONV("responseTimeLibrary:%d#\r\n"), elapsedLibrary);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("...............................................\r\n"));
-	}
-
-	return result;
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancelTransaction called\n"));
+	return (*Original_SCardCancelTransaction)(hCard);
 }
+
+static SCard LONG(__stdcall *Original_SCardState)(
+	IN SCARDHANDLE hCard,
+	OUT LPDWORD pdwState,
+	OUT LPDWORD pdwProtocol,
+	OUT LPBYTE pbAtr,
+	IN OUT LPDWORD pcbAtrLen
+	);
+
+SCard LONG __stdcall SCardState(
+	IN SCARDHANDLE hCard,
+	OUT LPDWORD pdwState,
+	OUT LPDWORD pdwProtocol,
+	OUT LPBYTE pbAtr,
+	IN OUT LPDWORD pcbAtrLen
+) {
+	string_type message;
+	message = string_format(_CONV("SCardState(hCard:0x%x) called\n"), hCard);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	return (*Original_SCardState)(hCard, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+}
+
+
+static SCard LONG(__stdcall *Original_SCardStatusW)(
+	IN SCARDHANDLE hCard,
+	OUT LPWSTR szReaderName,
+	IN OUT LPDWORD pcchReaderLen,
+	OUT LPDWORD pdwState,
+	OUT LPDWORD pdwProtocol,
+	OUT LPBYTE pbAtr,
+	IN OUT LPDWORD pcbAtrLen
+	);
+
+SCard LONG __stdcall SCardStatusW(
+	IN SCARDHANDLE hCard,
+	OUT LPWSTR szReaderName,
+	IN OUT LPDWORD pcchReaderLen,
+	OUT LPDWORD pdwState,
+	OUT LPDWORD pdwProtocol,
+	OUT LPBYTE pbAtr,
+	IN OUT LPDWORD pcbAtrLen
+) {
+	string_type message;
+	message = string_format(_CONV("SCardStatusW(hCard:0x%x) called\n"), hCard);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	return (*Original_SCardStatusW)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+}
+
+static SCard HANDLE(__stdcall *Original_SCardAccessStartedEvent)(void);
+
+SCard HANDLE __stdcall SCardAccessStartedEvent(void) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardAccessStartedEvent called\n"));
+	return (*Original_SCardAccessStartedEvent)();
+}
+
+
+static SCard void(__stdcall *Original_SCardReleaseStartedEvent)(void);
+
+SCard void __stdcall SCardReleaseStartedEvent(void) {
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardReleaseStartedEvent called\n"));
+	return (*Original_SCardReleaseStartedEvent)();
+}
+#endif
 
 #if __linux__
 	typedef void (*q)(void *restrict, const char *restrict);
@@ -1829,7 +1823,6 @@ int initialize()
 	    dlerror();    // Clear any existing errorz
     #endif
 
-	/*LINUX*/
 	Original_SCardTransmit =
 		(long(__stdcall *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
 		load_func(hOriginal, "SCardTransmit");
@@ -1840,7 +1833,213 @@ int initialize()
 		fprintf(stderr, "Could not find SCardTransmit procedure address %s\n", error);
 		return FALSE;
 	}
+	
+	Original_SCardDisconnect =
+		(long(__stdcall *)(SCARDHANDLE hCard, DWORD dwDisposition))
+		load_func(hOriginal, "SCardDisconnect");
+	if ((!Original_SCardDisconnect)) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardDisconnect procedure address %s\n", error);
+		return FALSE;
+	}
 
+	Original_SCardFreeMemory =
+		(long(__stdcall *)(SCARDCONTEXT hContext, LPCVOID pvMem))
+		load_func(hOriginal, "SCardFreeMemory");
+	if ((!Original_SCardFreeMemory)) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardFreeMemory procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardEstablishContext = (LONG(__stdcall *)(
+		IN  DWORD dwScope,
+		IN  LPCVOID pvReserved1,
+		IN  LPCVOID pvReserved2,
+		OUT LPSCARDCONTEXT phContext)) load_func(hOriginal, "SCardEstablishContext");
+	if (!Original_SCardEstablishContext) {
+        #if __linux__
+		error = dlerror();
+        #endif
+		fprintf(stderr, "Could not find SCardEstablishContext procedure address %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardReleaseContext =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext))
+		load_func(hOriginal, "SCardReleaseContext");
+	if (!Original_SCardReleaseContext) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardReleaseContext procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardIsValidContext =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext))
+		load_func(hOriginal, "SCardIsValidContext");
+	if (!Original_SCardIsValidContext) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardIsValidContext procedure address:  %s\n", error);
+		return FALSE;
+	}
+	
+	Original_SCardFreeMemory =
+		(LONG(__stdcall *)(
+			IN SCARDCONTEXT hContext,
+			IN LPCVOID pvMem))
+		load_func(hOriginal, "SCardFreeMemory");
+	if (!Original_SCardFreeMemory) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardFreeMemory procedure address:  %s\n", error);
+		return FALSE;
+	}
+	
+	Original_SCardCancel =
+		(LONG(__stdcall *)(
+			IN      SCARDCONTEXT hContext))
+		load_func(hOriginal, "SCardCancel");
+	if (!Original_SCardCancel) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardCancel procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardReconnect =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwShareMode,
+			IN      DWORD dwPreferredProtocols,
+			IN      DWORD dwInitialization,
+			OUT     LPDWORD pdwActiveProtocol))
+		load_func(hOriginal, "SCardReconnect");
+	if (!Original_SCardReconnect) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardReconnect procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardDisconnect =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwDisposition))
+		load_func(hOriginal, "SCardDisconnect");
+	if (!Original_SCardDisconnect) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardDisconnect procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardBeginTransaction =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard))
+		load_func(hOriginal, "SCardBeginTransaction");
+	if (!Original_SCardBeginTransaction) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardBeginTransaction procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardEndTransaction =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwDisposition))
+		load_func(hOriginal, "SCardEndTransaction");
+	if (!Original_SCardEndTransaction) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardEndTransaction procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardTransmit =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			IN LPCSCARD_IO_REQUEST pioSendPci,
+			IN LPCBYTE pbSendBuffer,
+			IN DWORD cbSendLength,
+			IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+			OUT LPBYTE pbRecvBuffer,
+			IN OUT LPDWORD pcbRecvLength))
+		load_func(hOriginal, "SCardTransmit");
+	if (!Original_SCardTransmit) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardTransmit procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	/*LINUX*/
+	Original_SCardControl =
+		(LONG(__stdcall *)(
+			IN      SCARDHANDLE hCard,
+			IN      DWORD dwControlCode,
+			IN      LPCVOID lpInBuffer,
+			IN      DWORD nInBufferSize,
+			OUT     LPVOID lpOutBuffer,
+			IN      DWORD nOutBufferSize,
+			OUT     LPDWORD lpBytesReturned))
+		load_func(hOriginal, "SCardControl");
+	if (!Original_SCardControl) {
+		#if __linux__
+				error = dlerror()
+		#endif
+		fprintf(stderr, "Could not find SCardControl procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardGetAttrib =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			IN DWORD dwAttrId,
+			OUT LPBYTE pbAttr,
+			IN OUT LPDWORD pcbAttrLen))
+		load_func(hOriginal, "SCardGetAttrib");
+	if (!Original_SCardGetAttrib) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardGetAttrib procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	Original_SCardSetAttrib =
+		(LONG(__stdcall *)(
+			IN SCARDHANDLE hCard,
+			IN DWORD dwAttrId,
+			IN LPCBYTE pbAttr,
+			IN DWORD cbAttrLen))
+		load_func(hOriginal, "SCardSetAttrib");
+	if (!Original_SCardSetAttrib) {
+		#if __linux__
+		error = dlerror();
+		#endif
+		fprintf(stderr, "Could not find SCardSetAttrib procedure address:  %s\n", error);
+		return FALSE;
+	}
+
+	//Initialization of windows specific funcions
 	#if defined (WIN32)
 	Original_SCardStatusA =
 		(long(__stdcall *)(SCARDHANDLE hCard, LPSTR szReaderName, LPDWORD pcchReaderLen, LPDWORD pdwState, LPDWORD pdwProtocol, LPBYTE pbAtr, LPDWORD pcbAtrLen))
@@ -1857,32 +2056,7 @@ int initialize()
 		fprintf(stderr, "Could not find SCardConnectW procedure address %s\n");
 		return FALSE;
 	}
-	#endif
-	/*LINUX*/
-	Original_SCardDisconnect =
-		(long(__stdcall *)(SCARDHANDLE hCard, DWORD dwDisposition))
-		load_func(hOriginal, "SCardDisconnect");
-	if ((!Original_SCardDisconnect)) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardDisconnect procedure address %s\n", error);
-		return FALSE;
-	}
 
-	/*LINUX*/
-	Original_SCardFreeMemory =
-		(long(__stdcall *)(SCARDCONTEXT hContext, LPCVOID pvMem))
-		load_func(hOriginal, "SCardFreeMemory");
-	if ((!Original_SCardFreeMemory)) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardFreeMemory procedure address %s\n", error);
-		return FALSE;
-	}
-
-	#if defined (WIN32)
 	Original_SCardListReadersW =
 		(long(__stdcall *)(SCARDCONTEXT hContext, LPCWSTR mszGroups, LPWSTR mszReaders, LPDWORD pcchReaders))
 		load_func(hOriginal, "SCardListReadersW");
@@ -1898,49 +2072,7 @@ int initialize()
 		fprintf(stderr, "Could not find SCardListReadersA procedure address %s\n", error);
 		return FALSE;
 	}
-	#endif
 
-	/*LINUNX*/
-	Original_SCardEstablishContext = (LONG(__stdcall *)(
-		IN  DWORD dwScope,
-		IN  LPCVOID pvReserved1,
-		IN  LPCVOID pvReserved2,
-		OUT LPSCARDCONTEXT phContext)) load_func(hOriginal, "SCardEstablishContext");
-	if (!Original_SCardEstablishContext) {
-        #if __linux__
-		error = dlerror();
-        #endif
-		fprintf(stderr, "Could not find SCardEstablishContext procedure address %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUNX*/
-	Original_SCardReleaseContext =
-		(LONG(__stdcall *)(
-			IN      SCARDCONTEXT hContext))
-		load_func(hOriginal, "SCardReleaseContext");
-	if (!Original_SCardReleaseContext) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardReleaseContext procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardIsValidContext =
-		(LONG(__stdcall *)(
-			IN      SCARDCONTEXT hContext))
-		load_func(hOriginal, "SCardIsValidContext");
-	if (!Original_SCardIsValidContext) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardIsValidContext procedure address:  %s\n", error);
-		return FALSE;
-	}
-	
-	#if defined (WIN32)
 	Original_SCardListReaderGroupsA =
 		(LONG(__stdcall *)(
 			IN      SCARDCONTEXT hContext,
@@ -2288,23 +2420,7 @@ int initialize()
 		fprintf(stderr, "Could not find SCardForgetCardTypeW procedure address:  %s\n", error);
 		return FALSE;
 	}
-	#endif
 
-	/*LINUX*/
-	Original_SCardFreeMemory =
-		(LONG(__stdcall *)(
-			IN SCARDCONTEXT hContext,
-			IN LPCVOID pvMem))
-		load_func(hOriginal, "SCardFreeMemory");
-	if (!Original_SCardFreeMemory) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardFreeMemory procedure address:  %s\n", error);
-		return FALSE;
-	}
-	
-	#if defined (WIN32)
 	Original_SCardAccessStartedEvent =
 		(HANDLE(__stdcall *)(void))
 		load_func(hOriginal, "SCardAccessStartedEvent");
@@ -2394,22 +2510,7 @@ int initialize()
 		fprintf(stderr, "Could not find SCardGetStatusChangeW procedure address:  %s\n", error);
 		return FALSE;
 	}
-	#endif
 
-	/*LINUX*/
-	Original_SCardCancel =
-		(LONG(__stdcall *)(
-			IN      SCARDCONTEXT hContext))
-		load_func(hOriginal, "SCardCancel");
-	if (!Original_SCardCancel) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardCancel procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	#if defined (WIN32)
 	Original_SCardConnectA =
 		(LONG(__stdcall *)(
 			IN      SCARDCONTEXT hContext,
@@ -2420,9 +2521,6 @@ int initialize()
 			OUT     LPDWORD pdwActiveProtocol))
 		load_func(hOriginal, "SCardConnectA");
 	if (!Original_SCardConnectA) {
-		#if __linux__
-				error = dlerror()
-		#endif
 		fprintf(stderr, "Could not find SCardConnectA procedure address:  %s\n", error);
 		return FALSE;
 	}
@@ -2437,73 +2535,10 @@ int initialize()
 			OUT     LPDWORD pdwActiveProtocol))
 		load_func(hOriginal, "SCardConnectW");
 	if (!Original_SCardConnectW) {
-		#if __linux__
-				error = dlerror()
-		#endif
 		fprintf(stderr, "Could not find SCardConnectW procedure address:  %s\n", error);
 		return FALSE;
 	}
-    #endif
 
-	/*LINUX*/
-	Original_SCardReconnect =
-		(LONG(__stdcall *)(
-			IN      SCARDHANDLE hCard,
-			IN      DWORD dwShareMode,
-			IN      DWORD dwPreferredProtocols,
-			IN      DWORD dwInitialization,
-			OUT     LPDWORD pdwActiveProtocol))
-		load_func(hOriginal, "SCardReconnect");
-	if (!Original_SCardReconnect) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardReconnect procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardDisconnect =
-		(LONG(__stdcall *)(
-			IN      SCARDHANDLE hCard,
-			IN      DWORD dwDisposition))
-		load_func(hOriginal, "SCardDisconnect");
-	if (!Original_SCardDisconnect) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardDisconnect procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardBeginTransaction =
-		(LONG(__stdcall *)(
-			IN      SCARDHANDLE hCard))
-		load_func(hOriginal, "SCardBeginTransaction");
-	if (!Original_SCardBeginTransaction) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardBeginTransaction procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardEndTransaction =
-		(LONG(__stdcall *)(
-			IN      SCARDHANDLE hCard,
-			IN      DWORD dwDisposition))
-		load_func(hOriginal, "SCardEndTransaction");
-	if (!Original_SCardEndTransaction) {
-		#if __linux__
-		error = dlerror();
-		#endif
-		fprintf(stderr, "Could not find SCardEndTransaction procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	#if defined (WIN32)
 	Original_SCardCancelTransaction =
 		(LONG(__stdcall *)(
 			IN      SCARDHANDLE hCard))
@@ -2554,79 +2589,7 @@ int initialize()
 		fprintf(stderr, "Could not find SCardStatusW procedure address:  %s\n", error);
 		return FALSE;
 	}
-    #endif
 
-	/*LINUX*/
-	Original_SCardTransmit =
-		(LONG(__stdcall *)(
-			IN SCARDHANDLE hCard,
-			IN LPCSCARD_IO_REQUEST pioSendPci,
-			IN LPCBYTE pbSendBuffer,
-			IN DWORD cbSendLength,
-			IN OUT LPSCARD_IO_REQUEST pioRecvPci,
-			OUT LPBYTE pbRecvBuffer,
-			IN OUT LPDWORD pcbRecvLength))
-		load_func(hOriginal, "SCardTransmit");
-	if (!Original_SCardTransmit) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardTransmit procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardControl =
-		(LONG(__stdcall *)(
-			IN      SCARDHANDLE hCard,
-			IN      DWORD dwControlCode,
-			IN      LPCVOID lpInBuffer,
-			IN      DWORD nInBufferSize,
-			OUT     LPVOID lpOutBuffer,
-			IN      DWORD nOutBufferSize,
-			OUT     LPDWORD lpBytesReturned))
-		load_func(hOriginal, "SCardControl");
-	if (!Original_SCardControl) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardControl procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardGetAttrib =
-		(LONG(__stdcall *)(
-			IN SCARDHANDLE hCard,
-			IN DWORD dwAttrId,
-			OUT LPBYTE pbAttr,
-			IN OUT LPDWORD pcbAttrLen))
-		load_func(hOriginal, "SCardGetAttrib");
-	if (!Original_SCardGetAttrib) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardGetAttrib procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	/*LINUX*/
-	Original_SCardSetAttrib =
-		(LONG(__stdcall *)(
-			IN SCARDHANDLE hCard,
-			IN DWORD dwAttrId,
-			IN LPCBYTE pbAttr,
-			IN DWORD cbAttrLen))
-		load_func(hOriginal, "SCardSetAttrib");
-	if (!Original_SCardSetAttrib) {
-		#if __linux__
-				error = dlerror()
-		#endif
-		fprintf(stderr, "Could not find SCardSetAttrib procedure address:  %s\n", error);
-		return FALSE;
-	}
-
-	#if defined (WIN32)
 	Original_SCardUIDlgSelectCardA =
 		(LONG(__stdcall *)(
 			LPOPENCARDNAMEA_EX))
@@ -2663,6 +2626,7 @@ int initialize()
 	if (!Original_SCardDlgExtendedError) {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardDlgExtendedError procedure address\n"));
 	}
+
 	#endif
 
 	return TRUE;
