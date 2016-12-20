@@ -1788,7 +1788,7 @@ SCard void STDCALL SCardReleaseStartedEvent(void) {
 #endif
 
 #if __linux__
-	typedef void (*q)(void *restrict, const char *restrict);
+	typedef void* (*q)(void *restrict, const char *restrict);
 	static q load_func = dlsym;
 
     //Linux specific functions declaration
@@ -1847,14 +1847,14 @@ SCard void STDCALL SCardReleaseStartedEvent(void) {
 	static LONG(*Original_SCardGetStatusChange)(
 		IN      SCARDCONTEXT hContext,
 		IN      DWORD dwTimeout,
-		IN OUT  LPSCARD_READERSTATEA rgReaderStates,
+		IN OUT  SCARD_READERSTATE *rgReaderStates,
 		IN      DWORD cReaders
 		);
 
 	LONG SCardGetStatusChange(
 		IN      SCARDCONTEXT hContext,
 		IN      DWORD dwTimeout,
-		IN OUT  LPSCARD_READERSTATEA rgReaderStates,
+		IN OUT  SCARD_READERSTATE *rgReaderStates,
 		IN      DWORD cReaders
 	) {
 		if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetStatusChange called\n"));
@@ -2019,7 +2019,7 @@ int initialize()
 	
 	if (!hOriginal) {
         #if __linux__
-		    error = dlerror()
+		error = dlerror();
         #endif
 		fprintf(stderr, "Failed to load original library%s%s\n", delimeter, error);
 		return FALSE;
@@ -2209,7 +2209,7 @@ int initialize()
 		load_func(hOriginal, "SCardControl");
 	if (!Original_SCardControl) {
 		#if __linux__
-				error = dlerror()
+		error = dlerror();
 		#endif
 		fprintf(stderr, "Could not find SCardControl procedure address%s%s\n", delimeter, error);
 		return FALSE;
@@ -2866,7 +2866,7 @@ int initialize()
 		(LONG(*)(
 			IN      SCARDCONTEXT hContext,
 			IN      DWORD dwTimeout,
-			IN OUT  LPSCARD_READERSTATEA rgReaderStates,
+			IN OUT  SCARD_READERSTATE *rgReaderStates,
 			IN      DWORD cReaders))
 		load_func(hOriginal, "SCardGetStatusChange");
 	if (!Original_SCardGetStatusChange) {
