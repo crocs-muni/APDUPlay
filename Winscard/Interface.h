@@ -43,6 +43,7 @@ Please, report any bugs to author <petr@svenda.com>
 #include <winscard.h>
 #include "Winscard.h"
 #include "CommonFnc.h"
+#define STDCALL __stdcall
 #include <time.h>
 #include "socket.h"
 #ifdef _DEBUG
@@ -64,7 +65,7 @@ typedef const wchar_t* LPCWSTR;
 #define TRUE 1
 #define FALSE 0
 #define NULL 0
-#define __stdcall
+#define STDCALL
 #ifndef IN
 #define IN
 #endif
@@ -86,8 +87,8 @@ BOOL    bLOG_FUNCTIONS_CALLS = TRUE;   // DEFAULT: FALSE, SET TO TRUE .
 
 CWinscardApp theApp;
 /*
-extern SCard (.*?) __stdcall.*?(SCard.*?)\((.*?)\);
-static SCard \1 (__stdcall *Original_\2)
+extern SCard (.*?) STDCALL.*?(SCard.*?)\((.*?)\);
+static SCard \1 (STDCALL *Original_\2)
 \3
 );
 /**/
@@ -196,14 +197,14 @@ void DumpMemory(LPCBYTE location, DWORD length) {
 
 }
 
-static SCard LONG(__stdcall *Original_SCardEstablishContext)(
+static SCard LONG(STDCALL *Original_SCardEstablishContext)(
 	IN  DWORD dwScope,
 	IN  LPCVOID pvReserved1,
 	IN  LPCVOID pvReserved2,
 	OUT LPSCARDCONTEXT phContext
 	);
 
-SCard LONG __stdcall SCardEstablishContext(
+SCard LONG STDCALL SCardEstablishContext(
 	IN  DWORD dwScope,
 	IN  LPCVOID pvReserved1,
 	IN  LPCVOID pvReserved2,
@@ -220,11 +221,11 @@ SCard LONG __stdcall SCardEstablishContext(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardReleaseContext)(
+static SCard LONG(STDCALL *Original_SCardReleaseContext)(
 	IN      SCARDCONTEXT hContext
 	);
 
-SCard LONG __stdcall SCardReleaseContext(
+SCard LONG STDCALL SCardReleaseContext(
 	IN      SCARDCONTEXT hContext
 ) {
 	string_type message;
@@ -234,11 +235,11 @@ SCard LONG __stdcall SCardReleaseContext(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIsValidContext)(
+static SCard LONG(STDCALL *Original_SCardIsValidContext)(
 	IN      SCARDCONTEXT hContext
 	);
 
-SCard LONG __stdcall SCardIsValidContext(
+SCard LONG STDCALL SCardIsValidContext(
 	IN      SCARDCONTEXT hContext
 ) {
 	string_type message;
@@ -247,18 +248,18 @@ SCard LONG __stdcall SCardIsValidContext(
 	return (*Original_SCardIsValidContext)(hContext);
 }
 
-static SCard LONG(__stdcall *Original_SCardCancel)(
+static SCard LONG(STDCALL *Original_SCardCancel)(
 	IN      SCARDCONTEXT hContext
 	);
 
-SCard LONG __stdcall SCardCancel(
+SCard LONG STDCALL SCardCancel(
 	IN      SCARDCONTEXT hContext
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancel called\n"));
 	return (*Original_SCardCancel)(hContext);
 }
 
-static SCard LONG(__stdcall *Original_SCardReconnect)(
+static SCard LONG(STDCALL *Original_SCardReconnect)(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwShareMode,
 	IN      DWORD dwPreferredProtocols,
@@ -266,7 +267,7 @@ static SCard LONG(__stdcall *Original_SCardReconnect)(
 	OUT     LPDWORD pdwActiveProtocol
 	);
 
-SCard LONG __stdcall SCardReconnect(
+SCard LONG STDCALL SCardReconnect(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwShareMode,
 	IN      DWORD dwPreferredProtocols,
@@ -279,11 +280,11 @@ SCard LONG __stdcall SCardReconnect(
 	return (*Original_SCardReconnect)(hCard, dwShareMode, dwPreferredProtocols, dwInitialization, pdwActiveProtocol);
 }
 
-static SCard LONG(__stdcall *Original_SCardBeginTransaction)(
+static SCard LONG(STDCALL *Original_SCardBeginTransaction)(
 	IN      SCARDHANDLE hCard
 	);
 
-SCard LONG __stdcall SCardBeginTransaction(
+SCard LONG STDCALL SCardBeginTransaction(
 	IN      SCARDHANDLE hCard
 ) {
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardBeginTransaction called\n"));
@@ -291,12 +292,12 @@ SCard LONG __stdcall SCardBeginTransaction(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardEndTransaction)(
+static SCard LONG(STDCALL *Original_SCardEndTransaction)(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwDisposition
 	);
 
-SCard LONG __stdcall SCardEndTransaction(
+SCard LONG STDCALL SCardEndTransaction(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwDisposition
 ) {
@@ -304,7 +305,7 @@ SCard LONG __stdcall SCardEndTransaction(
 	return (*Original_SCardEndTransaction)(hCard, dwDisposition);
 }
 
-static SCard LONG(__stdcall *Original_SCardControl)(
+static SCard LONG(STDCALL *Original_SCardControl)(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwControlCode,
 	IN      LPCVOID lpInBuffer,
@@ -314,7 +315,7 @@ static SCard LONG(__stdcall *Original_SCardControl)(
 	OUT     LPDWORD lpBytesReturned
 	);
 
-SCard LONG __stdcall SCardControl(
+SCard LONG STDCALL SCardControl(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwControlCode,
 	IN      LPCVOID lpInBuffer,
@@ -328,14 +329,14 @@ SCard LONG __stdcall SCardControl(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetAttrib)(
+static SCard LONG(STDCALL *Original_SCardGetAttrib)(
 	IN SCARDHANDLE hCard,
 	IN DWORD dwAttrId,
 	OUT LPBYTE pbAttr,
 	IN OUT LPDWORD pcbAttrLen
 	);
 
-SCard LONG __stdcall SCardGetAttrib(
+SCard LONG STDCALL SCardGetAttrib(
 	IN SCARDHANDLE hCard,
 	IN DWORD dwAttrId,
 	OUT LPBYTE pbAttr,
@@ -346,14 +347,14 @@ SCard LONG __stdcall SCardGetAttrib(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardSetAttrib)(
+static SCard LONG(STDCALL *Original_SCardSetAttrib)(
 	IN SCARDHANDLE hCard,
 	IN DWORD dwAttrId,
 	IN LPCBYTE pbAttr,
 	IN DWORD cbAttrLen
 	);
 
-SCard LONG __stdcall SCardSetAttrib(
+SCard LONG STDCALL SCardSetAttrib(
 	IN SCARDHANDLE hCard,
 	IN DWORD dwAttrId,
 	IN LPCBYTE pbAttr,
@@ -390,12 +391,12 @@ CWinscardApp::~CWinscardApp()
 	m_wcharAllocatedMemoryList.clear();
 }
 
-static SCard LONG(__stdcall *Original_SCardFreeMemory)(
+static SCard LONG(STDCALL *Original_SCardFreeMemory)(
 	IN SCARDCONTEXT hContext,
 	IN LPCVOID pvMem
 	);
 
-SCard LONG __stdcall SCardFreeMemory(
+SCard LONG STDCALL SCardFreeMemory(
 	IN SCARDCONTEXT hContext,
 	IN LPCVOID pvMem)
 {
@@ -434,12 +435,12 @@ SCard LONG __stdcall SCardFreeMemory(
 	return status;
 }
 
-static SCard LONG(__stdcall *Original_SCardDisconnect)(
+static SCard LONG(STDCALL *Original_SCardDisconnect)(
 	SCARDHANDLE hCard,
 	DWORD dwDisposition
 	);
 
-SCard LONG __stdcall SCardDisconnect(
+SCard LONG STDCALL SCardDisconnect(
 	SCARDHANDLE hCard,
 	DWORD dwDisposition)
 {
@@ -455,7 +456,7 @@ SCard LONG __stdcall SCardDisconnect(
 	}
 }
 
-static SCard LONG(__stdcall *Original_SCardTransmit)(
+static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN SCARDHANDLE hCard,
 	IN LPCSCARD_IO_REQUEST pioSendPci,
 	IN LPCBYTE pbSendBuffer,
@@ -465,7 +466,7 @@ static SCard LONG(__stdcall *Original_SCardTransmit)(
 	IN OUT LPDWORD pcbRecvLength
 	);
 
-SCard LONG __stdcall SCardTransmit(
+SCard LONG STDCALL SCardTransmit(
 	IN SCARDHANDLE hCard,
 	IN LPCSCARD_IO_REQUEST pioSendPci,
 	IN LPCBYTE pbSendBuffer,
@@ -694,7 +695,7 @@ SCard LONG __stdcall SCardTransmit(
 // Here are declared only windows specific functions
 #if defined (WIN32)
 
-static SCard LONG(__stdcall *Original_SCardStatusA)(
+static SCard LONG(STDCALL *Original_SCardStatusA)(
 	SCARDHANDLE hCard,
 	LPSTR szReaderName,
 	LPDWORD pcchReaderLen,
@@ -704,7 +705,7 @@ static SCard LONG(__stdcall *Original_SCardStatusA)(
 	LPDWORD pcbAtrLen
 	);
 
-SCard LONG __stdcall SCardStatusA(
+SCard LONG STDCALL SCardStatusA(
 	SCARDHANDLE hCard,
 	LPSTR szReaderName,
 	LPDWORD pcchReaderLen,
@@ -717,7 +718,7 @@ SCard LONG __stdcall SCardStatusA(
 	return (*Original_SCardStatusA)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
 }
 
-static SCard LONG(__stdcall *Original_SCardConnectW)(
+static SCard LONG(STDCALL *Original_SCardConnectW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR szReader,
 	IN      DWORD dwShareMode,
@@ -726,7 +727,7 @@ static SCard LONG(__stdcall *Original_SCardConnectW)(
 	OUT     LPDWORD pdwActiveProtocol
 	);
 
-SCard LONG __stdcall SCardConnectW(
+SCard LONG STDCALL SCardConnectW(
 	SCARDCONTEXT hContext,
 	LPCWSTR szReader,
 	DWORD dwShareMode,
@@ -784,14 +785,14 @@ SCard LONG __stdcall SCardConnectW(
 	return status;
 }
 
-static SCard LONG(__stdcall *Original_SCardListReadersW)(
+static SCard LONG(STDCALL *Original_SCardListReadersW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR mszGroups,
 	OUT     LPWSTR mszReaders,
 	IN OUT  LPDWORD pcchReaders
 	);
 
-SCard LONG __stdcall SCardListReadersW(
+SCard LONG STDCALL SCardListReadersW(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR mszGroups,
 	OUT     LPWSTR mszReaders,
@@ -908,14 +909,14 @@ SCard LONG __stdcall SCardListReadersW(
 	return status;
 }
 
-static SCard LONG(__stdcall *Original_SCardListReadersA)(
+static SCard LONG(STDCALL *Original_SCardListReadersA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszGroups,
 	OUT     LPSTR mszReaders,
 	IN OUT  LPDWORD pcchReaders
 	);
 
-SCard LONG __stdcall SCardListReadersA(
+SCard LONG STDCALL SCardListReadersA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszGroups,
 	OUT     LPSTR mszReaders,
@@ -1026,13 +1027,13 @@ SCard LONG __stdcall SCardListReadersA(
 	return status;
 }
 
-static SCard LONG(__stdcall *Original_SCardListReaderGroupsA)(
+static SCard LONG(STDCALL *Original_SCardListReaderGroupsA)(
 	IN      SCARDCONTEXT hContext,
 	OUT     LPSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
 	);
 
-SCard LONG __stdcall SCardListReaderGroupsA(
+SCard LONG STDCALL SCardListReaderGroupsA(
 	IN      SCARDCONTEXT hContext,
 	OUT     LPSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
@@ -1042,13 +1043,13 @@ SCard LONG __stdcall SCardListReaderGroupsA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardListReaderGroupsW)(
+static SCard LONG(STDCALL *Original_SCardListReaderGroupsW)(
 	IN      SCARDCONTEXT hContext,
 	OUT     LPWSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
 	);
 
-SCard LONG __stdcall SCardListReaderGroupsW(
+SCard LONG STDCALL SCardListReaderGroupsW(
 	IN      SCARDCONTEXT hContext,
 	OUT     LPWSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
@@ -1058,7 +1059,7 @@ SCard LONG __stdcall SCardListReaderGroupsW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardListCardsA)(
+static SCard LONG(STDCALL *Original_SCardListCardsA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCBYTE pbAtr,
 	IN      LPCGUID rgquidInterfaces,
@@ -1067,7 +1068,7 @@ static SCard LONG(__stdcall *Original_SCardListCardsA)(
 	IN OUT  LPDWORD pcchCards
 	);
 
-SCard LONG __stdcall SCardListCardsA(
+SCard LONG STDCALL SCardListCardsA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCBYTE pbAtr,
 	IN      LPCGUID rgquidInterfaces,
@@ -1082,7 +1083,7 @@ SCard LONG __stdcall SCardListCardsA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardListCardsW)(
+static SCard LONG(STDCALL *Original_SCardListCardsW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCBYTE pbAtr,
 	IN      LPCGUID rgquidInterfaces,
@@ -1091,7 +1092,7 @@ static SCard LONG(__stdcall *Original_SCardListCardsW)(
 	IN OUT  LPDWORD pcchCards
 	);
 
-SCard LONG __stdcall SCardListCardsW(
+SCard LONG STDCALL SCardListCardsW(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCBYTE pbAtr,
 	IN      LPCGUID rgquidInterfaces,
@@ -1106,14 +1107,14 @@ SCard LONG __stdcall SCardListCardsW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardListInterfacesA)(
+static SCard LONG(STDCALL *Original_SCardListInterfacesA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szCard,
 	OUT     LPGUID pguidInterfaces,
 	IN OUT  LPDWORD pcguidInterfaces
 	);
 
-SCard LONG __stdcall SCardListInterfacesA(
+SCard LONG STDCALL SCardListInterfacesA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szCard,
 	OUT     LPGUID pguidInterfaces,
@@ -1124,14 +1125,14 @@ SCard LONG __stdcall SCardListInterfacesA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardListInterfacesW)(
+static SCard LONG(STDCALL *Original_SCardListInterfacesW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR szCard,
 	OUT     LPGUID pguidInterfaces,
 	IN OUT  LPDWORD pcguidInterfaces
 	);
 
-SCard LONG __stdcall SCardListInterfacesW(
+SCard LONG STDCALL SCardListInterfacesW(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR szCard,
 	OUT     LPGUID pguidInterfaces,
@@ -1142,13 +1143,13 @@ SCard LONG __stdcall SCardListInterfacesW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetProviderIdA)(
+static SCard LONG(STDCALL *Original_SCardGetProviderIdA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szCard,
 	OUT     LPGUID pguidProviderId
 	);
 
-SCard LONG __stdcall SCardGetProviderIdA(
+SCard LONG STDCALL SCardGetProviderIdA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szCard,
 	OUT     LPGUID pguidProviderId
@@ -1158,13 +1159,13 @@ SCard LONG __stdcall SCardGetProviderIdA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetProviderIdW)(
+static SCard LONG(STDCALL *Original_SCardGetProviderIdW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR szCard,
 	OUT     LPGUID pguidProviderId
 	);
 
-SCard LONG __stdcall SCardGetProviderIdW(
+SCard LONG STDCALL SCardGetProviderIdW(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR szCard,
 	OUT     LPGUID pguidProviderId
@@ -1174,7 +1175,7 @@ SCard LONG __stdcall SCardGetProviderIdW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetCardTypeProviderNameA)(
+static SCard LONG(STDCALL *Original_SCardGetCardTypeProviderNameA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName,
 	IN DWORD dwProviderId,
@@ -1182,7 +1183,7 @@ static SCard LONG(__stdcall *Original_SCardGetCardTypeProviderNameA)(
 	IN OUT LPDWORD pcchProvider
 	);
 
-SCard LONG __stdcall SCardGetCardTypeProviderNameA(
+SCard LONG STDCALL SCardGetCardTypeProviderNameA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName,
 	IN DWORD dwProviderId,
@@ -1194,7 +1195,7 @@ SCard LONG __stdcall SCardGetCardTypeProviderNameA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetCardTypeProviderNameW)(
+static SCard LONG(STDCALL *Original_SCardGetCardTypeProviderNameW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName,
 	IN DWORD dwProviderId,
@@ -1202,7 +1203,7 @@ static SCard LONG(__stdcall *Original_SCardGetCardTypeProviderNameW)(
 	IN OUT LPDWORD pcchProvider
 	);
 
-SCard LONG __stdcall SCardGetCardTypeProviderNameW(
+SCard LONG STDCALL SCardGetCardTypeProviderNameW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName,
 	IN DWORD dwProviderId,
@@ -1214,12 +1215,12 @@ SCard LONG __stdcall SCardGetCardTypeProviderNameW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIntroduceReaderGroupA)(
+static SCard LONG(STDCALL *Original_SCardIntroduceReaderGroupA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardIntroduceReaderGroupA(
+SCard LONG STDCALL SCardIntroduceReaderGroupA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szGroupName
 ) {
@@ -1228,12 +1229,12 @@ SCard LONG __stdcall SCardIntroduceReaderGroupA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIntroduceReaderGroupW)(
+static SCard LONG(STDCALL *Original_SCardIntroduceReaderGroupW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardIntroduceReaderGroupW(
+SCard LONG STDCALL SCardIntroduceReaderGroupW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szGroupName
 ) {
@@ -1242,12 +1243,12 @@ SCard LONG __stdcall SCardIntroduceReaderGroupW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardForgetReaderGroupA)(
+static SCard LONG(STDCALL *Original_SCardForgetReaderGroupA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardForgetReaderGroupA(
+SCard LONG STDCALL SCardForgetReaderGroupA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szGroupName
 ) {
@@ -1256,12 +1257,12 @@ SCard LONG __stdcall SCardForgetReaderGroupA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardForgetReaderGroupW)(
+static SCard LONG(STDCALL *Original_SCardForgetReaderGroupW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardForgetReaderGroupW(
+SCard LONG STDCALL SCardForgetReaderGroupW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szGroupName
 ) {
@@ -1270,13 +1271,13 @@ SCard LONG __stdcall SCardForgetReaderGroupW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIntroduceReaderA)(
+static SCard LONG(STDCALL *Original_SCardIntroduceReaderA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName,
 	IN LPCSTR szDeviceName
 	);
 
-SCard LONG __stdcall SCardIntroduceReaderA(
+SCard LONG STDCALL SCardIntroduceReaderA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName,
 	IN LPCSTR szDeviceName
@@ -1286,13 +1287,13 @@ SCard LONG __stdcall SCardIntroduceReaderA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIntroduceReaderW)(
+static SCard LONG(STDCALL *Original_SCardIntroduceReaderW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szDeviceName
 	);
 
-SCard LONG __stdcall SCardIntroduceReaderW(
+SCard LONG STDCALL SCardIntroduceReaderW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szDeviceName
@@ -1302,12 +1303,12 @@ SCard LONG __stdcall SCardIntroduceReaderW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardForgetReaderA)(
+static SCard LONG(STDCALL *Original_SCardForgetReaderA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName
 	);
 
-SCard LONG __stdcall SCardForgetReaderA(
+SCard LONG STDCALL SCardForgetReaderA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName
 ) {
@@ -1316,12 +1317,12 @@ SCard LONG __stdcall SCardForgetReaderA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardForgetReaderW)(
+static SCard LONG(STDCALL *Original_SCardForgetReaderW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName
 	);
 
-SCard LONG __stdcall SCardForgetReaderW(
+SCard LONG STDCALL SCardForgetReaderW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName
 ) {
@@ -1330,13 +1331,13 @@ SCard LONG __stdcall SCardForgetReaderW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardAddReaderToGroupA)(
+static SCard LONG(STDCALL *Original_SCardAddReaderToGroupA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName,
 	IN LPCSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardAddReaderToGroupA(
+SCard LONG STDCALL SCardAddReaderToGroupA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName,
 	IN LPCSTR szGroupName
@@ -1346,13 +1347,13 @@ SCard LONG __stdcall SCardAddReaderToGroupA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardAddReaderToGroupW)(
+static SCard LONG(STDCALL *Original_SCardAddReaderToGroupW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardAddReaderToGroupW(
+SCard LONG STDCALL SCardAddReaderToGroupW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szGroupName
@@ -1362,13 +1363,13 @@ SCard LONG __stdcall SCardAddReaderToGroupW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardRemoveReaderFromGroupA)(
+static SCard LONG(STDCALL *Original_SCardRemoveReaderFromGroupA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName,
 	IN LPCSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardRemoveReaderFromGroupA(
+SCard LONG STDCALL SCardRemoveReaderFromGroupA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName,
 	IN LPCSTR szGroupName
@@ -1378,13 +1379,13 @@ SCard LONG __stdcall SCardRemoveReaderFromGroupA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardRemoveReaderFromGroupW)(
+static SCard LONG(STDCALL *Original_SCardRemoveReaderFromGroupW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szGroupName
 	);
 
-SCard LONG __stdcall SCardRemoveReaderFromGroupW(
+SCard LONG STDCALL SCardRemoveReaderFromGroupW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szGroupName
@@ -1394,7 +1395,7 @@ SCard LONG __stdcall SCardRemoveReaderFromGroupW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIntroduceCardTypeA)(
+static SCard LONG(STDCALL *Original_SCardIntroduceCardTypeA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName,
 	IN LPCGUID pguidPrimaryProvider,
@@ -1405,7 +1406,7 @@ static SCard LONG(__stdcall *Original_SCardIntroduceCardTypeA)(
 	IN DWORD cbAtrLen
 	);
 
-SCard LONG __stdcall SCardIntroduceCardTypeA(
+SCard LONG STDCALL SCardIntroduceCardTypeA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName,
 	IN LPCGUID pguidPrimaryProvider,
@@ -1420,7 +1421,7 @@ SCard LONG __stdcall SCardIntroduceCardTypeA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardIntroduceCardTypeW)(
+static SCard LONG(STDCALL *Original_SCardIntroduceCardTypeW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName,
 	IN LPCGUID pguidPrimaryProvider,
@@ -1431,7 +1432,7 @@ static SCard LONG(__stdcall *Original_SCardIntroduceCardTypeW)(
 	IN DWORD cbAtrLen
 	);
 
-SCard LONG __stdcall SCardIntroduceCardTypeW(
+SCard LONG STDCALL SCardIntroduceCardTypeW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName,
 	IN LPCGUID pguidPrimaryProvider,
@@ -1446,14 +1447,14 @@ SCard LONG __stdcall SCardIntroduceCardTypeW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardSetCardTypeProviderNameA)(
+static SCard LONG(STDCALL *Original_SCardSetCardTypeProviderNameA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName,
 	IN DWORD dwProviderId,
 	IN LPCSTR szProvider
 	);
 
-SCard LONG __stdcall SCardSetCardTypeProviderNameA(
+SCard LONG STDCALL SCardSetCardTypeProviderNameA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName,
 	IN DWORD dwProviderId,
@@ -1464,14 +1465,14 @@ SCard LONG __stdcall SCardSetCardTypeProviderNameA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardSetCardTypeProviderNameW)(
+static SCard LONG(STDCALL *Original_SCardSetCardTypeProviderNameW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName,
 	IN DWORD dwProviderId,
 	IN LPCWSTR szProvider
 	);
 
-SCard LONG __stdcall SCardSetCardTypeProviderNameW(
+SCard LONG STDCALL SCardSetCardTypeProviderNameW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName,
 	IN DWORD dwProviderId,
@@ -1482,12 +1483,12 @@ SCard LONG __stdcall SCardSetCardTypeProviderNameW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardForgetCardTypeA)(
+static SCard LONG(STDCALL *Original_SCardForgetCardTypeA)(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName
 	);
 
-SCard LONG __stdcall SCardForgetCardTypeA(
+SCard LONG STDCALL SCardForgetCardTypeA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName
 ) {
@@ -1496,12 +1497,12 @@ SCard LONG __stdcall SCardForgetCardTypeA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardForgetCardTypeW)(
+static SCard LONG(STDCALL *Original_SCardForgetCardTypeW)(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName
 	);
 
-SCard LONG __stdcall SCardForgetCardTypeW(
+SCard LONG STDCALL SCardForgetCardTypeW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName
 ) {
@@ -1509,14 +1510,14 @@ SCard LONG __stdcall SCardForgetCardTypeW(
 	return (*Original_SCardForgetCardTypeW)(hContext, szCardName);
 }
 
-static SCard LONG(__stdcall *Original_SCardLocateCardsA)(
+static SCard LONG(STDCALL *Original_SCardLocateCardsA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszCards,
 	IN OUT  LPSCARD_READERSTATEA rgReaderStates,
 	IN      DWORD cReaders
 	);
 
-SCard LONG __stdcall SCardLocateCardsA(
+SCard LONG STDCALL SCardLocateCardsA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszCards,
 	IN OUT  LPSCARD_READERSTATEA rgReaderStates,
@@ -1529,14 +1530,14 @@ SCard LONG __stdcall SCardLocateCardsA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardLocateCardsW)(
+static SCard LONG(STDCALL *Original_SCardLocateCardsW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR mszCards,
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
 	IN      DWORD cReaders
 	);
 
-SCard LONG __stdcall SCardLocateCardsW(
+SCard LONG STDCALL SCardLocateCardsW(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCWSTR mszCards,
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
@@ -1549,7 +1550,7 @@ SCard LONG __stdcall SCardLocateCardsW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardLocateCardsByATRA)(
+static SCard LONG(STDCALL *Original_SCardLocateCardsByATRA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPSCARD_ATRMASK rgAtrMasks,
 	IN      DWORD cAtrs,
@@ -1557,7 +1558,7 @@ static SCard LONG(__stdcall *Original_SCardLocateCardsByATRA)(
 	IN      DWORD cReaders
 	);
 
-SCard LONG __stdcall SCardLocateCardsByATRA(
+SCard LONG STDCALL SCardLocateCardsByATRA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPSCARD_ATRMASK rgAtrMasks,
 	IN      DWORD cAtrs,
@@ -1571,7 +1572,7 @@ SCard LONG __stdcall SCardLocateCardsByATRA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardLocateCardsByATRW)(
+static SCard LONG(STDCALL *Original_SCardLocateCardsByATRW)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPSCARD_ATRMASK rgAtrMasks,
 	IN      DWORD cAtrs,
@@ -1579,7 +1580,7 @@ static SCard LONG(__stdcall *Original_SCardLocateCardsByATRW)(
 	IN      DWORD cReaders
 	);
 
-SCard LONG __stdcall SCardLocateCardsByATRW(
+SCard LONG STDCALL SCardLocateCardsByATRW(
 	IN      SCARDCONTEXT hContext,
 	IN      LPSCARD_ATRMASK rgAtrMasks,
 	IN      DWORD cAtrs,
@@ -1593,14 +1594,14 @@ SCard LONG __stdcall SCardLocateCardsByATRW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetStatusChangeA)(
+static SCard LONG(STDCALL *Original_SCardGetStatusChangeA)(
 	IN      SCARDCONTEXT hContext,
 	IN      DWORD dwTimeout,
 	IN OUT  LPSCARD_READERSTATEA rgReaderStates,
 	IN      DWORD cReaders
 	);
 
-SCard LONG __stdcall SCardGetStatusChangeA(
+SCard LONG STDCALL SCardGetStatusChangeA(
 	IN      SCARDCONTEXT hContext,
 	IN      DWORD dwTimeout,
 	IN OUT  LPSCARD_READERSTATEA rgReaderStates,
@@ -1611,14 +1612,14 @@ SCard LONG __stdcall SCardGetStatusChangeA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardGetStatusChangeW)(
+static SCard LONG(STDCALL *Original_SCardGetStatusChangeW)(
 	IN      SCARDCONTEXT hContext,
 	IN      DWORD dwTimeout,
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
 	IN      DWORD cReaders
 	);
 
-SCard LONG __stdcall SCardGetStatusChangeW(
+SCard LONG STDCALL SCardGetStatusChangeW(
 	IN      SCARDCONTEXT hContext,
 	IN      DWORD dwTimeout,
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
@@ -1628,7 +1629,7 @@ SCard LONG __stdcall SCardGetStatusChangeW(
 	return (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
 }
 
-static SCard LONG(__stdcall *Original_SCardConnectA)(
+static SCard LONG(STDCALL *Original_SCardConnectA)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szReader,
 	IN      DWORD dwShareMode,
@@ -1637,7 +1638,7 @@ static SCard LONG(__stdcall *Original_SCardConnectA)(
 	OUT     LPDWORD pdwActiveProtocol
 	);
 
-SCard LONG __stdcall SCardConnectA(
+SCard LONG STDCALL SCardConnectA(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR szReader,
 	IN      DWORD dwShareMode,
@@ -1659,11 +1660,11 @@ SCard LONG __stdcall SCardConnectA(
 	return status;
 }
 
-static SCard LONG(__stdcall *Original_SCardUIDlgSelectCardA)(
+static SCard LONG(STDCALL *Original_SCardUIDlgSelectCardA)(
 	LPOPENCARDNAMEA_EX
 	);
 
-SCard LONG __stdcall SCardUIDlgSelectCardA(
+SCard LONG STDCALL SCardUIDlgSelectCardA(
 	LPOPENCARDNAMEA_EX a
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardUIDlgSelectCardA called\n"));
@@ -1671,33 +1672,33 @@ SCard LONG __stdcall SCardUIDlgSelectCardA(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardUIDlgSelectCardW)(
+static SCard LONG(STDCALL *Original_SCardUIDlgSelectCardW)(
 	LPOPENCARDNAMEW_EX
 	);
 
-SCard LONG __stdcall SCardUIDlgSelectCardW(
+SCard LONG STDCALL SCardUIDlgSelectCardW(
 	LPOPENCARDNAMEW_EX a
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardUIDlgSelectCardW called\n"));
 	return (*Original_SCardUIDlgSelectCardW)(a);
 }
 
-static SCard LONG(__stdcall *Original_GetOpenCardNameA)(
+static SCard LONG(STDCALL *Original_GetOpenCardNameA)(
 	LPOPENCARDNAMEA
 	);
 
-SCard LONG __stdcall GetOpenCardNameA(
+SCard LONG STDCALL GetOpenCardNameA(
 	LPOPENCARDNAMEA a
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("GetOpenCardNameA called\n"));
 	return (*Original_GetOpenCardNameA)(a);
 }
 
-static SCard LONG(__stdcall *Original_GetOpenCardNameW)(
+static SCard LONG(STDCALL *Original_GetOpenCardNameW)(
 	LPOPENCARDNAMEW
 	);
 
-SCard LONG __stdcall GetOpenCardNameW(
+SCard LONG STDCALL GetOpenCardNameW(
 	LPOPENCARDNAMEW a
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("GetOpenCardNameW called\n"));
@@ -1705,25 +1706,25 @@ SCard LONG __stdcall GetOpenCardNameW(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardDlgExtendedError)(void);
+static SCard LONG(STDCALL *Original_SCardDlgExtendedError)(void);
 
-SCard LONG __stdcall SCardDlgExtendedError(void) {
+SCard LONG STDCALL SCardDlgExtendedError(void) {
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardDlgExtendedError called\n"));
 	return (*Original_SCardDlgExtendedError)();
 }
 
-static SCard LONG(__stdcall *Original_SCardCancelTransaction)(
+static SCard LONG(STDCALL *Original_SCardCancelTransaction)(
 	IN      SCARDHANDLE hCard
 	);
 
-SCard LONG __stdcall SCardCancelTransaction(
+SCard LONG STDCALL SCardCancelTransaction(
 	IN      SCARDHANDLE hCard
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancelTransaction called\n"));
 	return (*Original_SCardCancelTransaction)(hCard);
 }
 
-static SCard LONG(__stdcall *Original_SCardState)(
+static SCard LONG(STDCALL *Original_SCardState)(
 	IN SCARDHANDLE hCard,
 	OUT LPDWORD pdwState,
 	OUT LPDWORD pdwProtocol,
@@ -1731,7 +1732,7 @@ static SCard LONG(__stdcall *Original_SCardState)(
 	IN OUT LPDWORD pcbAtrLen
 	);
 
-SCard LONG __stdcall SCardState(
+SCard LONG STDCALL SCardState(
 	IN SCARDHANDLE hCard,
 	OUT LPDWORD pdwState,
 	OUT LPDWORD pdwProtocol,
@@ -1745,7 +1746,7 @@ SCard LONG __stdcall SCardState(
 }
 
 
-static SCard LONG(__stdcall *Original_SCardStatusW)(
+static SCard LONG(STDCALL *Original_SCardStatusW)(
 	IN SCARDHANDLE hCard,
 	OUT LPWSTR szReaderName,
 	IN OUT LPDWORD pcchReaderLen,
@@ -1755,7 +1756,7 @@ static SCard LONG(__stdcall *Original_SCardStatusW)(
 	IN OUT LPDWORD pcbAtrLen
 	);
 
-SCard LONG __stdcall SCardStatusW(
+SCard LONG STDCALL SCardStatusW(
 	IN SCARDHANDLE hCard,
 	OUT LPWSTR szReaderName,
 	IN OUT LPDWORD pcchReaderLen,
@@ -1770,17 +1771,17 @@ SCard LONG __stdcall SCardStatusW(
 	return (*Original_SCardStatusW)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
 }
 
-static SCard HANDLE(__stdcall *Original_SCardAccessStartedEvent)(void);
+static SCard HANDLE(STDCALL *Original_SCardAccessStartedEvent)(void);
 
-SCard HANDLE __stdcall SCardAccessStartedEvent(void) {
+SCard HANDLE STDCALL SCardAccessStartedEvent(void) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardAccessStartedEvent called\n"));
 	return (*Original_SCardAccessStartedEvent)();
 }
 
 
-static SCard void(__stdcall *Original_SCardReleaseStartedEvent)(void);
+static SCard void(STDCALL *Original_SCardReleaseStartedEvent)(void);
 
-SCard void __stdcall SCardReleaseStartedEvent(void) {
+SCard void STDCALL SCardReleaseStartedEvent(void) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardReleaseStartedEvent called\n"));
 	return (*Original_SCardReleaseStartedEvent)();
 }
@@ -1790,7 +1791,7 @@ SCard void __stdcall SCardReleaseStartedEvent(void) {
 	typedef void (*q)(void *restrict, const char *restrict);
 	static q load_func = dlsym;
 #else 
-	typedef FARPROC(__stdcall *q) (HMODULE, LPCSTR);
+	typedef FARPROC(STDCALL *q) (HMODULE, LPCSTR);
 	static q load_func = GetProcAddress;
 #endif
 
@@ -1824,7 +1825,7 @@ int initialize()
     #endif
 
 	Original_SCardTransmit =
-		(long(__stdcall *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
 		load_func(hOriginal, "SCardTransmit");
 	if ((!Original_SCardTransmit)) {
         #if __linux__
@@ -1835,7 +1836,7 @@ int initialize()
 	}
 	
 	Original_SCardDisconnect =
-		(long(__stdcall *)(SCARDHANDLE hCard, DWORD dwDisposition))
+		(long(STDCALL *)(SCARDHANDLE hCard, DWORD dwDisposition))
 		load_func(hOriginal, "SCardDisconnect");
 	if ((!Original_SCardDisconnect)) {
 		#if __linux__
@@ -1846,7 +1847,7 @@ int initialize()
 	}
 
 	Original_SCardFreeMemory =
-		(long(__stdcall *)(SCARDCONTEXT hContext, LPCVOID pvMem))
+		(long(STDCALL *)(SCARDCONTEXT hContext, LPCVOID pvMem))
 		load_func(hOriginal, "SCardFreeMemory");
 	if ((!Original_SCardFreeMemory)) {
 		#if __linux__
@@ -1856,7 +1857,7 @@ int initialize()
 		return FALSE;
 	}
 
-	Original_SCardEstablishContext = (LONG(__stdcall *)(
+	Original_SCardEstablishContext = (LONG(STDCALL *)(
 		IN  DWORD dwScope,
 		IN  LPCVOID pvReserved1,
 		IN  LPCVOID pvReserved2,
@@ -1870,7 +1871,7 @@ int initialize()
 	}
 
 	Original_SCardReleaseContext =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext))
 		load_func(hOriginal, "SCardReleaseContext");
 	if (!Original_SCardReleaseContext) {
@@ -1882,7 +1883,7 @@ int initialize()
 	}
 
 	Original_SCardIsValidContext =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext))
 		load_func(hOriginal, "SCardIsValidContext");
 	if (!Original_SCardIsValidContext) {
@@ -1894,7 +1895,7 @@ int initialize()
 	}
 	
 	Original_SCardFreeMemory =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCVOID pvMem))
 		load_func(hOriginal, "SCardFreeMemory");
@@ -1907,7 +1908,7 @@ int initialize()
 	}
 	
 	Original_SCardCancel =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext))
 		load_func(hOriginal, "SCardCancel");
 	if (!Original_SCardCancel) {
@@ -1919,7 +1920,7 @@ int initialize()
 	}
 
 	Original_SCardReconnect =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDHANDLE hCard,
 			IN      DWORD dwShareMode,
 			IN      DWORD dwPreferredProtocols,
@@ -1935,7 +1936,7 @@ int initialize()
 	}
 
 	Original_SCardDisconnect =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDHANDLE hCard,
 			IN      DWORD dwDisposition))
 		load_func(hOriginal, "SCardDisconnect");
@@ -1948,7 +1949,7 @@ int initialize()
 	}
 
 	Original_SCardBeginTransaction =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDHANDLE hCard))
 		load_func(hOriginal, "SCardBeginTransaction");
 	if (!Original_SCardBeginTransaction) {
@@ -1960,7 +1961,7 @@ int initialize()
 	}
 
 	Original_SCardEndTransaction =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDHANDLE hCard,
 			IN      DWORD dwDisposition))
 		load_func(hOriginal, "SCardEndTransaction");
@@ -1973,7 +1974,7 @@ int initialize()
 	}
 
 	Original_SCardTransmit =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			IN LPCSCARD_IO_REQUEST pioSendPci,
 			IN LPCBYTE pbSendBuffer,
@@ -1992,7 +1993,7 @@ int initialize()
 
 	/*LINUX*/
 	Original_SCardControl =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDHANDLE hCard,
 			IN      DWORD dwControlCode,
 			IN      LPCVOID lpInBuffer,
@@ -2010,7 +2011,7 @@ int initialize()
 	}
 
 	Original_SCardGetAttrib =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			IN DWORD dwAttrId,
 			OUT LPBYTE pbAttr,
@@ -2025,7 +2026,7 @@ int initialize()
 	}
 
 	Original_SCardSetAttrib =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			IN DWORD dwAttrId,
 			IN LPCBYTE pbAttr,
@@ -2042,7 +2043,7 @@ int initialize()
 	//Initialization of windows specific funcions
 	#if defined (WIN32)
 	Original_SCardStatusA =
-		(long(__stdcall *)(SCARDHANDLE hCard, LPSTR szReaderName, LPDWORD pcchReaderLen, LPDWORD pdwState, LPDWORD pdwProtocol, LPBYTE pbAtr, LPDWORD pcbAtrLen))
+		(long(STDCALL *)(SCARDHANDLE hCard, LPSTR szReaderName, LPDWORD pcchReaderLen, LPDWORD pdwState, LPDWORD pdwProtocol, LPBYTE pbAtr, LPDWORD pcbAtrLen))
 		load_func(hOriginal, "SCardStatusA");
 	if ((!Original_SCardStatusA)) {
 		fprintf(stderr, "Could not find SCardStatusA procedure address %s\n");
@@ -2050,7 +2051,7 @@ int initialize()
 	}
 
 	Original_SCardConnectW =
-		(long(__stdcall *)(SCARDCONTEXT hContext, LPCWSTR szReader, DWORD dwShareMode, DWORD dwPreferredProtocols, LPSCARDHANDLE phCard, LPDWORD pdwActiveProtocol))
+		(long(STDCALL *)(SCARDCONTEXT hContext, LPCWSTR szReader, DWORD dwShareMode, DWORD dwPreferredProtocols, LPSCARDHANDLE phCard, LPDWORD pdwActiveProtocol))
 		load_func(hOriginal, "SCardConnectW");
 	if ((!Original_SCardConnectW)) {
 		fprintf(stderr, "Could not find SCardConnectW procedure address %s\n");
@@ -2058,7 +2059,7 @@ int initialize()
 	}
 
 	Original_SCardListReadersW =
-		(long(__stdcall *)(SCARDCONTEXT hContext, LPCWSTR mszGroups, LPWSTR mszReaders, LPDWORD pcchReaders))
+		(long(STDCALL *)(SCARDCONTEXT hContext, LPCWSTR mszGroups, LPWSTR mszReaders, LPDWORD pcchReaders))
 		load_func(hOriginal, "SCardListReadersW");
 	if ((!Original_SCardListReadersW)) {
 		fprintf(stderr, "Could not find SCardListReadersW procedure address %s\n", error);
@@ -2066,7 +2067,7 @@ int initialize()
 	}
 
 	Original_SCardListReadersA =
-		(long(__stdcall *)(SCARDCONTEXT hContext, LPCSTR mszGroups, LPSTR mszReaders, LPDWORD pcchReaders))
+		(long(STDCALL *)(SCARDCONTEXT hContext, LPCSTR mszGroups, LPSTR mszReaders, LPDWORD pcchReaders))
 		load_func(hOriginal, "SCardListReadersA");
 	if ((!Original_SCardListReadersA)) {
 		fprintf(stderr, "Could not find SCardListReadersA procedure address %s\n", error);
@@ -2074,7 +2075,7 @@ int initialize()
 	}
 
 	Original_SCardListReaderGroupsA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			OUT     LPSTR mszGroups,
 			IN OUT  LPDWORD pcchGroups))
@@ -2085,7 +2086,7 @@ int initialize()
 	}
 
 	Original_SCardListReaderGroupsW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			OUT     LPWSTR mszGroups,
 			IN OUT  LPDWORD pcchGroups))
@@ -2096,7 +2097,7 @@ int initialize()
 	}
 
 	Original_SCardListReadersA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR mszGroups,
 			OUT     LPSTR mszReaders,
@@ -2108,7 +2109,7 @@ int initialize()
 	}
 
 	Original_SCardListReadersW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCWSTR mszGroups,
 			OUT     LPWSTR mszReaders,
@@ -2120,7 +2121,7 @@ int initialize()
 	}
 
 	Original_SCardListCardsA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCBYTE pbAtr,
 			IN      LPCGUID rgquidInterfaces,
@@ -2134,7 +2135,7 @@ int initialize()
 	}
 
 	Original_SCardListCardsW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCBYTE pbAtr,
 			IN      LPCGUID rgquidInterfaces,
@@ -2148,7 +2149,7 @@ int initialize()
 	}
 
 	Original_SCardListInterfacesA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR szCard,
 			OUT     LPGUID pguidInterfaces,
@@ -2160,7 +2161,7 @@ int initialize()
 	}
 
 	Original_SCardListInterfacesW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCWSTR szCard,
 			OUT     LPGUID pguidInterfaces,
@@ -2172,7 +2173,7 @@ int initialize()
 	}
 
 	Original_SCardGetProviderIdA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR szCard,
 			OUT     LPGUID pguidProviderId))
@@ -2183,7 +2184,7 @@ int initialize()
 	}
 
 	Original_SCardGetProviderIdW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCWSTR szCard,
 			OUT     LPGUID pguidProviderId))
@@ -2194,7 +2195,7 @@ int initialize()
 	}
 
 	Original_SCardGetCardTypeProviderNameA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szCardName,
 			IN DWORD dwProviderId,
@@ -2207,7 +2208,7 @@ int initialize()
 	}
 
 	Original_SCardGetCardTypeProviderNameW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szCardName,
 			IN DWORD dwProviderId,
@@ -2220,7 +2221,7 @@ int initialize()
 	}
 
 	Original_SCardIntroduceReaderGroupA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szGroupName))
 		load_func(hOriginal, "SCardIntroduceReaderGroupA");
@@ -2230,7 +2231,7 @@ int initialize()
 	}
 
 	Original_SCardIntroduceReaderGroupW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szGroupName))
 		load_func(hOriginal, "SCardIntroduceReaderGroupW");
@@ -2240,7 +2241,7 @@ int initialize()
 	}
 
 	Original_SCardForgetReaderGroupA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szGroupName))
 		load_func(hOriginal, "SCardForgetReaderGroupA");
@@ -2250,7 +2251,7 @@ int initialize()
 	}
 
 	Original_SCardForgetReaderGroupW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szGroupName))
 		load_func(hOriginal, "SCardForgetReaderGroupW");
@@ -2260,7 +2261,7 @@ int initialize()
 	}
 
 	Original_SCardIntroduceReaderA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szReaderName,
 			IN LPCSTR szDeviceName))
@@ -2271,7 +2272,7 @@ int initialize()
 	}
 
 	Original_SCardIntroduceReaderW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szReaderName,
 			IN LPCWSTR szDeviceName))
@@ -2282,7 +2283,7 @@ int initialize()
 	}
 
 	Original_SCardForgetReaderA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szReaderName))
 		load_func(hOriginal, "SCardForgetReaderA");
@@ -2292,7 +2293,7 @@ int initialize()
 	}
 
 	Original_SCardForgetReaderW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szReaderName))
 		load_func(hOriginal, "SCardForgetReaderW");
@@ -2302,7 +2303,7 @@ int initialize()
 	}
 
 	Original_SCardAddReaderToGroupA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szReaderName,
 			IN LPCSTR szGroupName))
@@ -2313,7 +2314,7 @@ int initialize()
 	}
 
 	Original_SCardAddReaderToGroupW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szReaderName,
 			IN LPCWSTR szGroupName))
@@ -2324,7 +2325,7 @@ int initialize()
 	}
 
 	Original_SCardRemoveReaderFromGroupA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szReaderName,
 			IN LPCSTR szGroupName))
@@ -2335,7 +2336,7 @@ int initialize()
 	}
 
 	Original_SCardRemoveReaderFromGroupW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szReaderName,
 			IN LPCWSTR szGroupName))
@@ -2346,7 +2347,7 @@ int initialize()
 	}
 
 	Original_SCardIntroduceCardTypeA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szCardName,
 			IN LPCGUID pguidPrimaryProvider,
@@ -2362,7 +2363,7 @@ int initialize()
 	}
 
 	Original_SCardIntroduceCardTypeW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szCardName,
 			IN LPCGUID pguidPrimaryProvider,
@@ -2378,7 +2379,7 @@ int initialize()
 	}
 
 	Original_SCardSetCardTypeProviderNameA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szCardName,
 			IN DWORD dwProviderId,
@@ -2390,7 +2391,7 @@ int initialize()
 	}
 
 	Original_SCardSetCardTypeProviderNameW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szCardName,
 			IN DWORD dwProviderId,
@@ -2402,7 +2403,7 @@ int initialize()
 	}
 
 	Original_SCardForgetCardTypeA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCSTR szCardName))
 		load_func(hOriginal, "SCardForgetCardTypeA");
@@ -2412,7 +2413,7 @@ int initialize()
 	}
 
 	Original_SCardForgetCardTypeW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDCONTEXT hContext,
 			IN LPCWSTR szCardName))
 		load_func(hOriginal, "SCardForgetCardTypeW");
@@ -2422,7 +2423,7 @@ int initialize()
 	}
 
 	Original_SCardAccessStartedEvent =
-		(HANDLE(__stdcall *)(void))
+		(HANDLE(STDCALL *)(void))
 		load_func(hOriginal, "SCardAccessStartedEvent");
 	if (!Original_SCardAccessStartedEvent) {
 		fprintf(stderr, "Could not find SCardAccessStartedEvent procedure address:  %s\n", error);
@@ -2430,7 +2431,7 @@ int initialize()
 	}
 
 	Original_SCardReleaseStartedEvent =
-		(void(__stdcall *)(void))
+		(void(STDCALL *)(void))
 		load_func(hOriginal, "SCardReleaseStartedEvent");
 	if (!Original_SCardReleaseStartedEvent) {
 		fprintf(stderr, "Could not find SCardReleaseStartedEvent procedure address:  %s\n", error);
@@ -2438,7 +2439,7 @@ int initialize()
 	}
 
 	Original_SCardLocateCardsA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR mszCards,
 			IN OUT  LPSCARD_READERSTATEA rgReaderStates,
@@ -2450,7 +2451,7 @@ int initialize()
 	}
 
 	Original_SCardLocateCardsW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCWSTR mszCards,
 			IN OUT  LPSCARD_READERSTATEW rgReaderStates,
@@ -2462,7 +2463,7 @@ int initialize()
 	}
 
 	Original_SCardLocateCardsByATRA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPSCARD_ATRMASK rgAtrMasks,
 			IN      DWORD cAtrs,
@@ -2475,7 +2476,7 @@ int initialize()
 	}
 
 	Original_SCardLocateCardsByATRW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPSCARD_ATRMASK rgAtrMasks,
 			IN      DWORD cAtrs,
@@ -2488,7 +2489,7 @@ int initialize()
 	}
 
 	Original_SCardGetStatusChangeA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      DWORD dwTimeout,
 			IN OUT  LPSCARD_READERSTATEA rgReaderStates,
@@ -2500,7 +2501,7 @@ int initialize()
 	}
 
 	Original_SCardGetStatusChangeW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      DWORD dwTimeout,
 			IN OUT  LPSCARD_READERSTATEW rgReaderStates,
@@ -2512,7 +2513,7 @@ int initialize()
 	}
 
 	Original_SCardConnectA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR szReader,
 			IN      DWORD dwShareMode,
@@ -2526,7 +2527,7 @@ int initialize()
 	}
 
 	Original_SCardConnectW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCWSTR szReader,
 			IN      DWORD dwShareMode,
@@ -2540,7 +2541,7 @@ int initialize()
 	}
 
 	Original_SCardCancelTransaction =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN      SCARDHANDLE hCard))
 		load_func(hOriginal, "SCardCancelTransaction");
 	if (!Original_SCardCancelTransaction) {
@@ -2548,7 +2549,7 @@ int initialize()
 	}
 
 	Original_SCardState =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			OUT LPDWORD pdwState,
 			OUT LPDWORD pdwProtocol,
@@ -2561,7 +2562,7 @@ int initialize()
 	}
 
 	Original_SCardStatusA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			OUT LPSTR szReaderName,
 			IN OUT LPDWORD pcchReaderLen,
@@ -2576,7 +2577,7 @@ int initialize()
 	}
 
 	Original_SCardStatusW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			OUT LPWSTR szReaderName,
 			IN OUT LPDWORD pcchReaderLen,
@@ -2591,7 +2592,7 @@ int initialize()
 	}
 
 	Original_SCardUIDlgSelectCardA =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			LPOPENCARDNAMEA_EX))
 		load_func(hOriginal, "SCardUIDlgSelectCardA");
 	if (!Original_SCardUIDlgSelectCardA) {
@@ -2599,7 +2600,7 @@ int initialize()
 	}
 
 	Original_SCardUIDlgSelectCardW =
-		(LONG(__stdcall *)(
+		(LONG(STDCALL *)(
 			LPOPENCARDNAMEW_EX))
 		load_func(hOriginal, "SCardUIDlgSelectCardW");
 	if (!Original_SCardUIDlgSelectCardW) {
@@ -2607,21 +2608,21 @@ int initialize()
 	}
 
 	Original_GetOpenCardNameA =
-		(LONG(__stdcall *)(LPOPENCARDNAMEA))
+		(LONG(STDCALL *)(LPOPENCARDNAMEA))
 		load_func(hOriginal, "GetOpenCardNameA");
 	if (!Original_GetOpenCardNameA) {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find GetOpenCardNameA procedure address\n"));
 	}
 
 	Original_GetOpenCardNameW =
-		(LONG(__stdcall *)(LPOPENCARDNAMEW))
+		(LONG(STDCALL *)(LPOPENCARDNAMEW))
 		load_func(hOriginal, "GetOpenCardNameW");
 	if (!Original_GetOpenCardNameW) {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find GetOpenCardNameW procedure address\n"));
 	}
 
 	Original_SCardDlgExtendedError =
-		(LONG(__stdcall *)(void))
+		(LONG(STDCALL *)(void))
 		load_func(hOriginal, "SCardDlgExtendedError ");
 	if (!Original_SCardDlgExtendedError) {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardDlgExtendedError procedure address\n"));
