@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Interface.h"
+#include "../Iniparser/iniparser.h"
 
 // CWinscardApp initialization
 
@@ -299,7 +300,7 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
     return status;
 }
 
-int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
+int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*string_type filePath*/) {
     int     status = STAT_OK;
     char_type    buffer[10000];
     DWORD   cBuffer = 10000;
@@ -310,68 +311,107 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
     string_type subValue;
     string_type help;
     APDU_RULE   rule;
-    APDU_SINGLE_RULE    singleRule;
+    APDU_SINGLE_RULE singleRule;
+	char_type* sec_and_key;
+	const char_type* char_value;
+	int value;
+	string_type section_name_string = section_name;
     
-    if (compareWithNoCase(ruleName.c_str(), _CONV("WINSCARD")) == 0) {
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("AUTO_REQUEST_DATA"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.bAUTO_REQUEST_DATA = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("FORCE_CONNECT_SHARED_MODE"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.bFORCE_CONNECT_SHARED_MODE = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("FORCE_APDU_NONZERO_INPUT_DATA"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_EXCHANGED_APDU"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.bLOG_EXCHANGED_APDU = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_BASE_PATH"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.sLOG_BASE_PATH = buffer;
-        } 
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MODIFY_APDU_BY_RULES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.bMODIFY_APDU_BY_RULES = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_FUNCTIONS_CALLS"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.bLOG_FUNCTIONS_CALLS = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("READER_ORDERED_FIRST"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_winscardConfig.sREADER_ORDERED_FIRST = buffer;
-        }
-        
+    if (compareWithNoCase(section_name, _CONV("WINSCARD")) == 0) {
+		
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":AUTO_REQUEST_DATA")), 2)) != 2) {
+			m_winscardConfig.bAUTO_REQUEST_DATA = value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":FORCE_CONNECT_SHARED_MODE")), 2)) != 2) {
+			m_winscardConfig.bFORCE_CONNECT_SHARED_MODE = value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":FORCE_APDU_NONZERO_INPUT_DATA")), 2)) != 2) {
+			m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA = value;
+		}
+      
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_EXCHANGED_APDU")), 2)) != 2) {
+			m_winscardConfig.bLOG_EXCHANGED_APDU = value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_BASE_PATH")), 2)) != 2) {
+			m_winscardConfig.sLOG_BASE_PATH = value;
+		}
+    
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":MODIFY_APDU_BY_RULES")), 2)) != 2) {
+			m_winscardConfig.bMODIFY_APDU_BY_RULES = value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, strcat(sec_and_key, _CONV(":LOG_FUNCTIONS_CALLS")), 2)) != 2) {
+			m_winscardConfig.bLOG_FUNCTIONS_CALLS = value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, strcat(sec_and_key, _CONV(":READER_ORDERED_FIRST")), 2)) != 2) {
+			m_winscardConfig.sREADER_ORDERED_FIRST = value;
+		}
     }
         
-    if (compareWithNoCase(ruleName.c_str(), _CONV("SCSAT04")) == 0) {
+    if (compareWithNoCase(section_name, _CONV("SCSAT04")) == 0) {
         // SCSAT04 CONFIGURATION RULE
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("REDIRECT"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.bRedirect = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("IP"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.IP = buffer;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("PORT"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.port = buffer;
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_APDU"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
-            CCommonFnc::BYTE_ConvertFromHexStringToArray(buffer, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_BYTE_COUNTER"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.measureApduByteCounter = type_to_int(buffer, NULL, 10);
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_BYTE_DELAY"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.measureApduByteDelay = type_to_int(buffer, NULL, 10);
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("READ_RATIO"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.readRatio = type_to_int(buffer, NULL, 10);
-        }
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("NUM_SAMPLES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            m_scsat04Config.numSamples = type_to_int(buffer, NULL, 10);
-        }
-        
-        
-        
+
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, strcat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2) {
+			m_winscardConfig.bAUTO_REQUEST_DATA = value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":IP")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.IP = char_value;
+		}
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":PORT")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.IP = char_value;
+		}
+ 
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_APDU")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(char_value, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
+		}
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_BYTE_COUNTER")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.measureApduByteCounter = type_to_int(char_value, NULL, 10);
+		}
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_BYTE_DELAY")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.measureApduByteDelay = type_to_int(char_value, NULL, 10);
+		} 
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":READ_RATIO")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.readRatio = type_to_int(char_value, NULL, 10);
+		}
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":NUM_SAMPLES")), "");
+		if (type_length(char_value) != 0) {
+			m_scsat04Config.numSamples = type_to_int(char_value, NULL, 10);
+		} 
     }
-    if (compareWithNoCase(ruleName.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0) {
+    if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0) {
         // COMMON RULE
     
         if ((GetPrivateProfileString(ruleName.c_str(), _CONV("USAGE"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
@@ -558,8 +598,25 @@ int CWinscardApp::LoadRules() {
     lcs     valuesList;
     lcs::iterator   iter;
 	string_type filePath;
-    
-    memset(buffer, 0, cBuffer);
+
+	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
+
+	dictionary* dict = iniparser_load((const char*) RULE_FILE.c_str());
+
+	int number_of_sections = iniparser_getnsec(dict);
+ 
+	for (int i = 0; i < number_of_sections; ++i)
+	{
+		const char* section_name = iniparser_getsecname(dict, i);
+		LoadRule(section_name, dict);
+	}
+
+	m_bRulesActive = TRUE;
+
+	WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
+	WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
+
+    /*memset(buffer, 0, cBuffer);
   
     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
     
@@ -592,7 +649,7 @@ int CWinscardApp::LoadRules() {
 
 	WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
 	WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-	
+	*/
 
     return status;
 }
