@@ -16,6 +16,8 @@ CWinscardApp::CWinscardApp()
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 	#ifdef __linux__
+		LoadRules();
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
 		initialize();
 	#endif
 	m_bRulesActive = FALSE;
