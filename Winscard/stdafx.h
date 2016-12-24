@@ -58,6 +58,7 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include "../Shared/globals.h"
+#include "../Iniparser/iniparser.h"
 #include "../Shared/status.H"
 #include "socket.h"
 

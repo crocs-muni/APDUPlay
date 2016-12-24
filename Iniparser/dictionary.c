@@ -39,16 +39,6 @@
  ---------------------------------------------------------------------------*/
 #include "dictionary.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef __linux__
-#include <unistd.h>
-#else 
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
-
 /** Maximum value size for integers and doubles. */
 #define MAXVALSZ    1024
 

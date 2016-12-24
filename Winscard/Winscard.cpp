@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "Interface.h"
-#include "../Iniparser/iniparser.h"
 
 // CWinscardApp initialization
 
@@ -665,11 +664,6 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 
 int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
-    char_type    buffer[10000];
-    DWORD   cBuffer = 10000;
-    DWORD   cReaded = 0;
-    lcs     valuesList;
-    lcs::iterator   iter;
 	string_type filePath;
 
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
@@ -688,6 +682,8 @@ int CWinscardApp::LoadRules() {
 
 	WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
 	WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
+
+	iniparser_freedict(dict);
 
     /*memset(buffer, 0, cBuffer);
   
