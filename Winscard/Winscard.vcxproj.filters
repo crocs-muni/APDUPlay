@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Iniparser">
+      <UniqueIdentifier>{22fcb5b4-274f-4d8d-b631-3c0003b22a98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommonFnc.cpp">
@@ -29,6 +32,12 @@
     </ClCompile>
     <ClCompile Include="PCSCard.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Iniparser\dictionary.c">
+      <Filter>Iniparser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Iniparser\iniparser.c">
+      <Filter>Iniparser</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -61,6 +70,12 @@
     </ClInclude>
     <ClInclude Include="Interface.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Iniparser\dictionary.h">
+      <Filter>Iniparser</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Iniparser\iniparser.h">
+      <Filter>Iniparser</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

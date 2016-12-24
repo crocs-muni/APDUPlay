@@ -165,6 +165,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Iniparser\dictionary.c" />
+    <ClCompile Include="..\Iniparser\iniparser.c" />
     <ClCompile Include="CommonFnc.cpp" />
     <ClCompile Include="PCSCard.cpp" />
     <ClCompile Include="socket.cpp">
@@ -188,6 +190,8 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Iniparser\dictionary.h" />
+    <ClInclude Include="..\Iniparser\iniparser.h" />
     <ClInclude Include="CommonFnc.h" />
     <ClInclude Include="Interface.h" />
     <ClInclude Include="rdtsc.h" />
