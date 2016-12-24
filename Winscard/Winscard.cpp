@@ -301,293 +301,364 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
 }
 
 int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*string_type filePath*/) {
-    int     status = STAT_OK;
-    char_type    buffer[10000];
-    DWORD   cBuffer = 10000;
-    string_type valueName;
+	int status = STAT_OK;
+	char_type buffer[10000];
+	DWORD cBuffer = 10000;
+	string_type valueName;
 	string_type rulePart;
 	string_type ruleString;
 	string_type elemName;
-    string_type subValue;
-    string_type help;
-    APDU_RULE   rule;
-    APDU_SINGLE_RULE singleRule;
-	char_type* sec_and_key;
+	string_type subValue;
+	string_type help;
+	APDU_RULE rule;
+	APDU_SINGLE_RULE singleRule;
+	char_type sec_and_key[256];
 	const char_type* char_value;
 	int value;
 	string_type section_name_string = section_name;
-    
-    if (compareWithNoCase(section_name, _CONV("WINSCARD")) == 0) {
-		
+
+	if (compareWithNoCase(section_name, _CONV("WINSCARD")) == 0)
+	{
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":AUTO_REQUEST_DATA")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":AUTO_REQUEST_DATA")), 2)) != 2)
+		{
 			m_winscardConfig.bAUTO_REQUEST_DATA = value;
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":FORCE_CONNECT_SHARED_MODE")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":FORCE_CONNECT_SHARED_MODE")), 2)) != 2)
+		{
 			m_winscardConfig.bFORCE_CONNECT_SHARED_MODE = value;
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":FORCE_APDU_NONZERO_INPUT_DATA")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":FORCE_APDU_NONZERO_INPUT_DATA")), 2)) != 2)
+		{
 			m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA = value;
 		}
-      
+
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_EXCHANGED_APDU")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_EXCHANGED_APDU")), 2)) != 2)
+		{
 			m_winscardConfig.bLOG_EXCHANGED_APDU = value;
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_BASE_PATH")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_BASE_PATH")), 2)) != 2)
+		{
 			m_winscardConfig.sLOG_BASE_PATH = value;
 		}
-    
+
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":MODIFY_APDU_BY_RULES")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":MODIFY_APDU_BY_RULES")), 2)) != 2)
+		{
 			m_winscardConfig.bMODIFY_APDU_BY_RULES = value;
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, strcat(sec_and_key, _CONV(":LOG_FUNCTIONS_CALLS")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_FUNCTIONS_CALLS")), 2)) != 2)
+		{
 			m_winscardConfig.bLOG_FUNCTIONS_CALLS = value;
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, strcat(sec_and_key, _CONV(":READER_ORDERED_FIRST")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":READER_ORDERED_FIRST")), 2)) != 2)
+		{
 			m_winscardConfig.sREADER_ORDERED_FIRST = value;
 		}
-    }
-        
-    if (compareWithNoCase(section_name, _CONV("SCSAT04")) == 0) {
-        // SCSAT04 CONFIGURATION RULE
+	}
+
+	if (compareWithNoCase(section_name, _CONV("SCSAT04")) == 0)
+	{
+		// SCSAT04 CONFIGURATION RULE
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, strcat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2) {
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2)
+		{
 			m_winscardConfig.bAUTO_REQUEST_DATA = value;
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":IP")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.IP = char_value;
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":PORT")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.IP = char_value;
 		}
- 
+
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_APDU")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
 			CCommonFnc::BYTE_ConvertFromHexStringToArray(char_value, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_BYTE_COUNTER")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.measureApduByteCounter = type_to_int(char_value, NULL, 10);
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_BYTE_DELAY")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.measureApduByteDelay = type_to_int(char_value, NULL, 10);
-		} 
+		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":READ_RATIO")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.readRatio = type_to_int(char_value, NULL, 10);
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":NUM_SAMPLES")), "");
-		if (type_length(char_value) != 0) {
+		if (type_length(char_value) != 0)
+		{
 			m_scsat04Config.numSamples = type_to_int(char_value, NULL, 10);
-		} 
-    }
-    if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0) {
-        // COMMON RULE
-    
-        if ((GetPrivateProfileString(ruleName.c_str(), _CONV("USAGE"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-            rule.usage = type_to_int(buffer, NULL, 10);
-            
-            if ((GetPrivateProfileString(ruleName.c_str(), _CONV("APDUIN"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-                rule.direction = type_to_int(buffer, NULL, 10);
-            }
-            if ((GetPrivateProfileString(ruleName.c_str(), _CONV("DELAY"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-                rule.msDelay = type_to_int(buffer, NULL, 10);
-            }
-            
-            
-            // SET RULE NAME FOR FUTURE IDENTIFICATION
-            rule.ruleName = ruleName;
-            
-            // LOAD MATCH RULES
-            int counter = 1;
-            int pos = 0;
-            int pos2 = 0;
-            valueName = string_format(_CONV("MATCH%d"), counter);
-            while((GetPrivateProfileString(ruleName.c_str(), valueName.c_str(), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-                ruleString = buffer; ruleString += _CONV(" ");
-                
-                // FIND HISTORY ELEMENT, WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
-                if ((pos = ruleString.find(_CONV("t="))) != string_type::npos) {
-                    //singleRule.history = atoi(ruleString.substr(pos + (int) type_length(_CONV("t="))).c_str());
-					singleRule.history = type_to_int(ruleString.substr(pos + (int)type_length(_CONV("t="))).c_str(), NULL, 10);
-                    ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
-                }                    
-                // FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
-                if ((pos = ruleString.find(_CONV("in="))) != string_type::npos) {
-                    singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int) type_length(_CONV("in="))).c_str(), NULL, 10);
-                    ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
-                }                    
+		}
+	}
+	
+	if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0)
+	{
+		// COMMON RULE
 
-                // PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
-                pos2 = 0;
-                while ((pos = ruleString.find(_CONV(";"), pos2)) != -1) {
-                    rulePart = ruleString.substr(pos2, pos - pos2 + 1);
-                    
-                    //elemName = rulePart.Left(rulePart.Find("="));
-					elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":USAGE")), "");
+		if (type_length(char_value) != 0)
+		{
+			rule.usage = type_to_int(char_value, NULL, 10);
+		}
 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("CLA")) == 0) {
-                        singleRule.element = CLA_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0) {
-                        singleRule.element = INS_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0) {
-                        singleRule.element = P1_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0) {
-                        singleRule.element = P2_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0) {
-                        singleRule.element = LC_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.substr(0, (int) type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0) {
-                        // DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
-                        // CREATE SEPARATE ELEMENT FOR EACH
-                        int offset = type_to_int(elemName.substr(ruleName.find_first_of(_CONV("0123456789")), 0).c_str(), NULL, 10);
-                        // GO OVER ALL MATCH DATA
-						string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
-                        //data.Replace(";", "");
-						data.erase(remove(data.begin(), data.end(), ';'), data.end());
-                        BYTE    dataBuffer[300];
-                        DWORD   dataBufferLen = 300;
-                        CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
-                        for (DWORD i = 0; i < dataBufferLen; i++) {
-                            if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;    
-                            else singleRule.element = offset;
-                            singleRule.value = dataBuffer[i];
-                            singleRule.valid = TRUE;rule.matchRules.push_back(singleRule);
-                            // increase offset for next element
-                            offset++; 
-                        }
-                    } 
-                
-                    pos2 = pos + 1; 
-                }
-                            
-                counter++;
-                valueName = string_format(_CONV("MATCH%d"), counter);
-            }
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":APDUIN")), "");
+		if (type_length(char_value) != 0)
+		{
+			rule.direction = type_to_int(char_value, NULL, 10);
+		}
 
-            // LOAD ACTION RULES
-            counter = 1;
-            pos = 0;
-            if ((GetPrivateProfileString(ruleName.c_str(), _CONV("ACTION"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-                ruleString = buffer; ruleString += _CONV(" ");
-                // PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
-                singleRule.clear();
-                // FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTARY RULES
-                if ((pos = ruleString.find(_CONV("in="))) != string_type::npos) {
-                    singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int) type_length(_CONV("in="))).c_str(), NULL, 10);
-                    //ruleString.Delete(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
-					ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1);
-                }                    
-                pos2 = 0;
-                while ((pos = ruleString.find(_CONV(";"), pos2)) != string_type::npos) {
-                    rulePart = ruleString.substr(pos2, pos - pos2 + 1);
-                    
-                    elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
-                    
-                    if (compareWithNoCase(elemName.c_str(), _CONV("CLA")) == 0) {
-                        singleRule.element = CLA_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0) {
-                        singleRule.element = INS_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0) {
-                        singleRule.element = P1_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0) {
-                        singleRule.element = P2_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0) {
-                        singleRule.element = LC_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.c_str(), _CONV("LE")) == 0) {
-                        singleRule.element = LE_ELEM;    
-                        CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("="))+1, 2), &(singleRule.value));
-                        singleRule.valid = TRUE;rule.actionRules.push_back(singleRule);
-                    } 
-                    if (compareWithNoCase(elemName.substr(0, (int) type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0) {
-                        // DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
-                        // CREATE SEPARATE ELEMENT FOR EACH
-                        int offset = type_to_int(elemName.substr(ruleName.find_first_of(_CONV("0123456789"))).c_str(), NULL, 10);
-                        // GO OVER ALL MATCH DATA
-						string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
-                        //data.Replace(";", "");
-						data.erase(remove(data.begin(), data.end(), ';'), data.end());
-                        BYTE    dataBuffer[300];
-                        DWORD   dataBufferLen = 300;
-                        CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
-                        for (DWORD i = 0; i < dataBufferLen; i++) {
-                            if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;    
-                            else singleRule.element = offset;
-                            singleRule.value = dataBuffer[i];
-                            singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
-                            // increase offset for next element
-                            offset++; 
-                        }
-                    } 
-                
-                    pos2 = pos + 1; 
-                }
-            }
-            
-            rulesList.push_back(rule);
-        }
-    }
-    
-    return status;
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":DELAY")), "");
+		if (type_length(char_value) != 0)
+		{
+			rule.msDelay = type_to_int(char_value, NULL, 10);
+		}
+
+		// SET RULE NAME FOR FUTURE IDENTIFICATION
+		rule.ruleName = section_name_string;
+
+		// LOAD MATCH RULES
+		int counter = 1;
+		int pos = 0;
+		int pos2 = 0;
+		valueName = string_format(_CONV(":MATCH%d"), counter);
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, valueName.c_str()), "");
+		while (type_length(char_value) != 0)
+		{
+			ruleString = char_value;
+			ruleString += _CONV(" ");
+
+			// FIND HISTORY ELEMENT, WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
+			if ((pos = ruleString.find(_CONV("t="))) != string_type::npos)
+			{
+				//singleRule.history = atoi(ruleString.substr(pos + (int) type_length(_CONV("t="))).c_str());
+				singleRule.history = type_to_int(ruleString.substr(pos + (int)type_length(_CONV("t="))).c_str(), NULL, 10);
+				ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
+			}
+			// FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
+			if ((pos = ruleString.find(_CONV("in="))) != string_type::npos)
+			{
+				singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int) type_length(_CONV("in="))).c_str(), NULL, 10);
+				ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
+			}
+
+			// PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
+			pos2 = 0;
+			while ((pos = ruleString.find(_CONV(";"), pos2)) != -1)
+			{
+				rulePart = ruleString.substr(pos2, pos - pos2 + 1);
+
+				//elemName = rulePart.Left(rulePart.Find("="));
+				elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
+
+				if (compareWithNoCase(elemName.c_str(), _CONV("CLA")) == 0)
+				{
+					singleRule.element = CLA_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.matchRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0)
+				{
+					singleRule.element = INS_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.matchRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0)
+				{
+					singleRule.element = P1_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.matchRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0)
+				{
+					singleRule.element = P2_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.matchRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0)
+				{
+					singleRule.element = LC_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.matchRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.substr(0, (int) type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0)
+				{
+					// DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
+					// CREATE SEPARATE ELEMENT FOR EACH
+					int offset = type_to_int(elemName.substr(section_name_string.find_first_of(_CONV("0123456789")), 0).c_str(), NULL, 10);
+					// GO OVER ALL MATCH DATA
+					string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
+					//data.Replace(";", "");
+					data.erase(remove(data.begin(), data.end(), ';'), data.end());
+					BYTE dataBuffer[300];
+					DWORD dataBufferLen = 300;
+					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
+					for (DWORD i = 0; i < dataBufferLen; i++)
+					{
+						if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;
+						else singleRule.element = offset;
+						singleRule.value = dataBuffer[i];
+						singleRule.valid = TRUE;
+						rule.matchRules.push_back(singleRule);
+						// increase offset for next element
+						offset++;
+					}
+				}
+
+				pos2 = pos + 1;
+			}
+
+			counter++;
+			valueName = string_format(_CONV("MATCH%d"), counter);
+			type_copy(sec_and_key, section_name);
+			char_value = iniparser_getstring(dict, type_cat(sec_and_key, valueName.c_str()), "");
+		}
+
+		// LOAD ACTION RULES
+		counter = 1;
+		pos = 0;
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, ":ACTION"), "");
+		if (type_length(char_value) != 0)
+		{
+			ruleString = buffer;
+			ruleString += _CONV(" ");
+			// PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
+			singleRule.clear();
+			// FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTARY RULES
+			if ((pos = ruleString.find(_CONV("in="))) != string_type::npos)
+			{
+				singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int) type_length(_CONV("in="))).c_str(), NULL, 10);
+				//ruleString.Delete(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
+				ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1);
+			}
+			pos2 = 0;
+			while ((pos = ruleString.find(_CONV(";"), pos2)) != string_type::npos)
+			{
+				rulePart = ruleString.substr(pos2, pos - pos2 + 1);
+
+				elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
+
+				if (compareWithNoCase(elemName.c_str(), _CONV("CLA")) == 0)
+				{
+					singleRule.element = CLA_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.actionRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0)
+				{
+					singleRule.element = INS_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.actionRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0)
+				{
+					singleRule.element = P1_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.actionRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0)
+				{
+					singleRule.element = P2_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.actionRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0)
+				{
+					singleRule.element = LC_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.actionRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.c_str(), _CONV("LE")) == 0)
+				{
+					singleRule.element = LE_ELEM;
+					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+					singleRule.valid = TRUE;
+					rule.actionRules.push_back(singleRule);
+				}
+				if (compareWithNoCase(elemName.substr(0, (int) type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0)
+				{
+					// DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
+					// CREATE SEPARATE ELEMENT FOR EACH
+					int offset = type_to_int(elemName.substr(section_name_string.find_first_of(_CONV("0123456789"))).c_str(), NULL, 10);
+					// GO OVER ALL MATCH DATA
+					string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
+					//data.Replace(";", "");
+					data.erase(remove(data.begin(), data.end(), ';'), data.end());
+					BYTE dataBuffer[300];
+					DWORD dataBufferLen = 300;
+					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
+					for (DWORD i = 0; i < dataBufferLen; i++)
+					{
+						if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;
+						else singleRule.element = offset;
+						singleRule.value = dataBuffer[i];
+						singleRule.valid = TRUE;
+						rule.actionRules.push_back(singleRule);
+						// increase offset for next element
+						offset++;
+					}
+				}
+
+				pos2 = pos + 1;
+			}
+		}
+
+		rulesList.push_back(rule);
+	}
+
+	return status;
 }
 
 int CWinscardApp::LoadRules() {
