@@ -8,7 +8,7 @@
 #endif
 
 #include "resource.h"		// main symbols
-#include "../Iniparser/dictionary.h"
+#include "../Iniparser/iniparser_all.h"
 
 #define     SCSAT_MAX_SAMPLING_FREQUENCY        100
 #define		SCSAT_MAX_NUMBER_OF_SAMPLES			48000000 

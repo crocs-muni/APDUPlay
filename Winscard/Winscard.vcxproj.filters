@@ -33,12 +33,6 @@
     <ClCompile Include="PCSCard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Iniparser\dictionary.c">
-      <Filter>Iniparser</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Iniparser\iniparser.c">
-      <Filter>Iniparser</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Winscard.def">
@@ -71,10 +65,7 @@
     <ClInclude Include="Interface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Iniparser\dictionary.h">
-      <Filter>Iniparser</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Iniparser\iniparser.h">
+    <ClInclude Include="..\Iniparser\iniparser_all.h">
       <Filter>Iniparser</Filter>
     </ClInclude>
   </ItemGroup>
