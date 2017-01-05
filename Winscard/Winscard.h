@@ -8,6 +8,7 @@
 #endif
 
 #include "resource.h"		// main symbols
+#include "../Iniparser/iniparser_all.h"
 
 #define     SCSAT_MAX_SAMPLING_FREQUENCY        100
 #define		SCSAT_MAX_NUMBER_OF_SAMPLES			48000000 
@@ -18,6 +19,10 @@
 // CWinscardApp
 // See Winscard.cpp for the implementation of this class
 //
+
+#ifdef __linux__
+	class CWinApp {};
+#endif
 
 class CWinscardApp : public CWinApp
 {
@@ -42,7 +47,7 @@ public:
     int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath);
     
     
-    int LoadRule(string_type ruleName, string_type filePath);
+    int LoadRule(const char_type* section_name, dictionary* dict);
     int LoadRules();
     
     int ApplyRules(BYTE* pbSendBuffer, DWORD* pcbSendLength, int direction);
@@ -50,7 +55,7 @@ public:
     
 //	int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
     LONG SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
-    
+	int LoadRule(string_type ruleName, dictionary* dict);
 public:
 	virtual BOOL InitInstance();
 

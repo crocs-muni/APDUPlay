@@ -441,15 +441,25 @@ Socket* SocketServer::Accept() {
 SocketClient::SocketClient(const string_type& host, int port) : Socket() {
   std::string error;
 
-  char *str = new char[1024];;
-  wcstombs(str, host.c_str(), host.length());
+  #ifdef UNICODE
+    char *str = new char[1024];
+    wcstombs(str, host.c_str(), host.length());
+  #else 
+    const char *str = host.c_str();
+  #endif
 
   hostent *he;
   if ((he = gethostbyname(str)) == 0) {
+    #ifdef UNICODE
+	  free(str);
+    #endif
     error = strerror(errno);
     throw error;
   }
 
+  #ifdef UNICODE
+    free(str);
+  #endif
 
   sockaddr_in addr;
   addr.sin_family = AF_INET;

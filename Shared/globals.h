@@ -1,6 +1,13 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+
+#ifdef __linux__
+    #include <wintypes.h>
+#endif 
+
+#include <cstring>
+
 #ifndef HIGHBYTE
     #define HIGHBYTE(x)  x >> 8 
 #endif
