@@ -6,7 +6,6 @@
 package parser.output.data.analyzedPackets;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,11 +39,17 @@ public class ABDUOutputPacket {
     }
     
     public void addReceivedMessage(ABDUOutputMessage msg) {
-        receivedMessages.add(msg);
+        int index = receivedMessages.indexOf(msg);
+        if (index == -1) {
+            receivedMessages.add(msg);
+            return;
+        }
+        
+        receivedMessages.get(index).increaseCount(msg.getCount());
     }
     
     public void addReceivedMessages(List<ABDUOutputMessage> msgs) {
-        receivedMessages.addAll(msgs);
+        msgs.forEach(msg -> addReceivedMessage(msg));
     }
     
     @Override

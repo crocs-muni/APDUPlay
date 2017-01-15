@@ -83,8 +83,10 @@ public class ABDUWriter {
                         break;
                     case ABDUOutputType.PACKETS:
                         functions.add(new ABDUOutputFunction((tree, writer) -> printPackets(tree, writer), null));
+                        break;
                     case ABDUOutputType.PACKETS_ANALYZED:
                         functions.add(new ABDUOutputFunction((tree, writer) -> printAnalyzedPackets(tree, writer), null));
+                        break;
                 }
             }
         }
@@ -205,7 +207,7 @@ public class ABDUWriter {
     }
     
     private void printAnalyzedPackets(ABDUTree tree, PrintWriter writer) {
-        ABDUOutputTree outputTree = new ABDUOutputTree(tree.header, tree.root.identifier);
+        ABDUOutputTree outputTree = new ABDUOutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier);
         
         tree.streamPackets.forEach((packet) -> {
             byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());

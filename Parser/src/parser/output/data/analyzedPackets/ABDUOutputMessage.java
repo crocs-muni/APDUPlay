@@ -15,9 +15,12 @@ public class ABDUOutputMessage {
     public final String message;
     public final int identifier;
     
+    private int count;
+    
     public ABDUOutputMessage(String message, int identifier) {
         this.message = message;
         this.identifier = identifier;
+        count = 1;
     }
     
     @Override
@@ -43,5 +46,13 @@ public class ABDUOutputMessage {
         int hash = 3;
         hash = 97 * hash + Objects.hashCode(this.message);
         return hash;
+    }
+    
+    public int getCount() {
+        return count;
+    }
+    
+    public void increaseCount(int amount) {
+        count += amount;
     }
 }
