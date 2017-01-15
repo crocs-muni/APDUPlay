@@ -5,6 +5,8 @@
  */
 package parser.output;
 
+import parser.output.data.analyzedPackets.ABDUOutputPacket;
+import parser.output.data.analyzedPackets.ABDUOutputTree;
 import parser.settings.ABDUSettings;
 import java.io.File;
 import java.io.PrintWriter;
@@ -24,6 +26,7 @@ import parser.ABDULogger;
 import parser.data.ABDUNode;
 import parser.data.ABDUPacket;
 import parser.data.ABDUTree;
+import parser.output.data.analyzedPackets.ABDUOutputMessage;
 import parser.settings.graph.ABDUGraphSettings;
 
 /**
@@ -80,6 +83,8 @@ public class ABDUWriter {
                         break;
                     case ABDUOutputType.PACKETS:
                         functions.add(new ABDUOutputFunction((tree, writer) -> printPackets(tree, writer), null));
+                    case ABDUOutputType.PACKETS_ANALYZED:
+                        functions.add(new ABDUOutputFunction((tree, writer) -> printAnalyzedPackets(tree, writer), null));
                 }
             }
         }
@@ -196,8 +201,26 @@ public class ABDUWriter {
                     writer.println(String.format("\t%d -> %d [label=\"[ac=%d, time=%d]\"];", transmittedNode.identifier, receivedNode.identifier, packet.getAc(), packet.getResponseTime()));
                 });
             });
-            
         });
+    }
+    
+    private void printAnalyzedPackets(ABDUTree tree, PrintWriter writer) {
+        ABDUOutputTree outputTree = new ABDUOutputTree(tree.header, tree.root.identifier);
+        
+        tree.streamPackets.forEach((packet) -> {
+            byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
+            byte[] received = getDataFromLeafNode(packet.getReceivedLeafNode());
+            
+            String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
+            String receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
+            
+            ABDUOutputPacket p = new ABDUOutputPacket(new ABDUOutputMessage(transmittedStr, packet.getTransmittedLeafNode().identifier));
+            p.addReceivedMessage(new ABDUOutputMessage(receivedStr, packet.getReceivedLeafNode().identifier));
+            
+            outputTree.addPacket(p);
+        });
+        
+        writer.println(outputTree.prepareOutput());
     }
     
     private byte[] getDataFromLeafNode(ABDUNode node) {
