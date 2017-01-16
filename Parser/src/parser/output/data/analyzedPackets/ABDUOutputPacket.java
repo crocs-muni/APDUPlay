@@ -17,6 +17,11 @@ public class ABDUOutputPacket {
     private ABDUOutputMessage transmittedMessage;
     private List<ABDUOutputMessage> receivedMessages;
     
+    /**
+     * Creates new instance of ABDUOutputPacket
+     * 
+     * @param transmittedMessage transmitted message from packet
+     */
     public ABDUOutputPacket(ABDUOutputMessage transmittedMessage) {
         this.transmittedMessage = transmittedMessage;
         receivedMessages = new ArrayList<>();
@@ -38,6 +43,11 @@ public class ABDUOutputPacket {
         receivedMessages = msgs;
     }
     
+    /**
+     * Adds received message to this packet
+     * 
+     * @param msg message to be add
+     */
     public void addReceivedMessage(ABDUOutputMessage msg) {
         int index = receivedMessages.indexOf(msg);
         if (index == -1) {
@@ -48,6 +58,11 @@ public class ABDUOutputPacket {
         receivedMessages.get(index).increaseCount(msg.getCount());
     }
     
+    /**
+     * Adds multiple received messages to this packet
+     * 
+     * @param msgs messages to be add
+     */
     public void addReceivedMessages(List<ABDUOutputMessage> msgs) {
         msgs.forEach(msg -> addReceivedMessage(msg));
     }

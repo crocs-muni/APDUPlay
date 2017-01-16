@@ -18,6 +18,12 @@ public class ABDUOutputTree {
     public final int identifier;
     private List<ABDUOutputPacket> packets;
     
+    /**
+     * Creates new instance of ABDUOutputTree
+     * 
+     * @param header packet header
+     * @param identifier node identifier for output
+     */
     public ABDUOutputTree(String header, int identifier) {
         this.header = header;
         this.identifier = identifier;
@@ -32,6 +38,11 @@ public class ABDUOutputTree {
         this.packets = packets;
     }
     
+    /**
+     * Adds output packet into this tree
+     * 
+     * @param packet packet to be added
+     */
     public void addPacket(ABDUOutputPacket packet) {
         int index = packets.indexOf(packet);
         if (index == -1) {

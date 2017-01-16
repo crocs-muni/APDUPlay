@@ -17,10 +17,29 @@ public class ABDUOutputMessage {
     
     private int count;
     
+    /**
+     * Creates new instance of ABDUOutputMessage
+     * 
+     * @param message packet message
+     * @param identifier node identifier
+     */
     public ABDUOutputMessage(String message, int identifier) {
         this.message = message;
         this.identifier = identifier;
         count = 1;
+    }
+    
+    public int getCount() {
+        return count;
+    }
+    
+    /**
+     * Increases message number of occurences
+     * 
+     * @param amount amount to be increased by
+     */
+    public void increaseCount(int amount) {
+        count += amount;
     }
     
     @Override
@@ -46,13 +65,5 @@ public class ABDUOutputMessage {
         int hash = 3;
         hash = 97 * hash + Objects.hashCode(this.message);
         return hash;
-    }
-    
-    public int getCount() {
-        return count;
-    }
-    
-    public void increaseCount(int amount) {
-        count += amount;
     }
 }
