@@ -8,6 +8,7 @@ package parser.output.data.analyzedPackets;
 import java.util.ArrayList;
 import java.util.List;
 import parser.data.ABDUNode;
+import tools.SimilarityTool;
 
 /**
  *
@@ -85,21 +86,22 @@ public class ABDUOutputTree {
         int left = longestCommonPrefix(strings);
         int right = longestCommonPrefix(invertedStrings);
         
+        String color = getColorForMidStream(msgs, left, right);
         msgs.forEach((msg) -> {
             int msgLength = msg.message.length();
             int nodeIdentifier = generateIdentifier ? new ABDUNode(null).identifier : msg.identifier;
             
             if (left + right + 1 >= msgLength) {
-                sb.append(String.format("\t%d [label=<<font color=\"green\">%s</font>>];", nodeIdentifier, msg.message));
+                sb.append(String.format("\t%d [label=\"%s\"];", nodeIdentifier, msg.message));
             } else {
                 sb.append(String.format("\t%d [label=<", nodeIdentifier));
                 if (left > 0) {
-                    sb.append(String.format("<font color=\"green\">%s</font>", msg.message.substring(0, left)));
+                    sb.append(msg.message.substring(0, left));
                 }
                 
-                sb.append(String.format("<font color=\"red\">%s</font>", msg.message.substring(left, msgLength - right)));
+                sb.append(String.format("<font color=\"%s\">%s</font>", color, msg.message.substring(left, msgLength - right)));
                 if (right > 0) {
-                    sb.append(String.format("<font color=\"green\">%s</font>", msg.message.substring(msgLength - right)));
+                    sb.append(msg.message.substring(msgLength - right));
                 }
                 
                 sb.append(">];");
@@ -137,5 +139,36 @@ public class ABDUOutputTree {
         }
         
         return end > 0 ? end - 1 : 0; // ignore last space
+    }
+    
+    private String getColorForMidStream(List<ABDUOutputMessage> msgs, int leftIndex, int rightIndex) {
+        double similarityRank = 0;
+        int count = 0;
+        int msgsLength = msgs.size();
+        
+        for (int i = 0; i < msgsLength; i++) {
+            for (int j = 1; j < msgsLength; j++) {
+                if (i == j) {
+                    continue;
+                }
+                
+                String msg1 = msgs.get(i).message;
+                String msg2 = msgs.get(j).message;
+                double currentRank = SimilarityTool.compareStrings(msg1.substring(leftIndex, msg1.length() - rightIndex), msg2.substring(leftIndex, msg2.length() - rightIndex));
+                int msgCount = msgs.get(i).getCount() * msgs.get(i).getCount();
+
+                similarityRank += currentRank * msgCount;
+                count += msgCount;
+            }
+            
+            int msgCount = msgs.get(i).getCount();
+            if (msgCount > 1) {
+                msgCount = msgCount * (msgCount - 1) / 2;
+                similarityRank += msgCount;
+                count += msgCount;
+            }
+        }
+        
+        return similarityRank / count > .5 ? "gold4" : "red";
     }
 }
