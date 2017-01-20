@@ -155,7 +155,7 @@ public class ABDUOutputTree {
                 String msg1 = msgs.get(i).message;
                 String msg2 = msgs.get(j).message;
                 double currentRank = SimilarityTool.compareStrings(msg1.substring(leftIndex, msg1.length() - rightIndex), msg2.substring(leftIndex, msg2.length() - rightIndex));
-                int msgCount = msgs.get(i).getCount() * msgs.get(i).getCount();
+                int msgCount = msgs.get(i).getCount() * msgs.get(j).getCount();
 
                 similarityRank += currentRank * msgCount;
                 count += msgCount;
