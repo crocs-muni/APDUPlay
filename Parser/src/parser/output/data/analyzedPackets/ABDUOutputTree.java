@@ -178,6 +178,6 @@ public class ABDUOutputTree {
             }
         }
         
-        return similarityRank / count > .5 ? "gold4" : "red";
+        return similarityRank / count > .5 ? "darkorchid4" : "red";
     }
 }
