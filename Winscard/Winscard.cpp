@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "Interface.h"
 
 // CWinscardApp initialization
@@ -345,15 +345,21 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_BASE_PATH")), 2)) != 2)
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":LOG_BASE_PATH")), "");
+		if(type_length(char_value) != 0)
 		{
-			m_winscardConfig.sLOG_BASE_PATH = value;
+			m_winscardConfig.sLOG_BASE_PATH = char_value;
 		}
-
+		
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":MODIFY_APDU_BY_RULES")), 2)) != 2)
 		{
 			m_winscardConfig.bMODIFY_APDU_BY_RULES = value;
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format("Našlo sa to s hodnotou %d\n", value));
+		}
+		else
+		{
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Nenašlo sa to\n");
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -363,9 +369,10 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		}
 
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":READER_ORDERED_FIRST")), 2)) != 2)
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":READER_ORDERED_FIRST")), "");
+		if (type_length(char_value) != 0)
 		{
-			m_winscardConfig.sREADER_ORDERED_FIRST = value;
+			m_winscardConfig.sREADER_ORDERED_FIRST = char_value;
 		}
 	}
 
@@ -664,26 +671,41 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 
 int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
-	string_type filePath;
+	//string_type filePath;
 
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
 
-	dictionary* dict = iniparser_load((const char*) RULE_FILE.c_str());
+	if (FILE *file = fopen(RULE_FILE.c_str(), "r")) {
+		fclose(file);
 
-	int number_of_sections = iniparser_getnsec(dict);
- 
-	for (int i = 0; i < number_of_sections; ++i)
-	{
-		const char* section_name = iniparser_getsecname(dict, i);
-		LoadRule(section_name, dict);
+		string_type message;
+		message = _CONV("Rules file found\n");
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+		dictionary* dict = iniparser_load((const char*)RULE_FILE.c_str());
+
+		int number_of_sections = iniparser_getnsec(dict);
+
+		for (int i = 0; i < number_of_sections; ++i)
+		{
+			const char* section_name = iniparser_getsecname(dict, i);
+			LoadRule(section_name, dict);
+		}
+
+		m_bRulesActive = TRUE;
+
+		iniparser_freedict(dict);
+	}
+	else {
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
 	}
 
-	m_bRulesActive = TRUE;
-
-	WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-	WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-
-	iniparser_freedict(dict);
+	//printf("\n_____%s_____\n", m_winscardConfig.sLOG_BASE_PATH);
+	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
+		WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
+	}
 
     /*memset(buffer, 0, cBuffer);
   

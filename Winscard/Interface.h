@@ -155,12 +155,21 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 /* ******************************************************************************* */
 
 int compareWithNoCase(const char_type* str1,const char_type* str2) {
-	char_type *str1_2 = new char_type[type_length(str1)];
-	char_type *str2_2 = new char_type[type_length(str2)];
-	type_copy(str1_2, str1);
-	type_copy(str2_2, str2);
-	toupper(*str1_2);
-	toupper(*str2_2);
+	
+	if(type_length(str1) != type_length(str2))
+	{
+		return max(type_length(str1), type_length(str2));
+	}
+
+	char_type *str1_2 = new char_type[type_length(str1) +1];
+	char_type *str2_2 = new char_type[type_length(str2) +1];
+	
+	for (int i = 0; i <= type_length(str1); ++i) 
+	{
+		str1_2[i] = toupper(str1[i]);  
+		str2_2[i] = toupper(str2[i]);
+	}
+
 	int result = type_compare(str1_2, str2_2);
 	delete[] str1_2;
 	delete[] str2_2;
