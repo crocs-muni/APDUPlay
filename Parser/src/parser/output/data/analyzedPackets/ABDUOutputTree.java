@@ -8,6 +8,7 @@ package parser.output.data.analyzedPackets;
 import java.util.ArrayList;
 import java.util.List;
 import parser.data.ABDUNode;
+import parser.settings.ABDUSettings;
 import tools.SimilarityTool;
 
 /**
@@ -17,6 +18,7 @@ import tools.SimilarityTool;
 public class ABDUOutputTree {
     public final String header;
     public final int identifier;
+    private final ABDUSettings settings;
     private List<ABDUOutputPacket> packets;
     
     /**
@@ -24,10 +26,12 @@ public class ABDUOutputTree {
      * 
      * @param header packet header
      * @param identifier node identifier for output
+     * @param settings output settings
      */
-    public ABDUOutputTree(String header, int identifier) {
+    public ABDUOutputTree(String header, int identifier, ABDUSettings settings) {
         this.header = header;
         this.identifier = identifier;
+        this.settings = settings;
         packets = new ArrayList<>();
     }
     
@@ -138,7 +142,12 @@ public class ABDUOutputTree {
             }
         }
         
-        return end > 0 ? end - 1 : 0; // ignore last space
+        boolean returnIndex = end >= settings.getMinimalConstantLength() * 3;
+        if (!returnIndex && !settings.getCheckMinimalLengthOnShorterStreams()) {
+            returnIndex = end >= minStr.length();
+        }
+        
+        return returnIndex ? end - 1 : 0; // ignore last space
     }
     
     private String getColorForMidStream(List<ABDUOutputMessage> msgs, int leftIndex, int rightIndex) {

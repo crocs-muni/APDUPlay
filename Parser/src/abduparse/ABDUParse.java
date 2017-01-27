@@ -31,6 +31,7 @@ public class ABDUParse {
         settings.setSimpleNodes(false);
         settings.setOutputTypeMask(ABDUOutputType.ALL);
         settings.setHeaderLength(4);
+        settings.setMinimalConstantLength(3);
         settings.setBytesSeparator(" ");
         
         ABDUGraphSettings graphSettings = settings.getGraphSettings();

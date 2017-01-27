@@ -16,8 +16,10 @@ public class ABDUSettings {
     private String bytesSeparator;
     private boolean separatePackets;
     private boolean simpleNodes;
+    private boolean checkMinimalLengthOnShorterStreams;
     private int outputTypeMask;
     private int headerLength;
+    private int minimalConstantLength;
     private final ABDUGraphSettings graphSettings = new ABDUGraphSettings();
     
     public void setOutputDirectory(String outputDir) {
@@ -70,5 +72,21 @@ public class ABDUSettings {
     
     public ABDUGraphSettings getGraphSettings() {
         return graphSettings;
+    }
+    
+    public int getMinimalConstantLength() {
+        return minimalConstantLength;
+    }
+    
+    public void setMinimalConstantLength(int length) {
+        minimalConstantLength = length;
+    }
+    
+    public boolean getCheckMinimalLengthOnShorterStreams() {
+        return checkMinimalLengthOnShorterStreams;
+    }
+    
+    public void setCheckMinimalLengthOnShorterStreams(boolean check) {
+        checkMinimalLengthOnShorterStreams = check;
     }
 }

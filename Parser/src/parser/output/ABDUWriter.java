@@ -207,7 +207,7 @@ public class ABDUWriter {
     }
     
     private void printAnalyzedPackets(ABDUTree tree, PrintWriter writer) {
-        ABDUOutputTree outputTree = new ABDUOutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier);
+        ABDUOutputTree outputTree = new ABDUOutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier, settings);
         
         tree.streamPackets.forEach((packet) -> {
             byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
