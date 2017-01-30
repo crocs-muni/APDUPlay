@@ -6,7 +6,52 @@
     #include <wintypes.h>
 #endif 
 
-#include <cstring>
+#include <string>
+
+
+//#define UNICODE
+
+#ifdef UNICODE
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+#endif
+
+#ifdef _UNICODE
+#ifndef UNICODE
+#define UNICODE
+#endif
+#endif
+
+#if defined (UNICODE) && defined (_WIN32)
+typedef std::wstring string_type;
+typedef std::wifstream ifstream_type;
+typedef std::wofstream ofstream_type;
+typedef std::wfstream fstream_type;
+typedef wchar_t char_type;
+#define _CONV(x) L ##x
+static FILE*(*type_fopen)(const char_type*, const char_type*) = _wfopen;
+static size_t(*type_length)(const char_type*) = wcslen;
+static char_type*(*type_copy)(char_type*, const char_type*) = wcscpy;
+static int(*type_compare)(const char_type*, const char_type*) = wcscmp;
+static long(*type_to_int)(const char_type*, char_type**, int) = wcstol;
+static char_type*(*type_cat)(char_type*, const char_type*) = wcscat;
+static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t) = _wsplitpath_s;
+#else 
+typedef std::string string_type;
+typedef std::ifstream ifstream_type;
+typedef std::ofstream ofstream_type;
+typedef std::fstream fstream_type;
+typedef char char_type;
+#define _CONV(x) x
+static FILE*(*type_fopen)(const char_type*, const char_type*) = fopen;
+static  size_t(*type_length)(const char_type*) = strlen;
+static char_type*(*type_copy)(char_type*, const char_type*) = strcpy;
+static int(*type_compare)(const char_type*, const char_type*) = strcmp;
+static long(*type_to_int)(const char_type*, char_type**, int) = strtol;
+static char_type*(*type_cat)(char_type*, const char_type*) = strcat;
+static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t) = _splitpath_s;
+#endif
 
 #ifndef HIGHBYTE
     #define HIGHBYTE(x)  x >> 8 

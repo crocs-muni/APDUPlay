@@ -29,6 +29,7 @@ OTHER DEALINGS IN THE SOFTWARE.*/
 #include <cstdlib>
 #include <ctype.h>
 #include <cstdarg>
+#include "../Shared/globals.h"
 #ifdef __linux__
 #include <unistd.h>
 #else 
@@ -37,7 +38,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #define ASCIILINESZ         (1024)
-#define INI_INVALID_KEY     ((char*)-1)
+#define INI_INVALID_KEY     ((char_type*)-1)
 
 typedef struct _dictionary_ {
 	int             n;     /** Number of entries in dictionary */
