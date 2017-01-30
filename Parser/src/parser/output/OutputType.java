@@ -9,7 +9,7 @@ package parser.output;
  *
  * @author Andrej
  */
-public class ABDUOutputType {
+public class OutputType {
     public static final int NODES               = 0x1;
     public static final int FLOW                = 0x2;
     public static final int PACKETS             = 0x4;

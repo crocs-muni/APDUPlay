@@ -7,16 +7,16 @@ package parser.output;
 
 import java.io.PrintWriter;
 import java.util.function.BiConsumer;
-import parser.data.ABDUTree;
+import parser.data.Tree;
 
 /**
  *
  * @author Andrej
  */
-public class ABDUOutputFunction {
+public class OutputFunction {
     
-    private final BiConsumer<ABDUTree, PrintWriter> transmittedFunction;
-    private final BiConsumer<ABDUTree, PrintWriter> receivedFunction;
+    private final BiConsumer<Tree, PrintWriter> transmittedFunction;
+    private final BiConsumer<Tree, PrintWriter> receivedFunction;
     
     /**
      * Creates new instance of ABDUOutputFunction
@@ -24,7 +24,7 @@ public class ABDUOutputFunction {
      * @param transmittedFunction   transmitted data output function
      * @param receivedFunction      receicved data output function
      */
-    public ABDUOutputFunction(BiConsumer<ABDUTree, PrintWriter> transmittedFunction, BiConsumer<ABDUTree, PrintWriter> receivedFunction) {
+    public OutputFunction(BiConsumer<Tree, PrintWriter> transmittedFunction, BiConsumer<Tree, PrintWriter> receivedFunction) {
         this.transmittedFunction = transmittedFunction;
         this.receivedFunction = receivedFunction;
     }
@@ -35,7 +35,7 @@ public class ABDUOutputFunction {
      * @param tree      tree which output function will use
      * @param writer    writer which output function will use
      */
-    public void invokeTransmitted(ABDUTree tree, PrintWriter writer) {
+    public void invokeTransmitted(Tree tree, PrintWriter writer) {
         if (this.transmittedFunction != null) {
             this.transmittedFunction.accept(tree, writer);
         }
@@ -47,7 +47,7 @@ public class ABDUOutputFunction {
      * @param tree      tree which output function will use
      * @param writer    writer which output function will use
      */
-    public void invokeReceived(ABDUTree tree, PrintWriter writer) {
+    public void invokeReceived(Tree tree, PrintWriter writer) {
         if (this.receivedFunction != null) {
             this.receivedFunction.accept(tree, writer);
         }

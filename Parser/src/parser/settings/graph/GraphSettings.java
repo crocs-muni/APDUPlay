@@ -9,7 +9,7 @@ package parser.settings.graph;
  *
  * @author Andrej
  */
-public class ABDUGraphSettings {
+public class GraphSettings {
     private String rankDir;
     private String size;
     private String nodeAttributes;

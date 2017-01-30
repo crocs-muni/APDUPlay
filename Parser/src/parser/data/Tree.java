@@ -17,14 +17,14 @@ import javax.xml.bind.DatatypeConverter;
  *
  * @author Andrej
  */
-public class ABDUTree {
+public class Tree {
     private int packetsCount;
-    private ABDUPacket lastPacket;
+    private Packet lastPacket;
     
-    public final ABDUNode receivedRoot;
-    public final ABDUNode root;
+    public final Node receivedRoot;
+    public final Node root;
     public final String header;
-    public final List<ABDUPacket> streamPackets;
+    public final List<Packet> streamPackets;
     
     /**
      * Creates new instance of ABDUTree which represents packets data stream as a tree
@@ -32,13 +32,13 @@ public class ABDUTree {
      * @param header    packet header
      * @param data      packet data
      */
-    public ABDUTree(byte[] header, byte[] data) {
+    public Tree(byte[] header, byte[] data) {
         ByteBuffer wrapped = ByteBuffer.wrap(header);
         this.header = DatatypeConverter.printHexBinary(header);
-        root = new ABDUNode(wrapped.array());
-        ABDUNode node = new ABDUNode(data);
+        root = new Node(wrapped.array());
+        Node node = new Node(data);
         root.addChild(node);
-        receivedRoot = new ABDUNode(wrapped.array());
+        receivedRoot = new Node(wrapped.array());
         streamPackets = new LinkedList<>();
         init();
     }
@@ -49,8 +49,8 @@ public class ABDUTree {
      * @param stream byte stream to merge
      */
     public void merge(byte[] stream) {
-        ABDUNode node = merge(root, stream);
-        lastPacket = new ABDUPacket(node);
+        Node node = merge(root, stream);
+        lastPacket = new Packet(node);
         streamPackets.add(lastPacket);
         packetsCount++;
     }
@@ -61,7 +61,7 @@ public class ABDUTree {
      * @param data byte stream do add
      */
     public void addReceivedData(byte[] data) {
-        ABDUNode node = merge(receivedRoot, data);
+        Node node = merge(receivedRoot, data);
         if (node != null && lastPacket != null) {
             lastPacket.setReceivedLeafNode(node);
         }
@@ -95,21 +95,21 @@ public class ABDUTree {
         receivedRoot.setCount(0);
         packetsCount = 1;
         
-        lastPacket = new ABDUPacket(root.getChildNodes().iterator().next());
+        lastPacket = new Packet(root.getChildNodes().iterator().next());
         streamPackets.add(lastPacket);
     }
     
-    private void simplifyNodes(ABDUNode node) {
-        Queue<ABDUNode> queue = new ArrayDeque<>();
+    private void simplifyNodes(Node node) {
+        Queue<Node> queue = new ArrayDeque<>();
         queue.addAll(node.getChildNodes());
         while(!queue.isEmpty()) {
             node = queue.remove();
             byte[] data = node.getData();
             if (data.length > 1) {
-                ABDUNode firstNode = new ABDUNode(Arrays.copyOfRange(data, 0, 1));
-                ABDUNode lastNode = firstNode;
+                Node firstNode = new Node(Arrays.copyOfRange(data, 0, 1));
+                Node lastNode = firstNode;
                 for (int i = 1; i < data.length; i++) {
-                    ABDUNode n = new ABDUNode(Arrays.copyOfRange(data, i, i + 1));
+                    Node n = new Node(Arrays.copyOfRange(data, i, i + 1));
                     lastNode.setCount(node.getCount());
                     lastNode.addChild(n);
                     lastNode = n;
@@ -124,24 +124,24 @@ public class ABDUTree {
         }
     }
     
-    private ABDUNode merge(ABDUNode node, byte[] stream) {
+    private Node merge(Node node, byte[] stream) {
         node.incrementCount();
         
-        ABDUNode currentNode = node.findChildNode(stream[0]);
+        Node currentNode = node.findChildNode(stream[0]);
         if (currentNode == null) {
-            currentNode = new ABDUNode(stream);
+            currentNode = new Node(stream);
             node.addChild(currentNode);
             return currentNode;
         }
         
         byte[] data = currentNode.getData();
         int currentIndex = 0;
-        ABDUNode lastNode = null;
+        Node lastNode = null;
         for (int i = 0; i < stream.length; i++) {
             if (currentIndex >= data.length) {
                 lastNode = currentNode.findChildNode(stream[i]);
                 if (lastNode == null) {
-                    lastNode = new ABDUNode(Arrays.copyOfRange(stream, i, stream.length));
+                    lastNode = new Node(Arrays.copyOfRange(stream, i, stream.length));
                     currentNode.addChild(lastNode);
                     break;
                 }
@@ -154,7 +154,7 @@ public class ABDUTree {
             
             if (data[currentIndex] != stream[i]) {
                 currentNode.divide(currentIndex);
-                lastNode = new ABDUNode(Arrays.copyOfRange(stream, i, stream.length));
+                lastNode = new Node(Arrays.copyOfRange(stream, i, stream.length));
                 currentNode.getParentNode().addChild(lastNode);
                 break;
             }

@@ -7,19 +7,19 @@ package parser.output.data.analyzedPackets;
 
 import java.util.ArrayList;
 import java.util.List;
-import parser.data.ABDUNode;
-import parser.settings.ABDUSettings;
+import parser.data.Node;
+import parser.settings.Settings;
 import tools.SimilarityTool;
 
 /**
  *
  * @author Andrej
  */
-public class ABDUOutputTree {
+public class OutputTree {
     public final String header;
     public final int identifier;
-    private final ABDUSettings settings;
-    private List<ABDUOutputPacket> packets;
+    private final Settings settings;
+    private List<OutputPacket> packets;
     
     /**
      * Creates new instance of ABDUOutputTree
@@ -28,18 +28,18 @@ public class ABDUOutputTree {
      * @param identifier node identifier for output
      * @param settings output settings
      */
-    public ABDUOutputTree(String header, int identifier, ABDUSettings settings) {
+    public OutputTree(String header, int identifier, Settings settings) {
         this.header = header;
         this.identifier = identifier;
         this.settings = settings;
         packets = new ArrayList<>();
     }
     
-    public List<ABDUOutputPacket> getPackets() {
+    public List<OutputPacket> getPackets() {
         return packets;
     }
     
-    public void setPackets(List<ABDUOutputPacket> packets) {
+    public void setPackets(List<OutputPacket> packets) {
         this.packets = packets;
     }
     
@@ -48,14 +48,14 @@ public class ABDUOutputTree {
      * 
      * @param packet packet to be added
      */
-    public void addPacket(ABDUOutputPacket packet) {
+    public void addPacket(OutputPacket packet) {
         int index = packets.indexOf(packet);
         if (index == -1) {
             packets.add(packet);
             return;
         }
         
-        ABDUOutputPacket p = packets.get(index);
+        OutputPacket p = packets.get(index);
         p.getTransmittedMessage().increaseCount(packet.getTransmittedMessage().getCount());
         p.addReceivedMessages(packet.getReceivedMessages());
     }
@@ -69,7 +69,7 @@ public class ABDUOutputTree {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("\t%d [label=\"%s\"];%s", identifier, header, System.lineSeparator()));
         
-        List<ABDUOutputMessage> transmittedMessages = new ArrayList<>();
+        List<OutputMessage> transmittedMessages = new ArrayList<>();
         packets.forEach((packet) -> {
             transmittedMessages.add(packet.getTransmittedMessage());
             prepare(sb, packet.getTransmittedMessage().identifier, packet.getReceivedMessages(), true);
@@ -79,7 +79,7 @@ public class ABDUOutputTree {
         return sb.toString();
     }
     
-    private void prepare(StringBuilder sb, int parentIdentifier, List<ABDUOutputMessage> msgs, boolean generateIdentifier) {
+    private void prepare(StringBuilder sb, int parentIdentifier, List<OutputMessage> msgs, boolean generateIdentifier) {
         String[] strings = new String[msgs.size()];
         String[] invertedStrings = new String[msgs.size()];
         for (int i = 0; i < msgs.size(); i++) {
@@ -93,7 +93,7 @@ public class ABDUOutputTree {
         String color = getColorForMidStream(msgs, left, right);
         msgs.forEach((msg) -> {
             int msgLength = msg.message.length();
-            int nodeIdentifier = generateIdentifier ? new ABDUNode(null).identifier : msg.identifier;
+            int nodeIdentifier = generateIdentifier ? new Node(null).identifier : msg.identifier;
             
             if (left + right + 1 >= msgLength) {
                 sb.append(String.format("\t%d [label=\"%s\"];", nodeIdentifier, msg.message));
@@ -150,7 +150,7 @@ public class ABDUOutputTree {
         return returnIndex ? end - 1 : 0; // ignore last space
     }
     
-    private String getColorForMidStream(List<ABDUOutputMessage> msgs, int leftIndex, int rightIndex) {
+    private String getColorForMidStream(List<OutputMessage> msgs, int leftIndex, int rightIndex) {
         double similarityRank = 0;
         int count = 0;
         int msgsLength = msgs.size();

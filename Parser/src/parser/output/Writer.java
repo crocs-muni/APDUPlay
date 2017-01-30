@@ -5,9 +5,9 @@
  */
 package parser.output;
 
-import parser.output.data.analyzedPackets.ABDUOutputPacket;
-import parser.output.data.analyzedPackets.ABDUOutputTree;
-import parser.settings.ABDUSettings;
+import parser.output.data.analyzedPackets.OutputPacket;
+import parser.output.data.analyzedPackets.OutputTree;
+import parser.settings.Settings;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
@@ -22,22 +22,22 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Stack;
-import parser.ABDULogger;
-import parser.data.ABDUNode;
-import parser.data.ABDUPacket;
-import parser.data.ABDUTree;
-import parser.output.data.analyzedPackets.ABDUOutputMessage;
-import parser.settings.graph.ABDUGraphSettings;
+import parser.Logger;
+import parser.data.Node;
+import parser.data.Packet;
+import parser.data.Tree;
+import parser.output.data.analyzedPackets.OutputMessage;
+import parser.settings.graph.GraphSettings;
 
 /**
  *
  * @author Andrej
  */
-public class ABDUWriter {
+public class Writer {
     
     private static int flowIndex = 0;
-    private final ABDUSettings settings;
-    private final ABDULogger logger;
+    private final Settings settings;
+    private final Logger logger;
     
     /**
      * Creates new instance of ABDUWriter
@@ -45,7 +45,7 @@ public class ABDUWriter {
      * @param settings
      * @param logger
      */
-    public ABDUWriter(ABDUSettings settings, ABDULogger logger) {
+    public Writer(Settings settings, Logger logger) {
         this.settings = settings;
         this.logger = logger;
     }
@@ -55,7 +55,7 @@ public class ABDUWriter {
      * 
      * @param packets packets to write
      */
-    public void write(Collection<ABDUTree> packets) {
+    public void write(Collection<Tree> packets) {
         File file = new File(settings.getOutputDirectory());
         file.mkdirs();
 
@@ -70,22 +70,22 @@ public class ABDUWriter {
         }
     }
     
-    private List<ABDUOutputFunction> getOutputFunctions() {
-        List<ABDUOutputFunction> functions = new ArrayList<>();
-        for(int type : ABDUOutputType.TYPES) {
+    private List<OutputFunction> getOutputFunctions() {
+        List<OutputFunction> functions = new ArrayList<>();
+        for(int type : OutputType.TYPES) {
             if ((settings.getOutputTypeMask() & type) != 0) {
                 switch(type) {
-                    case ABDUOutputType.NODES:
-                        functions.add(new ABDUOutputFunction((tree, writer) -> printTransmitted(tree, writer), (tree, writer) -> printReceived(tree, writer)));
+                    case OutputType.NODES:
+                        functions.add(new OutputFunction((tree, writer) -> printTransmitted(tree, writer), (tree, writer) -> printReceived(tree, writer)));
                         break;
-                    case ABDUOutputType.FLOW:
-                        functions.add(new ABDUOutputFunction((tree, writer) -> printTransmittedFlow(tree, writer), (tree, writer) -> printReceivedFlow(tree, writer)));
+                    case OutputType.FLOW:
+                        functions.add(new OutputFunction((tree, writer) -> printTransmittedFlow(tree, writer), (tree, writer) -> printReceivedFlow(tree, writer)));
                         break;
-                    case ABDUOutputType.PACKETS:
-                        functions.add(new ABDUOutputFunction((tree, writer) -> printPackets(tree, writer), null));
+                    case OutputType.PACKETS:
+                        functions.add(new OutputFunction((tree, writer) -> printPackets(tree, writer), null));
                         break;
-                    case ABDUOutputType.PACKETS_ANALYZED:
-                        functions.add(new ABDUOutputFunction((tree, writer) -> printAnalyzedPackets(tree, writer), null));
+                    case OutputType.PACKETS_ANALYZED:
+                        functions.add(new OutputFunction((tree, writer) -> printAnalyzedPackets(tree, writer), null));
                         break;
                 }
             }
@@ -94,15 +94,15 @@ public class ABDUWriter {
         return functions;
     }
     
-    private void writeInOneFile(Collection<ABDUTree> packets, String directoryPath) {
-        List<ABDUOutputFunction> outputFunctions = getOutputFunctions();
+    private void writeInOneFile(Collection<Tree> packets, String directoryPath) {
+        List<OutputFunction> outputFunctions = getOutputFunctions();
         
         for (int i = 0; i < outputFunctions.size(); i++) {
             if (outputFunctions.get(i).hasTransmittedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_transmitted(%d).dot", directoryPath, i), "UTF-8")) {
                     writer.println("digraph packets {");
                     printGraphSettings(writer);
-                    for (ABDUTree tree : packets) {
+                    for (Tree tree : packets) {
                         outputFunctions.get(i).invokeTransmitted(tree, writer);
                     }
                     writer.println("}");
@@ -116,7 +116,7 @@ public class ABDUWriter {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_received(%d).dot",directoryPath, i), "UTF-8")) {
                     writer.println("digraph packets {");
                     printGraphSettings(writer);
-                    for (ABDUTree tree : packets) {
+                    for (Tree tree : packets) {
                         outputFunctions.get(i).invokeReceived(tree, writer);
                     }
                     writer.println("}");
@@ -128,10 +128,10 @@ public class ABDUWriter {
         }
     }
     
-    private void writeSeparated(Collection<ABDUTree> packets, String directoryPath) {
-        List<ABDUOutputFunction> outputFunctions = getOutputFunctions();
+    private void writeSeparated(Collection<Tree> packets, String directoryPath) {
+        List<OutputFunction> outputFunctions = getOutputFunctions();
         for (int i = 0; i < outputFunctions.size(); i++) {
-            for (ABDUTree tree : packets) {
+            for (Tree tree : packets) {
                 tree.simplifyNodes();
                 
                 if (outputFunctions.get(i).hasTransmittedFunction()) {
@@ -161,10 +161,10 @@ public class ABDUWriter {
         }
     }
     
-    private void printPackets(ABDUTree tree, PrintWriter writer) {
+    private void printPackets(Tree tree, PrintWriter writer) {
         writer.println(String.format("\t%d [label=\"%s\"];", tree.root.identifier, toHexBinaryString(tree.root.getData())));
         
-        Map<String, Map<String, List<ABDUPacket>>> streams = new HashMap<>();
+        Map<String, Map<String, List<Packet>>> streams = new HashMap<>();
         tree.streamPackets.forEach((packet) -> {
             byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
             byte[] received = getDataFromLeafNode(packet.getReceivedLeafNode());
@@ -172,9 +172,9 @@ public class ABDUWriter {
             String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
             String receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
-            Map<String, List<ABDUPacket>> val = streams.get(transmittedStr);
+            Map<String, List<Packet>> val = streams.get(transmittedStr);
             if (val != null) {
-                List<ABDUPacket> p = val.get(receivedStr);
+                List<Packet> p = val.get(receivedStr);
                 if (p == null) {
                     p = new LinkedList<>();
                     val.put(receivedStr, p);
@@ -182,7 +182,7 @@ public class ABDUWriter {
                 p.add(packet);
             } else {
                 val = new HashMap<>();
-                List<ABDUPacket> p = new LinkedList<>();
+                List<Packet> p = new LinkedList<>();
                 p.add(packet);
                 val.put(receivedStr, p);
                 streams.put(transmittedStr, val);
@@ -191,11 +191,11 @@ public class ABDUWriter {
         
         streams.entrySet().forEach((item) -> {
             // To generate identifier
-            ABDUNode transmittedNode = new ABDUNode(null);
+            Node transmittedNode = new Node(null);
             writer.println(String.format("\t%d [label=\"%s\"];", transmittedNode.identifier, item.getKey()));
             
             item.getValue().forEach((received, packets) -> {
-                ABDUNode receivedNode = new ABDUNode(null);
+                Node receivedNode = new Node(null);
                 writer.println(String.format("\t%d [label=\"%s\"];", receivedNode.identifier, received));
                 
                 packets.forEach((packet) -> {
@@ -206,8 +206,8 @@ public class ABDUWriter {
         });
     }
     
-    private void printAnalyzedPackets(ABDUTree tree, PrintWriter writer) {
-        ABDUOutputTree outputTree = new ABDUOutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier, settings);
+    private void printAnalyzedPackets(Tree tree, PrintWriter writer) {
+        OutputTree outputTree = new OutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier, settings);
         
         tree.streamPackets.forEach((packet) -> {
             byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
@@ -216,8 +216,8 @@ public class ABDUWriter {
             String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
             String receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
-            ABDUOutputPacket p = new ABDUOutputPacket(new ABDUOutputMessage(transmittedStr, packet.getTransmittedLeafNode().identifier));
-            p.addReceivedMessage(new ABDUOutputMessage(receivedStr, packet.getReceivedLeafNode().identifier));
+            OutputPacket p = new OutputPacket(new OutputMessage(transmittedStr, packet.getTransmittedLeafNode().identifier));
+            p.addReceivedMessage(new OutputMessage(receivedStr, packet.getReceivedLeafNode().identifier));
             
             outputTree.addPacket(p);
         });
@@ -225,7 +225,7 @@ public class ABDUWriter {
         writer.println(outputTree.prepareOutput());
     }
     
-    private byte[] getDataFromLeafNode(ABDUNode node) {
+    private byte[] getDataFromLeafNode(Node node) {
         List<byte[]> data = new ArrayList<>();
         
         int size = 0;
@@ -246,29 +246,29 @@ public class ABDUWriter {
         return array;
     }
     
-    private void printTransmitted(ABDUTree tree, PrintWriter writer) {
+    private void printTransmitted(Tree tree, PrintWriter writer) {
         printLabels(tree.root, writer);
         print(tree.root, writer);
     }
     
-    private void printReceived(ABDUTree tree, PrintWriter writer) {
+    private void printReceived(Tree tree, PrintWriter writer) {
         printLabels(tree.receivedRoot, writer);
         print(tree.receivedRoot, writer);
     }
     
-    private void printTransmittedFlow(ABDUTree tree, PrintWriter writer) {
+    private void printTransmittedFlow(Tree tree, PrintWriter writer) {
         printFlow(tree.root, tree.getPacketsCount(), writer);
     }
     
-    private void printReceivedFlow(ABDUTree tree, PrintWriter writer) {
+    private void printReceivedFlow(Tree tree, PrintWriter writer) {
         printFlow(tree.receivedRoot, tree.getPacketsCount(), writer);
     }
     
-    private void print(ABDUNode node, PrintWriter writer) {
-        Stack<ABDUNode> stack = new Stack<>();
+    private void print(Node node, PrintWriter writer) {
+        Stack<Node> stack = new Stack<>();
         stack.add(node);
         
-        List<ABDUNode> toPrint = new ArrayList<>();
+        List<Node> toPrint = new ArrayList<>();
         while(!stack.isEmpty()) {
             node = stack.pop();
             toPrint.add(node);
@@ -290,8 +290,8 @@ public class ABDUWriter {
         }
     }
     
-    private void printLabels(ABDUNode node, PrintWriter writer) {
-        Queue<ABDUNode> queue = new ArrayDeque<>();
+    private void printLabels(Node node, PrintWriter writer) {
+        Queue<Node> queue = new ArrayDeque<>();
         queue.add(node);
         while(!queue.isEmpty()) {
             node = queue.remove();
@@ -300,9 +300,9 @@ public class ABDUWriter {
         }
     }
     
-    private void printFlow(ABDUNode node, int packetsCount, PrintWriter writer) {
-        List<ABDUNode> nodes = new ArrayList<>();
-        List<ABDUNode> childNodes = new ArrayList<>();
+    private void printFlow(Node node, int packetsCount, PrintWriter writer) {
+        List<Node> nodes = new ArrayList<>();
+        List<Node> childNodes = new ArrayList<>();
         StringBuilder labels = new StringBuilder();
         StringBuilder graph = new StringBuilder();
         nodes.add(node);
@@ -335,7 +335,7 @@ public class ABDUWriter {
     }
     
     private void printGraphSettings(PrintWriter writer) {
-        ABDUGraphSettings graphSettings = settings.getGraphSettings();
+        GraphSettings graphSettings = settings.getGraphSettings();
         
         if (graphSettings.getRankDir() != null) {
             writer.println(String.format("\trankdir=%s;", graphSettings.getRankDir()));

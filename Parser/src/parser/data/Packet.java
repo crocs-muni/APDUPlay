@@ -9,31 +9,31 @@ package parser.data;
  *
  * @author Andrej
  */
-public class ABDUPacket {
-    private ABDUNode transmittedLeafNode;
-    private ABDUNode receivedLeafNode;
+public class Packet {
+    private Node transmittedLeafNode;
+    private Node receivedLeafNode;
     private int responseTime;
     private int ac;
     
-    public ABDUPacket() { }
+    public Packet() { }
     
-    public ABDUPacket(ABDUNode transmittedLeafNode) {
+    public Packet(Node transmittedLeafNode) {
         this.transmittedLeafNode = transmittedLeafNode;
     }
     
-    public void setTransmittedLeafNode(ABDUNode node) {
+    public void setTransmittedLeafNode(Node node) {
         this.transmittedLeafNode = node;
     }
     
-    public ABDUNode getTransmittedLeafNode() {
+    public Node getTransmittedLeafNode() {
         return transmittedLeafNode;
     }
     
-    public void setReceivedLeafNode(ABDUNode node) {
+    public void setReceivedLeafNode(Node node) {
         this.receivedLeafNode = node;
     }
     
-    public ABDUNode getReceivedLeafNode() {
+    public Node getReceivedLeafNode() {
         return receivedLeafNode;
     }
     

@@ -5,13 +5,13 @@
  */
 package parser.settings;
 
-import parser.settings.graph.ABDUGraphSettings;
+import parser.settings.graph.GraphSettings;
 
 /**
  *
  * @author Andrej
  */
-public class ABDUSettings {
+public class Settings {
     private String outputDirectory;
     private String bytesSeparator;
     private boolean separatePackets;
@@ -20,7 +20,7 @@ public class ABDUSettings {
     private int outputTypeMask;
     private int headerLength;
     private int minimalConstantLength;
-    private final ABDUGraphSettings graphSettings = new ABDUGraphSettings();
+    private final GraphSettings graphSettings = new GraphSettings();
     
     public void setOutputDirectory(String outputDir) {
         outputDirectory = outputDir;
@@ -70,7 +70,7 @@ public class ABDUSettings {
         return bytesSeparator;
     }
     
-    public ABDUGraphSettings getGraphSettings() {
+    public GraphSettings getGraphSettings() {
         return graphSettings;
     }
     

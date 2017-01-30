@@ -14,12 +14,12 @@ import java.util.Map;
  *
  * @author Andrej
  */
-public class ABDUNode {
+public class Node {
     private static int nextIdentifier = 0;
     
     private byte[] data;
-    private ABDUNode parent;
-    private final Map<Byte, ABDUNode> childNodes;
+    private Node parent;
+    private final Map<Byte, Node> childNodes;
     private int count;
     
     public final int identifier;
@@ -29,7 +29,7 @@ public class ABDUNode {
      * 
      * @param data byte stream
      */
-    public ABDUNode(byte[] data) {
+    public Node(byte[] data) {
         this.data = data;
         childNodes = new HashMap<>();
         identifier = nextIdentifier++;
@@ -91,7 +91,7 @@ public class ABDUNode {
         }
         
         byte[] subArray = Arrays.copyOfRange(data, 0, index);
-        ABDUNode node = new ABDUNode(subArray);
+        Node node = new Node(subArray);
         
         parent.addChild(node);
         data = Arrays.copyOfRange(data, index, data.length);
@@ -103,7 +103,7 @@ public class ABDUNode {
      * 
      * @param node child node to be added
      */
-    public void addChild(ABDUNode node) {
+    public void addChild(Node node) {
         node.parent = this;
         childNodes.put(node.getData()[0], node);
     }
@@ -113,7 +113,7 @@ public class ABDUNode {
      * 
      * @param nodes child nodes to be added
      */
-    public void addChildren(Collection<ABDUNode> nodes) {
+    public void addChildren(Collection<Node> nodes) {
         nodes.forEach((node) -> {
             addChild(node);
         });
@@ -124,7 +124,7 @@ public class ABDUNode {
      * 
      * @param nodes childs to be set
      */
-    public void setChildren(Collection<ABDUNode> nodes) {
+    public void setChildren(Collection<Node> nodes) {
         childNodes.clear();
         addChildren(nodes);
     }
@@ -144,7 +144,7 @@ public class ABDUNode {
      * @param item  first byte of data stream
      * @return      child node if any, otherwise null
      */
-    public ABDUNode findChildNode(byte item) {
+    public Node findChildNode(byte item) {
         return childNodes.get(item);
     }
     
@@ -153,7 +153,7 @@ public class ABDUNode {
      * 
      * @return child nodes
      */
-    public Collection<ABDUNode> getChildNodes() {
+    public Collection<Node> getChildNodes() {
         return childNodes.values();
     }
     
@@ -162,7 +162,7 @@ public class ABDUNode {
      * 
      * @return parent node
      */
-    public ABDUNode getParentNode() {
+    public Node getParentNode() {
         return parent;
     }
 }

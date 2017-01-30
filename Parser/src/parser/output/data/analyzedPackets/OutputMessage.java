@@ -11,7 +11,7 @@ import java.util.Objects;
  *
  * @author Andrej
  */
-public class ABDUOutputMessage {
+public class OutputMessage {
     public final String message;
     public final int identifier;
     
@@ -23,7 +23,7 @@ public class ABDUOutputMessage {
      * @param message packet message
      * @param identifier node identifier
      */
-    public ABDUOutputMessage(String message, int identifier) {
+    public OutputMessage(String message, int identifier) {
         this.message = message;
         this.identifier = identifier;
         count = 1;
@@ -52,11 +52,11 @@ public class ABDUOutputMessage {
             return true;
         }
         
-        if (!(obj instanceof ABDUOutputMessage)) {
+        if (!(obj instanceof OutputMessage)) {
             return false;
         }
 
-        ABDUOutputMessage msg = (ABDUOutputMessage)obj;
+        OutputMessage msg = (OutputMessage)obj;
         return (msg.message == null ? message == null : msg.message.equals(message));
     }
 

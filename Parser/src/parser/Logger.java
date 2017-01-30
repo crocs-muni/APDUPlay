@@ -9,7 +9,7 @@ package parser;
  *
  * @author Andrej
  */
-public class ABDULogger {
+public class Logger {
     
     /**
      * Logs message as an error

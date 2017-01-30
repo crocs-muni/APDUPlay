@@ -3,19 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package abduparse;
+package apduparse;
 
-import parser.ABDULogger;
-import parser.ABDUParser;
-import parser.output.ABDUOutputType;
-import parser.settings.ABDUSettings;
-import parser.settings.graph.ABDUGraphSettings;
+import parser.Logger;
+import parser.Parser;
+import parser.output.OutputType;
+import parser.settings.Settings;
+import parser.settings.graph.GraphSettings;
 
 /**
  *
  * @author Andrej
  */
-public class ABDUParse {
+public class APDUParse {
 
     /**
      * @param args the command line arguments
@@ -25,20 +25,20 @@ public class ABDUParse {
             throw new IllegalArgumentException("Path to file to parse is required as an argument");
         }
         
-        ABDUSettings settings = new ABDUSettings();
+        Settings settings = new Settings();
         settings.setOutputDirectory("output");
         settings.setSeparatePackets(false);
         settings.setSimpleNodes(false);
-        settings.setOutputTypeMask(ABDUOutputType.ALL);
+        settings.setOutputTypeMask(OutputType.ALL);
         settings.setHeaderLength(4);
         settings.setMinimalConstantLength(3);
         settings.setBytesSeparator(" ");
         
-        ABDUGraphSettings graphSettings = settings.getGraphSettings();
+        GraphSettings graphSettings = settings.getGraphSettings();
         graphSettings.setRankDir("LR");
         graphSettings.setNodeAttributes("color=lightblue2, style=filled");
         
-        ABDUParser parser = new ABDUParser(settings, new ABDULogger());
+        Parser parser = new Parser(settings, new Logger());
         parser.parseFile(args[0]);
         parser.printData();
     }

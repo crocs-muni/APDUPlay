@@ -13,33 +13,33 @@ import java.util.Objects;
  *
  * @author Andrej
  */
-public class ABDUOutputPacket {
-    private ABDUOutputMessage transmittedMessage;
-    private List<ABDUOutputMessage> receivedMessages;
+public class OutputPacket {
+    private OutputMessage transmittedMessage;
+    private List<OutputMessage> receivedMessages;
     
     /**
      * Creates new instance of ABDUOutputPacket
      * 
      * @param transmittedMessage transmitted message from packet
      */
-    public ABDUOutputPacket(ABDUOutputMessage transmittedMessage) {
+    public OutputPacket(OutputMessage transmittedMessage) {
         this.transmittedMessage = transmittedMessage;
         receivedMessages = new ArrayList<>();
     }
     
-    public ABDUOutputMessage getTransmittedMessage() {
+    public OutputMessage getTransmittedMessage() {
         return transmittedMessage;
     }
     
-    public void setTransmittedMessage(ABDUOutputMessage msg) {
+    public void setTransmittedMessage(OutputMessage msg) {
         transmittedMessage = msg;
     }
     
-    public List<ABDUOutputMessage> getReceivedMessages() {
+    public List<OutputMessage> getReceivedMessages() {
         return receivedMessages;
     }
     
-    public void setReceivedMessages(List<ABDUOutputMessage> msgs) {
+    public void setReceivedMessages(List<OutputMessage> msgs) {
         receivedMessages = msgs;
     }
     
@@ -48,7 +48,7 @@ public class ABDUOutputPacket {
      * 
      * @param msg message to be add
      */
-    public void addReceivedMessage(ABDUOutputMessage msg) {
+    public void addReceivedMessage(OutputMessage msg) {
         int index = receivedMessages.indexOf(msg);
         if (index == -1) {
             receivedMessages.add(msg);
@@ -63,7 +63,7 @@ public class ABDUOutputPacket {
      * 
      * @param msgs messages to be add
      */
-    public void addReceivedMessages(List<ABDUOutputMessage> msgs) {
+    public void addReceivedMessages(List<OutputMessage> msgs) {
         msgs.forEach(msg -> addReceivedMessage(msg));
     }
     
@@ -77,11 +77,11 @@ public class ABDUOutputPacket {
             return true;
         }
         
-        if (!(obj instanceof ABDUOutputPacket)) {
+        if (!(obj instanceof OutputPacket)) {
             return false;
         }
 
-        ABDUOutputPacket packet = (ABDUOutputPacket)obj;
+        OutputPacket packet = (OutputPacket)obj;
         return (packet.transmittedMessage == null ? transmittedMessage == null : packet.transmittedMessage.equals(transmittedMessage));
     }
 

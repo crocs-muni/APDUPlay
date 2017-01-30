@@ -5,9 +5,9 @@
  */
 package parser;
 
-import parser.data.ABDUTree;
-import parser.output.ABDUWriter;
-import parser.settings.ABDUSettings;
+import parser.data.Tree;
+import parser.output.Writer;
+import parser.settings.Settings;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,11 +20,11 @@ import javax.xml.bind.DatatypeConverter;
  *
  * @author Andrej
  */
-public class ABDUParser {
+public class Parser {
     private int ac;
-    private final ABDULogger logger;
-    private final ABDUSettings settings;
-    private final Map<String, ABDUTree> packets;
+    private final Logger logger;
+    private final Settings settings;
+    private final Map<String, Tree> packets;
     private String lastProcessedPacket;
     
     /**
@@ -33,7 +33,7 @@ public class ABDUParser {
      * @param settings
      * @param logger
      */
-    public ABDUParser(ABDUSettings settings, ABDULogger logger) {
+    public Parser(Settings settings, Logger logger) {
         this.settings = settings;
         this.logger = logger;
         this.packets = new HashMap<>();
@@ -60,7 +60,7 @@ public class ABDUParser {
      * Writes stored data
      */
     public void printData() {
-        ABDUWriter abduWriter = new ABDUWriter(settings, logger);
+        Writer abduWriter = new Writer(settings, logger);
         abduWriter.write(packets.values());
     }
     
@@ -102,9 +102,9 @@ public class ABDUParser {
         byte[] packetData = Arrays.copyOfRange(data, settings.getHeaderLength(), data.length);
         String header = DatatypeConverter.printHexBinary(packetHeader);
         
-        ABDUTree existingTree = packets.get(header);
+        Tree existingTree = packets.get(header);
         if (existingTree == null) {
-            ABDUTree tree = new ABDUTree(packetHeader, packetData);
+            Tree tree = new Tree(packetHeader, packetData);
             packets.put(tree.header, tree);
         } else {
             existingTree.merge(packetData);
@@ -114,7 +114,7 @@ public class ABDUParser {
     }
     
     private void handleReceivedData(byte[] data) {
-        ABDUTree tree = packets.get(lastProcessedPacket);
+        Tree tree = packets.get(lastProcessedPacket);
         if (tree == null) {
             logger.error("Packet \"" + DatatypeConverter.printHexBinary(data) + "\" not found as parsed tree");
             return;
@@ -125,7 +125,7 @@ public class ABDUParser {
     
     private void handleResponseTime(String time) {
         time = time.replaceAll("[^0-9]","");
-        ABDUTree tree = packets.get(lastProcessedPacket);
+        Tree tree = packets.get(lastProcessedPacket);
         
         // Sets also ac
         tree.setAdditionalInfoForLastPacket(Integer.parseInt(time), ac++);
