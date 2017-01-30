@@ -30,15 +30,6 @@
 #include "Socket.h"
 #include <errno.h>
 
-#if defined (UNICODE) && defined (_WIN32)
-typedef FILE*(*m)(const char_type*, const char_type*);
-static m type_fopen = _wfopen;
-#else 
-typedef FILE*(*m)(const char_type*, const char_type*);
-typedef errno_t(*n)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t);
-static m type_fopen = fopen;
-#endif
-
 using namespace std;
 
 #pragma warning(disable:4996)

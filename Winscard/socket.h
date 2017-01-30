@@ -36,34 +36,6 @@ Altered by P. Svenda
 
 #include <WinSock2.h>
 
-#include <string>
-
-/*#ifndef UNICODE
-#define UNICODE
-#endif
-
-#ifdef UNICODE
-#ifndef _UNICODE
-#define _UNICODE
-#endif
-#endif*/
-
-#if defined (UNICODE) && defined (_WIN32)
-typedef std::wstring string_type;
-typedef std::wifstream ifstream_type;
-typedef std::wofstream ofstream_type;
-typedef std::wfstream fstream_type;
-typedef wchar_t char_type;
-#define _CONV(x) L ##x
-#else 
-typedef std::string string_type;
-typedef std::ifstream ifstream_type;
-typedef std::ofstream ofstream_type;
-typedef std::fstream fstream_type;
-typedef char char_type;
-#define _CONV(x) x
-#endif
-
 enum TypeSocket {BlockingSocket, NonBlockingSocket};
 
 class Socket {
