@@ -56,6 +56,38 @@ static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type
 #endif
 #endif
 
+#define WINSCARDDATA __declspec(dllexport)
+
+#if defined(_WIN32)
+	#define STDCALL __stdcall
+#endif
+
+#ifdef _DEBUG
+	#define new DEBUG_NEW
+#endif
+
+#ifdef WINSCARDAPI
+	#define SCard WINSCARDAPI
+#else 
+	#define SCard
+#endif
+
+#ifdef __linux__
+	typedef wchar_t WCHAR;
+	typedef wchar_t* LPWSTR;
+	typedef const wchar_t* LPCWSTR;
+	#define TRUE 1
+	#define FALSE 0
+	#define NULL 0
+	#define STDCALL
+	#ifndef IN
+	#define IN
+	#endif
+	#ifndef OUT
+	#define OUT
+	#endif
+#endif
+
 #ifndef HIGHBYTE
     #define HIGHBYTE(x)  x >> 8 
 #endif
