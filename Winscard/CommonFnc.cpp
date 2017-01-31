@@ -37,13 +37,17 @@
 #include <math.h>
 #include <memory>
 #include <fstream>
+#include <cstring>
+
+#if defined (_WIN32)
 #include <filesystem>
+#endif
 
 int compareWithNoCase2(const char_type* str1, const char_type* str2) {
 	
 	if (type_length(str1) != type_length(str2))
 	{
-		return max(type_length(str1), type_length(str2));
+		return std::max(type_length(str1), type_length(str2));
 	}
 
 	char_type *str1_2 = new char_type[type_length(str1) + 1];
@@ -90,6 +94,7 @@ int CCommonFnc::File_AppendString(string_type filePath, string_type data) {
 	return status;
 }
 
+#if defined(_WIN32)
 int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFreeFileName) {
     int             status = STAT_OK;
     char_type            fileName[MAX_PATH];
@@ -127,6 +132,7 @@ int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFr
 
     return status;
 }
+#endif
 
 int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
     return File_SaveMatrixInt(filePath, pBlob, startOffset, endOffset, startFileOffset, bSaveBinary);
@@ -364,6 +370,7 @@ int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lc
     return status;
 }
 
+#if defined(_WIN32)
 int CCommonFnc::SCSAT_SaveSamples(string_type filePath, SAMPLE_PLOT* pSample, int startOffset, int endOffset) {
     int     status = STAT_OK;
     
@@ -522,3 +529,4 @@ int CCommonFnc::Sample_Free(SAMPLE_PLOT* pSample) {
 
     return status;
 }
+#endif

@@ -5,18 +5,17 @@
       <sourceFolder url="file://$MODULE_DIR$/Shared/status.H" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Shared/status.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Shared/globals.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Iniparser/iniparser_all.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/stdafx.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/socket.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/CommonFnc.cpp" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Winscard/Winscard.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Winscard/Interface.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Winscard/CommonFnc.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Winscard/PCSCard.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/socket.h" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/Resource.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Winscard/Winscard.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Winscard/stdafx.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Winscard/CommonFnc.h" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/Winscard/stdafx.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/Winscard.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/Winscard/Winscard.h" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/Winscard/Resource.h" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module-library">

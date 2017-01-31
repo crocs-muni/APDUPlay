@@ -35,29 +35,37 @@ public:
     lab     apduInList;    
     lab     apduOutList;    
     BOOL    m_bRulesActive;
-    
+
+#if defined (_WIN32)
     SCSAT04_CONFIG  m_scsat04Config;
+#endif
     WINSCARD_CONFIG m_winscardConfig;
     int             m_processedApduByteCounter;
-    
-    lptr    m_charAllocatedMemoryList;    
-    lptr    m_wcharAllocatedMemoryList;    
 
+    lptr    m_charAllocatedMemoryList;
+    lptr    m_wcharAllocatedMemoryList;
+
+#if defined (_WIN32)
     int ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig);
     int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath);
-    
-    
+#endif
+
     int LoadRule(const char_type* section_name, dictionary* dict);
     int LoadRules();
-    
+
     int ApplyRules(BYTE* pbSendBuffer, DWORD* pcbSendLength, int direction);
     int GetApduFromHistory(BYTE* buffer, int history, int apduDirection);
-    
+
+#if defined (_WIN32)
 //	int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
     LONG SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
+#endif
 	int LoadRule(string_type ruleName, dictionary* dict);
+
+#if defined (_WIN32)
 public:
 	virtual BOOL InitInstance();
 
 	DECLARE_MESSAGE_MAP()
+#endif
 };

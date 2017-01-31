@@ -7,6 +7,7 @@
 #endif 
 
 #include <string>
+#include <cstring>
 
 
 //#define UNICODE
@@ -50,7 +51,9 @@ static char_type*(*type_copy)(char_type*, const char_type*) = strcpy;
 static int(*type_compare)(const char_type*, const char_type*) = strcmp;
 static long(*type_to_int)(const char_type*, char_type**, int) = strtol;
 static char_type*(*type_cat)(char_type*, const char_type*) = strcat;
+#if defined(_WIN32)
 static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type*, size_t, char_type*, size_t, char_type*, size_t) = _splitpath_s;
+#endif
 #endif
 
 #ifndef HIGHBYTE
@@ -96,6 +99,7 @@ typedef struct _CARDAPDU {
 } CARDAPDU;
 #endif
 
+#if defined(_WIN32)
 typedef struct _INT_DATA_BLOB {
     int*    pData;
     DWORD   dwMaxLen;
@@ -147,7 +151,7 @@ typedef struct _FLOAT_DATA_BLOB {
     }
 
 } FLOAT_DATA_BLOB;
-
+#endif
 #define SLOT_ANY_AVAILABLE	-1
 
 #endif

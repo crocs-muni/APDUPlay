@@ -1,12 +1,16 @@
 ﻿#include "stdafx.h"
 #include "Interface.h"
+#include <chrono>
+#include <thread>
 
 // CWinscardApp initialization
 
 // CWinscardApp
 
+#if defined (_WIN32)
 BEGIN_MESSAGE_MAP(CWinscardApp, CWinApp)
 END_MESSAGE_MAP()
+#endif
 
 // CWinscardApp construction
 
@@ -23,6 +27,7 @@ CWinscardApp::CWinscardApp()
 	m_processedApduByteCounter = 0;
 }
 
+#if defined (_WIN32)
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
@@ -112,7 +117,7 @@ int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, st
                                 
     return status;
 }
-
+#endif
 
 
 int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
@@ -166,9 +171,11 @@ int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
                     
                     // NEDETERMINISTIC SLEEP IF REQUIRED
                     if (iter->msDelay > 0) {
-                        _sleep(iter->msDelay); 
+						std::this_thread::sleep_for(std::chrono::milliseconds(iter->msDelay));
+                        //_sleep(iter->msDelay);
                         // SLEEP RANDOMLY UP TO 1/10 OF ORIGINAL TIME
-                        _sleep(rand() % (iter->msDelay / 10));
+						std::this_thread::sleep_for(std::chrono::milliseconds(rand() % (iter->msDelay / 10)));
+                        //_sleep(rand() % (iter->msDelay / 10));
                     }
                     
                     // RULE FOUND
@@ -220,6 +227,7 @@ int CWinscardApp::GetApduFromHistory(BYTE* buffer, int history, int apduDirectio
     return status;
 }
 
+#if defined (_WIN32)
 LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
     LONG        status = 0;
     string_type     message;
@@ -300,6 +308,7 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
 
     return status;
 }
+#endif
 
 int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*string_type filePath*/) {
 	int status = STAT_OK;
@@ -376,6 +385,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		}
 	}
 
+#if defined (_WIN32)
 	if (compareWithNoCase(section_name, _CONV("SCSAT04")) == 0)
 	{
 		// SCSAT04 CONFIGURATION RULE
@@ -436,6 +446,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 			m_scsat04Config.numSamples = type_to_int(char_value, NULL, 10);
 		}
 	}
+#endif
 	
 	if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0)
 	{
@@ -543,7 +554,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					// GO OVER ALL MATCH DATA
 					string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
 					//data.Replace(";", "");
-					data.erase(remove(data.begin(), data.end(), ';'), data.end());
+					data.erase(std::remove(data.begin(), data.end(), ';'), data.end());
 					BYTE dataBuffer[300];
 					DWORD dataBufferLen = 300;
 					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
@@ -643,7 +654,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					// GO OVER ALL MATCH DATA
 					string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
 					//data.Replace(";", "");
-					data.erase(remove(data.begin(), data.end(), ';'), data.end());
+					data.erase(std::remove(data.begin(), data.end(), ';'), data.end());
 					BYTE dataBuffer[300];
 					DWORD dataBufferLen = 300;
 					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
