@@ -1,4 +1,4 @@
-#include "status.h"
+#include "status.H"
 
 const char* ErrorToString(int error) {
     switch (error) {

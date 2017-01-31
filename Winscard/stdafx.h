@@ -51,6 +51,8 @@
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdtctl.h>		// MFC support for Internet Explorer 4 Common Controls
 #endif
+#else
+#define FALSE 0
 #endif
 
 #ifndef _AFX_NO_AFXCMN_SUPPORT
@@ -161,6 +163,7 @@ typedef std::list<APDU_RULE>     lar;
 typedef std::list<PTR>           lptr;
 
 
+#if defined (_WIN32)
 typedef struct _SCSAT04_CONFIG {
     BOOL            bRedirect;
 	string_type     IP;
@@ -196,7 +199,7 @@ typedef struct _SCSAT04_CONFIG {
         sampleReaded = FALSE;
     }
 } SCSAT04_CONFIG;
-
+#endif
 
 typedef struct _WINSCARD_CONFIG {
     BOOL    bAUTO_REQUEST_DATA;    
@@ -319,7 +322,7 @@ static string_type SCSAT_MEASURE_SAMPLEUNIQUEID = _CONV("SAMPLEUNIQUEID");
 static string_type SCSAT_MEASURE_APDUDATA = _CONV("APDUDATA");
 static string_type SCSAT_MEASURE_SAVEBINARY = _CONV("SAVEBINARY");
 
-
+#if defined (_WIN32)
 typedef struct _SCSAT_MEASURE_INFO {
 	string_type     dateTime;
 	string_type     cardATR;
@@ -363,6 +366,7 @@ typedef struct _SCSAT_MEASURE_INFO {
         numSamples = 0;
         baseLevel = -1;
     }
+
 int formatToString(string_type* pResult) {
 		string_type value;
 		// remove all endlines and replace by ';' in multiline strings
@@ -459,3 +463,4 @@ public:
         measureInfo.clear();
     }
 };
+#endif

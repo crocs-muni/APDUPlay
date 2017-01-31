@@ -158,7 +158,7 @@ int compareWithNoCase(const char_type* str1,const char_type* str2) {
 	
 	if(type_length(str1) != type_length(str2))
 	{
-		return max(type_length(str1), type_length(str2));
+		return std::max(type_length(str1), type_length(str2));
 	}
 
 	char_type *str1_2 = new char_type[type_length(str1) +1];
@@ -385,8 +385,9 @@ CWinscardApp::~CWinscardApp()
 	// Reference to WINSCARD_LOG will fail with access to 0xfeefee (global CString WINSCARD_LOG does not exists at the time of dll release (strange))
 	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\r\n");
 
+#if defined(_WIN32)
 	if (m_scsat04Config.pSocket != NULL) delete m_scsat04Config.pSocket;
-
+#endif
 	lptr::iterator  iter;
 	for (iter = m_charAllocatedMemoryList.begin(); iter != m_charAllocatedMemoryList.end(); iter++) {
 		char* ptr = (char*)*iter;
@@ -552,7 +553,9 @@ SCard LONG STDCALL SCardTransmit(
 	// INCREASE COUNTER OF THE BYTES SEND TO CARD - IS USED AS MEASUREMENT TRIGGER LATER
 	theApp.m_processedApduByteCounter += cbSendLength;
 
-	// SCSAT04
+    // SCSAT04
+
+#if defined(_WIN32)
 	if (theApp.m_scsat04Config.bRedirect) {
 		// GET PIN COUNTER HACK
 		if (memcmp(pbSendBuffer, PIN_COUNTER_APDU, sizeof(PIN_COUNTER_APDU)) == 0) {
@@ -580,7 +583,7 @@ SCard LONG STDCALL SCardTransmit(
 		}
 	}
 	else {
-
+#endif
 		// If required, then ensure that at least one byte will be send to card
 		if (theApp.m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA) {
 			if (cbSendLength < 6) {
@@ -593,8 +596,8 @@ SCard LONG STDCALL SCardTransmit(
 
 		// SEND DIRECTLY TO LOCAL READER
 		result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-	}
-
+#if defined(_WIN32) 	}
+#endif
 
 	// HACK - if required, then perform transparently data readout on behalf of reader
 	// RECEIVE RESPONSE DATA, IF ANY 
@@ -671,6 +674,7 @@ SCard LONG STDCALL SCardTransmit(
 
 
 	// SCSAT04 - READ MEASUREMENT SAMPLE FROM BOARD IF NOT READED YET AND TRIGGER APPDU WAS REACHED (NUMBER OF BYTES IN)
+#if defined(_WIN32)
 	if (theApp.m_scsat04Config.bRedirect && !(theApp.m_scsat04Config.sampleReaded) && (theApp.m_processedApduByteCounter >= theApp.m_scsat04Config.measureApduByteCounter)) {
 		// DOWNLOAD DATA FROM MEASUREMENT (IF ANY) 
 		if (theApp.m_scsat04Config.pSocket != NULL) {
@@ -687,6 +691,7 @@ SCard LONG STDCALL SCardTransmit(
 		}
 	}
 	// SCSAT04 END
+#endif
 
 	// increase apdu counter	
 	apduCounter++;
