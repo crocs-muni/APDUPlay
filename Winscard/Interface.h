@@ -158,7 +158,11 @@ int compareWithNoCase(const char_type* str1,const char_type* str2) {
 	
 	if(type_length(str1) != type_length(str2))
 	{
+#if defined (_WIN32)
+		return max(type_length(str1), type_length(str2));
+#else
 		return std::max(type_length(str1), type_length(str2));
+#endif
 	}
 
 	char_type *str1_2 = new char_type[type_length(str1) +1];
@@ -596,7 +600,8 @@ SCard LONG STDCALL SCardTransmit(
 
 		// SEND DIRECTLY TO LOCAL READER
 		result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-#if defined(_WIN32) 	}
+#if defined(_WIN32) 	
+		}
 #endif
 
 	// HACK - if required, then perform transparently data readout on behalf of reader
