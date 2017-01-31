@@ -138,6 +138,7 @@ int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFr
 }
 #endif
 
+#if defined(_WIN32)
 int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
     return File_SaveMatrixInt(filePath, pBlob, startOffset, endOffset, startFileOffset, bSaveBinary);
 }
@@ -186,6 +187,7 @@ int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, i
 
     return status;
 }
+#endif
 
 int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen) {
     int     status = STAT_OK;
