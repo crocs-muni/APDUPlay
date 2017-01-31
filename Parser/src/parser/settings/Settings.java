@@ -5,6 +5,7 @@
  */
 package parser.settings;
 
+import parser.output.OutputType;
 import parser.settings.graph.GraphSettings;
 
 /**
@@ -21,6 +22,20 @@ public class Settings {
     private int headerLength;
     private int minimalConstantLength;
     private final GraphSettings graphSettings = new GraphSettings();
+
+    
+    public void setDefaults() {
+        outputDirectory = "output";
+        separatePackets = false;
+        simpleNodes = false;
+        outputTypeMask = OutputType.ALL;
+        headerLength = 4;
+        minimalConstantLength = 0;
+        bytesSeparator = " ";
+        
+        graphSettings.setRankDir("LR");
+        graphSettings.setNodeAttributes("color=lightblue2, style=filled");
+    }
     
     public void setOutputDirectory(String outputDir) {
         outputDirectory = outputDir;
