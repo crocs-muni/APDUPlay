@@ -5,7 +5,7 @@ PC/SC inspection and manipulation tool
 
 
 The project APDUPlay is based on ApduView tool (http://www.fernandes.org/apduview/index.html) which allows you to log communication realized via PC/SC interface (winscard.dll library). If you are interested only in log of transmitted data, you can readily
-use APDUView project (although APDYPlay project provides information about communication in more structured way more suitable for later post processing and add some additional information).
+use APDUView project (although APDUPlay project provides information about communication in more structured way more suitable for later post processing and add some additional information).
 
 Note: The APDUPlay tool is available for download including source codes, yet documentation still lack a bit behind :(. Still, it was requested several times and I hope it will be useful.
 
