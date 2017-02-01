@@ -46,8 +46,12 @@
 int compareWithNoCase2(const char_type* str1, const char_type* str2) {
 	
 	if (type_length(str1) != type_length(str2))
-	{
+	{   
+#if defined (_WIN32)
+		return max(type_length(str1), type_length(str2));
+#else
 		return std::max(type_length(str1), type_length(str2));
+#endif
 	}
 
 	char_type *str1_2 = new char_type[type_length(str1) + 1];
@@ -134,6 +138,7 @@ int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFr
 }
 #endif
 
+#if defined(_WIN32)
 int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
     return File_SaveMatrixInt(filePath, pBlob, startOffset, endOffset, startFileOffset, bSaveBinary);
 }
@@ -182,6 +187,7 @@ int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, i
 
     return status;
 }
+#endif
 
 int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen) {
     int     status = STAT_OK;

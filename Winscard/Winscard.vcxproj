@@ -192,7 +192,6 @@
   <ItemGroup>
     <ClInclude Include="..\Iniparser\iniparser_all.h" />
     <ClInclude Include="CommonFnc.h" />
-    <ClInclude Include="Interface.h" />
     <ClInclude Include="rdtsc.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="socket.h" />

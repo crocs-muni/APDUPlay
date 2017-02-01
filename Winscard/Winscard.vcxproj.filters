@@ -62,9 +62,6 @@
     <ClInclude Include="Winscard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Interface.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\Iniparser\iniparser_all.h">
       <Filter>Iniparser</Filter>
     </ClInclude>
