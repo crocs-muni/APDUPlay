@@ -13,6 +13,8 @@ public class GraphSettings {
     private String rankDir;
     private String size;
     private String nodeAttributes;
+    private String randomByteStreamColor;
+    private String similarByteStreamColor;
     
     public void setRankDir(String val) {
         rankDir = val;
@@ -23,7 +25,7 @@ public class GraphSettings {
     }
     
     public void setSize(String val) {
-        size = val.replace('.', ',');
+        size = val;
     }
     
     public String getSize() {
@@ -36,5 +38,21 @@ public class GraphSettings {
     
     public String getNodeAttributes() {
         return nodeAttributes;
+    }
+    
+    public void setRandomByteStreamColor(String val) {
+        randomByteStreamColor = val;
+    }
+    
+    public String getRandomByteStreamColor() {
+        return randomByteStreamColor;
+    }
+    
+    public void setSimilarByteStreamColor(String val) {
+        similarByteStreamColor = val;
+    }
+    
+    public String getSimilarByteStreamColor() {
+        return similarByteStreamColor;
     }
 }

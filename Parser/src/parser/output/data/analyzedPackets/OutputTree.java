@@ -178,6 +178,6 @@ public class OutputTree {
             }
         }
         
-        return similarityRank / count > .5 ? "darkorchid4" : "red";
+        return similarityRank / count > .5 ? settings.getGraphSettings().getSimilarByteStreamColor() : settings.getGraphSettings().getRandomByteStreamColor();
     }
 }

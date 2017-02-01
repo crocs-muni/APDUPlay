@@ -23,7 +23,6 @@ public class Settings {
     private int minimalConstantLength;
     private final GraphSettings graphSettings = new GraphSettings();
 
-    
     public void setDefaults() {
         outputDirectory = "output";
         separatePackets = false;
@@ -35,6 +34,8 @@ public class Settings {
         
         graphSettings.setRankDir("LR");
         graphSettings.setNodeAttributes("color=lightblue2, style=filled");
+        graphSettings.setRandomByteStreamColor("red");
+        graphSettings.setSimilarByteStreamColor("darkorchid4");
     }
     
     public void setOutputDirectory(String outputDir) {
