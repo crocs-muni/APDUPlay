@@ -76,16 +76,24 @@ static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type
 	typedef wchar_t WCHAR;
 	typedef wchar_t* LPWSTR;
 	typedef const wchar_t* LPCWSTR;
+#ifndef TRUE
 	#define TRUE 1
+#endif
+#ifndef FALSE
 	#define FALSE 0
+#endif
+#ifndef NULL
 	#define NULL 0
+#endif
+#ifndef STDCALL
 	#define STDCALL
-	#ifndef IN
+#endif
+#ifndef IN
 	#define IN
-	#endif
-	#ifndef OUT
+#endif
+#ifndef OUT
 	#define OUT
-	#endif
+#endif
 #endif
 
 #ifndef HIGHBYTE

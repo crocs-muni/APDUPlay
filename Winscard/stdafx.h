@@ -61,7 +61,9 @@
 
 #include "../Shared/globals.h"
 #include "../Shared/status.H"
+#if defined(_WIN32)
 #include "socket.h"
+#endif
 
 #include <list>
 //using namespace std;
@@ -245,6 +247,8 @@ typedef struct _WINSCARD_CONFIG {
 #ifndef RDTSC_H
 #define RDTSC_H
 
+#if defined(_WIN32)
+
 #if defined( _MSC_VER )
 #if defined( _WIN64 )
 #include <intrin.h>
@@ -265,6 +269,7 @@ __inline volatile unsigned long long read_tsc(void)
 #error A high resolution timer is not available
 #endif
 
+#endif
 #endif
 
 static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");

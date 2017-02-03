@@ -48,8 +48,9 @@ Please, report any bugs to author <petr@svenda.com>
 #include "CommonFnc.h"
 
 #include <time.h>
+#if defined(_WIN32)
 #include "socket.h"
-
+#endif
 #ifdef __linux__
 #include <dlfcn.h>
 #include "wintypes.h"
@@ -453,20 +454,20 @@ SCard LONG STDCALL SCardDisconnect(
 
 static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN SCARDHANDLE hCard,
-	IN LPCSCARD_IO_REQUEST pioSendPci,
+	IN SCARD_IO_REQUEST* pioSendPci,
 	IN LPCBYTE pbSendBuffer,
 	IN DWORD cbSendLength,
-	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+	IN OUT SCARD_IO_REQUEST* pioRecvPci,
 	OUT LPBYTE pbRecvBuffer,
 	IN OUT LPDWORD pcbRecvLength
 	);
 
 SCard LONG STDCALL SCardTransmit(
 	IN SCARDHANDLE hCard,
-	IN LPCSCARD_IO_REQUEST pioSendPci,
+	IN SCARD_IO_REQUEST* pioSendPci,
 	IN LPCBYTE pbSendBuffer,
 	IN DWORD cbSendLength,
-	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+	IN OUT SCARD_IO_REQUEST* pioRecvPci,
 	OUT LPBYTE pbRecvBuffer,
 	IN OUT LPDWORD pcbRecvLength
 ) {
@@ -1788,9 +1789,7 @@ SCard void STDCALL SCardReleaseStartedEvent(void) {
 #endif
 
 #if __linux__
-typedef void* (*q)(void *restrict, const char *restrict);
-static q load_func = dlsym;
-
+static void* (*load_func)(void*, const char*) = dlsym;
 //Linux specific functions declaration
 
 static LONG(*Original_SCardConnect)(
@@ -2026,11 +2025,11 @@ int initialize()
 	}
 
 #if __linux__
-	dlerror();    // Clear any existing errorz
+	dlerror();    // Clear any existing errors
 #endif
 
 	Original_SCardTransmit =
-		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		(long(STDCALL *)(SCARDHANDLE, SCARD_IO_REQUEST *, const unsigned char *, unsigned long, SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
 		load_func(hOriginal, "SCardTransmit");
 	if ((!Original_SCardTransmit)) {
 #if __linux__
@@ -2182,10 +2181,10 @@ int initialize()
 	Original_SCardTransmit =
 		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
-			IN LPCSCARD_IO_REQUEST pioSendPci,
+			IN SCARD_IO_REQUEST* pioSendPci,
 			IN LPCBYTE pbSendBuffer,
 			IN DWORD cbSendLength,
-			IN OUT LPSCARD_IO_REQUEST pioRecvPci,
+			IN OUT SCARD_IO_REQUEST* pioRecvPci,
 			OUT LPBYTE pbRecvBuffer,
 			IN OUT LPDWORD pcbRecvLength))
 		load_func(hOriginal, "SCardTransmit");
