@@ -8,4 +8,5 @@ include_directories(/usr/local/include/PCSC/ ${CMAKE_CURRENT_SOURCE_DIR})
 set(SOURCE_FILES Shared/status.cpp Shared/status.H Shared/globals.h Winscard/CommonFnc.cpp Winscard/CommonFnc.h
         Winscard/Interface.h Winscard/PCSCard.cpp Winscard/Resource.h Winscard/stdafx.cpp Winscard/stdafx.h
         Winscard/Winscard.cpp Winscard/Winscard.h Iniparser/iniparser_all.h)
-add_executable(APDUPlay ${SOURCE_FILES})
+
+add_library(libpcsclite ${SOURCE_FILES})
