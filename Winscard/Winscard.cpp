@@ -52,6 +52,7 @@ Please, report any bugs to author <petr@svenda.com>
 #include "socket.h"
 #endif
 #ifdef __linux__
+typedef SCARD_IO_REQUEST* LPSCARD_IO_REQUEST, LPCSCARD_IO_REQUEST;
 #include <dlfcn.h>
 #include "wintypes.h"
 #endif
@@ -454,20 +455,20 @@ SCard LONG STDCALL SCardDisconnect(
 
 static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN SCARDHANDLE hCard,
-	IN SCARD_IO_REQUEST* pioSendPci,
+	IN LPCSCARD_IO_REQUEST pioSendPci,
 	IN LPCBYTE pbSendBuffer,
 	IN DWORD cbSendLength,
-	IN OUT SCARD_IO_REQUEST* pioRecvPci,
+	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
 	OUT LPBYTE pbRecvBuffer,
 	IN OUT LPDWORD pcbRecvLength
 	);
 
 SCard LONG STDCALL SCardTransmit(
 	IN SCARDHANDLE hCard,
-	IN SCARD_IO_REQUEST* pioSendPci,
+	IN LPCSCARD_IO_REQUEST pioSendPci,
 	IN LPCBYTE pbSendBuffer,
 	IN DWORD cbSendLength,
-	IN OUT SCARD_IO_REQUEST* pioRecvPci,
+	IN OUT LPSCARD_IO_REQUEST pioRecvPci,
 	OUT LPBYTE pbRecvBuffer,
 	IN OUT LPDWORD pcbRecvLength
 ) {
@@ -751,7 +752,7 @@ SCard LONG STDCALL SCardConnectW(
 		string_type l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
 		message = string_format(_CONV("\n:: %s"), l.c_str());
 		//message.Replace("\n", " ");
-		message.erase(remove(message.begin(), message.end(), '\r'), message.end());
+		replace(message.begin(), message.end(), "\n", " ");
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 		// PREPARE FOR MEASUREMENT
@@ -2028,9 +2029,15 @@ int initialize()
 	dlerror();    // Clear any existing errors
 #endif
 
+#if defined(_WIN32)
+	Original_SCardTransmit =
+		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		load_func(hOriginal, "SCardTransmit");
+#else 
 	Original_SCardTransmit =
 		(long(STDCALL *)(SCARDHANDLE, SCARD_IO_REQUEST *, const unsigned char *, unsigned long, SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
 		load_func(hOriginal, "SCardTransmit");
+#endif
 	if ((!Original_SCardTransmit)) {
 #if __linux__
 		error = dlerror();
@@ -2181,10 +2188,10 @@ int initialize()
 	Original_SCardTransmit =
 		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
-			IN SCARD_IO_REQUEST* pioSendPci,
+			IN LPCSCARD_IO_REQUEST pioSendPci,
 			IN LPCBYTE pbSendBuffer,
 			IN DWORD cbSendLength,
-			IN OUT SCARD_IO_REQUEST* pioRecvPci,
+			IN OUT LPSCARD_IO_REQUEST pioRecvPci,
 			OUT LPBYTE pbRecvBuffer,
 			IN OUT LPDWORD pcbRecvLength))
 		load_func(hOriginal, "SCardTransmit");
