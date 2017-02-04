@@ -2009,7 +2009,7 @@ int initialize()
 {
 	char *error = "";
 #ifdef __linux__ 
-	hOriginal = dlopen("libpcsclite.so", RTLD_LAZY);
+	hOriginal = dlopen("original.so", RTLD_LAZY);
 	char *delimeter = ": ";
 #else 
 	hOriginal = LoadLibrary(_CONV("original.dll"));
