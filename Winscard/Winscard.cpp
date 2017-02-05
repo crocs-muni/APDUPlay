@@ -48,8 +48,9 @@ Please, report any bugs to author <petr@svenda.com>
 #include "CommonFnc.h"
 
 #include <time.h>
+#if defined(_WIN32)
 #include "socket.h"
-
+#endif
 #ifdef __linux__
 #include <dlfcn.h>
 #include "wintypes.h"
@@ -750,7 +751,7 @@ SCard LONG STDCALL SCardConnectW(
 		string_type l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
 		message = string_format(_CONV("\n:: %s"), l.c_str());
 		//message.Replace("\n", " ");
-		message.erase(remove(message.begin(), message.end(), '\r'), message.end());
+		replace(message.begin(), message.end(), "\n", " ");
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 		// PREPARE FOR MEASUREMENT
@@ -1788,9 +1789,7 @@ SCard void STDCALL SCardReleaseStartedEvent(void) {
 #endif
 
 #if __linux__
-typedef void* (*q)(void *restrict, const char *restrict);
-static q load_func = dlsym;
-
+static void* (*load_func)(void*, const char*) = dlsym;
 //Linux specific functions declaration
 
 static LONG(*Original_SCardConnect)(
@@ -2010,7 +2009,7 @@ int initialize()
 {
 	char *error = "";
 #ifdef __linux__ 
-	hOriginal = dlopen("libpcsclite.so", RTLD_LAZY);
+	hOriginal = dlopen("original.so", RTLD_LAZY);
 	char *delimeter = ": ";
 #else 
 	hOriginal = LoadLibrary(_CONV("original.dll"));
@@ -2026,12 +2025,18 @@ int initialize()
 	}
 
 #if __linux__
-	dlerror();    // Clear any existing errorz
+	dlerror();    // Clear any existing errors
 #endif
 
+#if defined(_WIN32)
 	Original_SCardTransmit =
 		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
 		load_func(hOriginal, "SCardTransmit");
+#else 
+	Original_SCardTransmit =
+		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST , const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
+		load_func(hOriginal, "SCardTransmit");
+#endif
 	if ((!Original_SCardTransmit)) {
 #if __linux__
 		error = dlerror();

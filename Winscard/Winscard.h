@@ -1,6 +1,6 @@
 // Winscard.h : main header file for the Winscard DLL
 //
-
+#if defined(_WIN32)
 #pragma once
 //#include <afxdtctl.h>
 #ifndef __AFXWIN_H__
@@ -8,6 +8,7 @@
 #endif
 
 #include "resource.h"		// main symbols
+#endif
 #include "../Iniparser/iniparser_all.h"
 
 #define     SCSAT_MAX_SAMPLING_FREQUENCY        100

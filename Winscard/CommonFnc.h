@@ -9,9 +9,10 @@ public:
     static int File_GetAvailableFileName(string_type baseFile, string_type* pFreeFileName);
 #endif
     static int File_AppendString(string_type filePath, string_type data);
+#if defined(_WIN32)
     static int File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
     static int File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
-
+#endif
     static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen);
     static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, DWORD* pbArrayLen);
     static int BYTE_ConvertFromHexNumToByte(string_type hexaString, BYTE* pByte);
