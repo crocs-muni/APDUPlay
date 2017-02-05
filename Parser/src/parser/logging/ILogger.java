@@ -3,29 +3,24 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package parser;
+package parser.logging;
 
 /**
  *
  * @author Andrej
  */
-public class Logger {
-    
+public interface ILogger {
     /**
-     * Logs message as an error
+     * Logs error message
      * 
      * @param message message to log
      */
-    public void error(String message) {
-        
-    }
+    void error(String message);
     
     /**
-     * Logs message as a warning
+     * Logs warning message
      * 
      * @param message message to log
      */
-    public void warning(String message) {
-        
-    }
+    void warning(String message);
 }

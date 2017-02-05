@@ -22,10 +22,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Stack;
-import parser.Logger;
 import parser.data.Node;
 import parser.data.Packet;
 import parser.data.Tree;
+import parser.logging.ILogger;
 import parser.output.data.analyzedPackets.OutputMessage;
 import parser.settings.graph.GraphSettings;
 
@@ -37,7 +37,7 @@ public class Writer {
     
     private static int flowIndex = 0;
     private final Settings settings;
-    private final Logger logger;
+    private final ILogger logger;
     
     /**
      * Creates new instance of ABDUWriter
@@ -45,7 +45,7 @@ public class Writer {
      * @param settings
      * @param logger
      */
-    public Writer(Settings settings, Logger logger) {
+    public Writer(Settings settings, ILogger logger) {
         this.settings = settings;
         this.logger = logger;
     }

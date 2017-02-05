@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Scanner;
 import javafx.util.Pair;
 import javax.xml.bind.DatatypeConverter;
+import parser.logging.ILogger;
 
 /**
  *
@@ -22,7 +23,7 @@ import javax.xml.bind.DatatypeConverter;
  */
 public class Parser {
     private int ac;
-    private final Logger logger;
+    private final ILogger logger;
     private final Settings settings;
     private final Map<String, Tree> packets;
     private String lastProcessedPacket;
@@ -33,7 +34,7 @@ public class Parser {
      * @param settings
      * @param logger
      */
-    public Parser(Settings settings, Logger logger) {
+    public Parser(Settings settings, ILogger logger) {
         this.settings = settings;
         this.logger = logger;
         this.packets = new HashMap<>();

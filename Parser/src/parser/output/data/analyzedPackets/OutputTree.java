@@ -147,7 +147,7 @@ public class OutputTree {
             returnIndex = end >= minStr.length();
         }
         
-        return returnIndex ? end - 1 : 0; // ignore last space
+        return returnIndex && end > 1 ? end - 1 : 0; // ignore last space
     }
     
     private String getColorForMidStream(List<OutputMessage> msgs, int leftIndex, int rightIndex) {
