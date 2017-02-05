@@ -52,7 +52,6 @@ Please, report any bugs to author <petr@svenda.com>
 #include "socket.h"
 #endif
 #ifdef __linux__
-typedef SCARD_IO_REQUEST* LPSCARD_IO_REQUEST, LPCSCARD_IO_REQUEST;
 #include <dlfcn.h>
 #include "wintypes.h"
 #endif
@@ -2035,7 +2034,7 @@ int initialize()
 		load_func(hOriginal, "SCardTransmit");
 #else 
 	Original_SCardTransmit =
-		(long(STDCALL *)(SCARDHANDLE, SCARD_IO_REQUEST *, const unsigned char *, unsigned long, SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST , const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
 		load_func(hOriginal, "SCardTransmit");
 #endif
 	if ((!Original_SCardTransmit)) {
