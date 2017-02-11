@@ -215,3 +215,9 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+#############
+##CMAKE
+#############
+
+cmake-build-debug/

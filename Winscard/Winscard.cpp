@@ -53,6 +53,7 @@ Please, report any bugs to author <petr@svenda.com>
 #endif
 #ifdef __linux__
 #include <dlfcn.h>
+#include <pwd.h>
 #include "wintypes.h"
 #endif
 
@@ -65,9 +66,7 @@ BOOL    bMODIFY_APDU_BY_RULES = TRUE;   // DEFAULT: FALSE, SET TO TRUE .
 BOOL    bLOG_FUNCTIONS_CALLS = TRUE;   // DEFAULT: FALSE, SET TO TRUE .
 /**/
 
-// The one and only CWinscardApp object
 
-CWinscardApp theApp;
 /*
 extern SCard (.*?) STDCALL.*?(SCard.*?)\((.*?)\);
 static SCard \1 (STDCALL *Original_\2)
@@ -80,6 +79,9 @@ static string_type RULE_FILE = _CONV("winscard_rules.txt");
 static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log.txt");
 static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
 
+// The one and only CWinscardApp object
+
+CWinscardApp theApp;
 
 #define SCSAT_SOCKET_TIMEOUT            5
 #define SCSAT_SOCKET_LONG_TIMEOUT       20
@@ -2007,9 +2009,10 @@ static q load_func = GetProcAddress;
 */
 int initialize()
 {
+    printf("initialization\n");
 	char *error = "";
 #ifdef __linux__ 
-	hOriginal = dlopen("original.so", RTLD_LAZY);
+	hOriginal = dlopen("./original.so", RTLD_LAZY);
 	char *delimeter = ": ";
 #else 
 	hOriginal = LoadLibrary(_CONV("original.dll"));
@@ -2924,7 +2927,24 @@ CWinscardApp::CWinscardApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
 	#ifdef __linux__
+        char* login;
+        struct passwd *pass;
+        pass = getpwuid(getuid());
+        login = pass->pw_name;
+
+        RULE_FILE = "/home/";
+        RULE_FILE += login;
+        RULE_FILE += "/Desktop/APDUPlay/winscard_rules.txt";
+
+        WINSCARD_RULES_LOG = "/home/";
+        WINSCARD_RULES_LOG += login;
+        WINSCARD_RULES_LOG += "/Desktop/APDUPlay/winscard_rules_log.txt";
+
+        WINSCARD_LOG = "/home/";
+        WINSCARD_LOG += login;
+        WINSCARD_LOG += "/Desktop/APDUPlay/winscard_log.txt";
 		LoadRules();
 		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
 		initialize();

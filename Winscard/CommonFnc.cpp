@@ -38,6 +38,7 @@
 #include <memory>
 #include <fstream>
 #include <cstring>
+#include <iostream>
 
 #if defined (_WIN32)
 #include <filesystem>
@@ -93,7 +94,10 @@ int CCommonFnc::File_AppendString(string_type filePath, string_type data) {
 		file.write((LPCTSTR)data.c_str(), data.length());
 		file.close();
 	}
-	else status = STAT_FILE_OPEN_FAIL;
+	else {
+        fprintf(stderr, "could not open the file with path: %s\n", filePath.c_str());
+        status = STAT_FILE_OPEN_FAIL;
+    }
 
 	return status;
 }
