@@ -30,9 +30,6 @@
     <ClCompile Include="Winscard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PCSCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Winscard.def">

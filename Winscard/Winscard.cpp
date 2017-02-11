@@ -753,7 +753,7 @@ SCard LONG STDCALL SCardConnectW(
 		string_type l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
 		message = string_format(_CONV("\n:: %s"), l.c_str());
 		//message.Replace("\n", " ");
-		replace(message.begin(), message.end(), "\n", " ");
+		replace(message.begin(), message.end(), '\n', ' ');
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 		// PREPARE FOR MEASUREMENT
