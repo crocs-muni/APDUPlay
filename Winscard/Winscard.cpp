@@ -1980,10 +1980,10 @@ static q load_func = GetProcAddress;
 */
 int initialize()
 {
-    printf("initialization\n");
+    printf("Initialization\n");
 	char *error = "";
 #ifdef __linux__ 
-	hOriginal = dlopen("./original.so", RTLD_LAZY);
+	hOriginal = dlopen("/lib/x86_64-linux-gnu/original.so", RTLD_LAZY);
 	char *delimeter = ": ";
 #else 
 	hOriginal = LoadLibrary(_CONV("original.dll"));
