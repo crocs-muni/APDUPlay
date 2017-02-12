@@ -38,7 +38,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #define ASCIILINESZ         (1024)
-#define INI_INVALID_KEY     ((char_type*)-1)
+#define INI_INVALID_KEY     ((char*)-1)
 
 typedef struct _dictionary_ {
 	int             n;     /** Number of entries in dictionary */

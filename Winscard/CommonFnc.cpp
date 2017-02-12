@@ -44,10 +44,10 @@
 #include <filesystem>
 #endif
 
-int compareWithNoCase2(const char_type* str1, const char_type* str2) {
+int compareWithNoCase(const char_type* str1, const char_type* str2) {
 	
 	if (type_length(str1) != type_length(str2))
-	{   
+	{
 #if defined (_WIN32)
 		return max(type_length(str1), type_length(str2));
 #else
@@ -60,8 +60,13 @@ int compareWithNoCase2(const char_type* str1, const char_type* str2) {
 
 	for (int i = 0; i <= type_length(str1); ++i)
 	{
+#if defined (_WIN32) && defined (UNICODE)
+		str1_2[i] = towupper(str1[i]);
+		str2_2[i] = towupper(str2[i]);
+#else
 		str1_2[i] = toupper(str1[i]);
 		str2_2[i] = toupper(str2[i]);
+#endif
 	}
 
 	int result = type_compare(str1_2, str2_2);
@@ -465,7 +470,7 @@ int CCommonFnc::SCSAT_EnsureFileHeader(string_type filePath, SCSAT_MEASURE_INFO*
 		//fileLength = file.tellg();
 		file.seekg(0, std::ios_base::beg);
 		string_type header = buffer; string_type part = header.substr(1, (int)SCSAT_MEASURE_SECTION.length());
-		if (compareWithNoCase2(SCSAT_MEASURE_SECTION.c_str(), part.c_str()) == 0) bNewFormat = TRUE;
+		if (compareWithNoCase(SCSAT_MEASURE_SECTION.c_str(), part.c_str()) == 0) bNewFormat = TRUE;
         //if (part.compareWithNoCase(SCSAT_MEASURE_SECTION) == 0) bNewFormat = TRUE;
         else bNewFormat = FALSE;
 

@@ -52,7 +52,8 @@ public:
 #endif
 
     int LoadRule(const char_type* section_name, dictionary* dict);
-    int LoadRules();
+	int LoadRule(string_type ruleName, string_type filePath);
+	int LoadRules();
 
     int ApplyRules(BYTE* pbSendBuffer, DWORD* pcbSendLength, int direction);
     int GetApduFromHistory(BYTE* buffer, int history, int apduDirection);

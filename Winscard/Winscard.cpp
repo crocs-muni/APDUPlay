@@ -138,35 +138,6 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 
 /* ******************************************************************************* */
 
-int compareWithNoCase(const char_type* str1, const char_type* str2) {
-
-	if (type_length(str1) != type_length(str2))
-	{
-#if defined (_WIN32)
-		return max(type_length(str1), type_length(str2));
-#else
-		return std::max(type_length(str1), type_length(str2));
-#endif
-	}
-
-	char_type *str1_2 = new char_type[type_length(str1) + 1];
-	char_type *str2_2 = new char_type[type_length(str2) + 1];
-
-	for (int i = 0; i <= type_length(str1); ++i)
-	{
-		str1_2[i] = toupper(str1[i]);
-		str2_2[i] = toupper(str2[i]);
-	}
-
-	int result = type_compare(str1_2, str2_2);
-	delete[] str1_2;
-	delete[] str2_2;
-	return result;
-}
-
-/*int compareWithNoCase(const char_type* str1, const char_type* str2) {
-return 0;
-}*/
 
 void DumpMemory(LPCBYTE location, DWORD length) {
 	/*
@@ -3236,6 +3207,7 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
 }
 #endif
 
+#if !defined(_WIN32) || !defined(UNICODE)
 int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*string_type filePath*/) {
 	int status = STAT_OK;
 	char_type buffer[10000];
@@ -3599,7 +3571,6 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 				pos2 = pos + 1;
 			}
 		}
-
 		rulesList.push_back(rule);
 	}
 
@@ -3643,42 +3614,312 @@ int CWinscardApp::LoadRules() {
 		WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
 		WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
 	}
+    return status;
+}
+#endif
 
-    /*memset(buffer, 0, cBuffer);
-  
-    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
-    
-    // OBTAIN FULL FILE PATH FOR RULES FILE
-    CFile   file;
-    if (file.Open(RULE_FILE.c_str(), CFile::modeRead)) {
-        filePath = file.GetFilePath();
-        file.Close();
-        
+#if defined(_WIN32) && defined(UNICODE)
+int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
+	int     status = STAT_OK;
+	char_type    buffer[10000];
+	DWORD   cBuffer = 10000;
+	string_type valueName;
+	string_type rulePart;
+	string_type ruleString;
+	string_type elemName;
+	string_type subValue;
+	string_type help;
+	APDU_RULE   rule;
+	APDU_SINGLE_RULE    singleRule;
+
+	if (compareWithNoCase(ruleName.c_str(), _CONV("WINSCARD")) == 0) {
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("AUTO_REQUEST_DATA"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.bAUTO_REQUEST_DATA = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("FORCE_CONNECT_SHARED_MODE"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.bFORCE_CONNECT_SHARED_MODE = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("FORCE_APDU_NONZERO_INPUT_DATA"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.bFORCE_APDU_NONZERO_INPUT_DATA = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_EXCHANGED_APDU"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.bLOG_EXCHANGED_APDU = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_BASE_PATH"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.sLOG_BASE_PATH = buffer;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MODIFY_APDU_BY_RULES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.bMODIFY_APDU_BY_RULES = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_FUNCTIONS_CALLS"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.bLOG_FUNCTIONS_CALLS = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("READER_ORDERED_FIRST"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_winscardConfig.sREADER_ORDERED_FIRST = buffer;
+		}
+
+	}
+
+	if (compareWithNoCase(ruleName.c_str(), _CONV("SCSAT04")) == 0) {
+		// SCSAT04 CONFIGURATION RULE
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("REDIRECT"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.bRedirect = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("IP"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.IP = buffer;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("PORT"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.port = buffer;
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_APDU"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(buffer, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_BYTE_COUNTER"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.measureApduByteCounter = type_to_int(buffer, NULL, 10);
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_BYTE_DELAY"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.measureApduByteDelay = type_to_int(buffer, NULL, 10);
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("READ_RATIO"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.readRatio = type_to_int(buffer, NULL, 10);
+		}
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("NUM_SAMPLES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			m_scsat04Config.numSamples = type_to_int(buffer, NULL, 10);
+		}
+
+
+
+	}
+	if (compareWithNoCase(ruleName.substr(0, (int)type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0) {
+		// COMMON RULE
+
+		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("USAGE"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+			rule.usage = type_to_int(buffer, NULL, 10);
+
+			if ((GetPrivateProfileString(ruleName.c_str(), _CONV("APDUIN"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+				rule.direction = type_to_int(buffer, NULL, 10);
+			}
+			if ((GetPrivateProfileString(ruleName.c_str(), _CONV("DELAY"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+				rule.msDelay = type_to_int(buffer, NULL, 10);
+			}
+
+
+			// SET RULE NAME FOR FUTURE IDENTIFICATION
+			rule.ruleName = ruleName;
+
+			// LOAD MATCH RULES
+			int counter = 1;
+			int pos = 0;
+			int pos2 = 0;
+			valueName = string_format(_CONV("MATCH%d"), counter);
+			while ((GetPrivateProfileString(ruleName.c_str(), valueName.c_str(), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+				ruleString = buffer; ruleString += _CONV(" ");
+
+				// FIND HISTORY ELEMENT, WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
+				if ((pos = ruleString.find(_CONV("t="))) != string_type::npos) {
+					//singleRule.history = atoi(ruleString.substr(pos + (int) type_length(_CONV("t="))).c_str());
+					singleRule.history = type_to_int(ruleString.substr(pos + (int)type_length(_CONV("t="))).c_str(), NULL, 10);
+					ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
+				}
+				// FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
+				if ((pos = ruleString.find(_CONV("in="))) != string_type::npos) {
+					singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int)type_length(_CONV("in="))).c_str(), NULL, 10);
+					ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
+				}
+
+				// PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
+				pos2 = 0;
+				while ((pos = ruleString.find(_CONV(";"), pos2)) != -1) {
+					rulePart = ruleString.substr(pos2, pos - pos2 + 1);
+
+					//elemName = rulePart.Left(rulePart.Find("="));
+					elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
+
+					if (compareWithNoCase(elemName.c_str(), _CONV("CLA")) == 0) {
+						singleRule.element = CLA_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.matchRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0) {
+						singleRule.element = INS_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.matchRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0) {
+						singleRule.element = P1_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.matchRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0) {
+						singleRule.element = P2_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.matchRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0) {
+						singleRule.element = LC_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.matchRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.substr(0, (int)type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0) {
+						// DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
+						// CREATE SEPARATE ELEMENT FOR EACH
+						int offset = type_to_int(elemName.substr(ruleName.find_first_of(_CONV("0123456789")), 0).c_str(), NULL, 10);
+						// GO OVER ALL MATCH DATA
+						string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
+						//data.Replace(";", "");
+						data.erase(remove(data.begin(), data.end(), ';'), data.end());
+						BYTE    dataBuffer[300];
+						DWORD   dataBufferLen = 300;
+						CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
+						for (DWORD i = 0; i < dataBufferLen; i++) {
+							if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;
+							else singleRule.element = offset;
+							singleRule.value = dataBuffer[i];
+							singleRule.valid = TRUE; rule.matchRules.push_back(singleRule);
+							// increase offset for next element
+							offset++;
+						}
+					}
+
+					pos2 = pos + 1;
+				}
+
+				counter++;
+				valueName = string_format(_CONV("MATCH%d"), counter);
+			}
+
+			// LOAD ACTION RULES
+			counter = 1;
+			pos = 0;
+			if ((GetPrivateProfileString(ruleName.c_str(), _CONV("ACTION"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
+				ruleString = buffer; ruleString += _CONV(" ");
+				// PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
+				singleRule.clear();
+				// FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTARY RULES
+				if ((pos = ruleString.find(_CONV("in="))) != string_type::npos) {
+					singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int)type_length(_CONV("in="))).c_str(), NULL, 10);
+					//ruleString.Delete(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
+					ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1);
+				}
+				pos2 = 0;
+				while ((pos = ruleString.find(_CONV(";"), pos2)) != string_type::npos) {
+					rulePart = ruleString.substr(pos2, pos - pos2 + 1);
+
+					elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
+
+					if (compareWithNoCase(elemName.c_str(), _CONV("CLA")) == 0) {
+						singleRule.element = CLA_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0) {
+						singleRule.element = INS_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0) {
+						singleRule.element = P1_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0) {
+						singleRule.element = P2_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0) {
+						singleRule.element = LC_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.c_str(), _CONV("LE")) == 0) {
+						singleRule.element = LE_ELEM;
+						CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
+						singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+					}
+					if (compareWithNoCase(elemName.substr(0, (int)type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0) {
+						// DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
+						// CREATE SEPARATE ELEMENT FOR EACH
+						int offset = type_to_int(elemName.substr(ruleName.find_first_of(_CONV("0123456789"))).c_str(), NULL, 10);
+						// GO OVER ALL MATCH DATA
+						string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
+						//data.Replace(";", "");
+						data.erase(remove(data.begin(), data.end(), ';'), data.end());
+						BYTE    dataBuffer[300];
+						DWORD   dataBufferLen = 300;
+						CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
+						for (DWORD i = 0; i < dataBufferLen; i++) {
+							if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;
+							else singleRule.element = offset;
+							singleRule.value = dataBuffer[i];
+							singleRule.valid = TRUE; rule.actionRules.push_back(singleRule);
+							// increase offset for next element
+							offset++;
+						}
+					}
+
+					pos2 = pos + 1;
+				}
+			}
+
+			rulesList.push_back(rule);
+		}
+	}
+
+	return status;
+}
+
+int CWinscardApp::LoadRules() {
+	int status = STAT_OK;
+	char_type    buffer[10000];
+	DWORD   cBuffer = 10000;
+	DWORD   cReaded = 0;
+	lcs     valuesList;
+	lcs::iterator   iter;
+	string_type filePath;
+	
+	const int buffsize = 4096;
+	TCHAR buf[buffsize] = _CONV("");
+
+	memset(buffer, 0, cBuffer);
+
+	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
+
+	// OBTAIN FULL FILE PATH FOR RULES FILE
+	if (FILE *file = type_fopen(RULE_FILE.c_str(), _CONV("r"))) {
+		
+		GetFullPathName(RULE_FILE.c_str(), buffsize, buf, NULL);
+		fclose(file);
+
+		filePath = string_type(buf);
+
 		string_type message;
-    	message = string_format(_CONV("Rules file found: %s\n"), filePath);
-        CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		message = string_format(_CONV("Rules file found: %s\n"), filePath);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
-        // OBTAIN SECTION NAMES
-        if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, filePath.c_str())) != 0) {
-            // PARSE SECTION NAMES, TRY TO LOAD EACH RULE
-            CCommonFnc::String_ParseNullSeparatedArray((BYTE*) buffer, cBuffer, &valuesList);
-            
-            for (iter = valuesList.begin(); iter != valuesList.end(); iter++) {
-                LoadRule(*iter, filePath);    
-            }
-        }
-        
-        m_bRulesActive = TRUE;
-    }
-    else {
-        // NO RULES DETECTED
-        CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
-    }
+		// OBTAIN SECTION NAMES
+		if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, filePath.c_str())) != 0) {
+			// PARSE SECTION NAMES, TRY TO LOAD EACH RULE
+			CCommonFnc::String_ParseNullSeparatedArray((BYTE*)buffer, cBuffer, &valuesList);
+
+			for (iter = valuesList.begin(); iter != valuesList.end(); iter++) {
+				LoadRule(*iter, filePath);
+			}
+		}
+
+		m_bRulesActive = TRUE;
+	}
+	else {
+		// NO RULES DETECTED
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
+	}
 
 	WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
 	WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-	*/
 
-    return status;
+
+	return status;
 }
+#endif
 

@@ -19,7 +19,7 @@ public:
     static int BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string_type* pHexaString);
 
     static int APDU_ConvertToString(CARDAPDU* pAPDU, string_type* pString, BOOL toSendAPDU);
-
+	
     static int String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString);
     static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString);
 
@@ -32,5 +32,7 @@ public:
     static int Sample_Free(SAMPLE_PLOT* pSample);
 #endif
 };
+
+int compareWithNoCase(const char_type* str1, const char_type* str2);
 
 #endif
