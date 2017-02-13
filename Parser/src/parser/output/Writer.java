@@ -132,13 +132,12 @@ public class Writer {
         List<OutputFunction> outputFunctions = getOutputFunctions();
         for (int i = 0; i < outputFunctions.size(); i++) {
             for (Tree tree : packets) {
-                tree.simplifyNodes();
-                
+               
                 if (outputFunctions.get(i).hasTransmittedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%s_transmitted(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph transmitted {");
                         printGraphSettings(writer);
-                        printTransmitted(tree, writer);
+                        outputFunctions.get(i).invokeTransmitted(tree, writer);
                         writer.println("}");
                     }
                     catch (Exception ex) {
@@ -150,7 +149,7 @@ public class Writer {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%s_received(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
                         writer.println("digraph received {");
                         printGraphSettings(writer);
-                        printTransmitted(tree, writer);
+                        outputFunctions.get(i).invokeReceived(tree, writer);
                         writer.println("}");
                     }
                     catch (Exception ex) {
