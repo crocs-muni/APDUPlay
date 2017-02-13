@@ -244,10 +244,11 @@ typedef struct _WINSCARD_CONFIG {
     }
 } WINSCARD_CONFIG;
 
-#ifndef RDTSC_H
-#define RDTSC_H
 
 #if defined(_WIN32)
+
+#ifndef RDTSC_H
+#define RDTSC_H
 
 #if defined( _MSC_VER )
 #if defined( _WIN64 )
@@ -257,18 +258,17 @@ __inline volatile unsigned long long read_tsc(void)
 {
     return __rdtsc();
 }
-#else
+#elif defined(_WIN32)
 __inline volatile unsigned long long read_tsc(void)
 {   unsigned long lo, hi;
     __asm cpuid __asm rdtsc __asm mov [lo],eax __asm mov [hi],edx ; 
     return (((unsigned long long)hi) << 32) + lo;
 }
-
 #endif
+
 #else
 #error A high resolution timer is not available
 #endif
-
 #endif
 #endif
 
