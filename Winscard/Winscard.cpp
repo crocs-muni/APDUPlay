@@ -803,7 +803,7 @@ SCard LONG STDCALL SCardTransmit(
 
 
 
-static LONG(*Original_SCardConnect)(
+static SCard LONG(STDCALL *Original_SCardConnect)(
 	IN		SCARDCONTEXT hContext,
 	IN		LPCSTR szReader,
 	IN		DWORD dwShareMode,
@@ -811,7 +811,7 @@ static LONG(*Original_SCardConnect)(
 	OUT		LPSCARDHANDLE phCard,
 	OUT		LPDWORD pdwActiveProtocol);
 
-LONG SCardConnect(
+SCard LONG STDCALL SCardConnect(
 	IN		SCARDCONTEXT hContext,
 	IN		LPCSTR szReader,
 	IN		DWORD dwShareMode,
@@ -831,7 +831,7 @@ LONG SCardConnect(
 	return status;
 }
 
-static LONG(*Original_SCardStatus)(
+static SCard LONG(STDCALL*Original_SCardStatus)(
 	SCARDHANDLE hCard,
 	LPSTR szReaderName,
 	LPDWORD pcchReaderLen,
@@ -841,7 +841,7 @@ static LONG(*Original_SCardStatus)(
 	LPDWORD pcbAtrLen
 	);
 
-LONG SCardStatus(
+SCard LONG STDCALL SCardStatus(
 	SCARDHANDLE hCard,
 	LPSTR szReaderName,
 	LPDWORD pcchReaderLen,
@@ -854,14 +854,14 @@ LONG SCardStatus(
 	return (*Original_SCardStatus)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
 }
 
-static LONG(*Original_SCardListReaders)(
+static SCard LONG(STDCALL *Original_SCardListReaders)(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszGroups,
 	OUT     LPSTR mszReaders,
 	IN OUT  LPDWORD pcchReaders
 	);
 
-LONG SCardListReaders(
+SCard LONG STDCALL SCardListReaders(
 	IN      SCARDCONTEXT hContext,
 	IN      LPCSTR mszGroups,
 	OUT     LPSTR mszReaders,
@@ -972,13 +972,13 @@ LONG SCardListReaders(
 	return status;
 }
 
-static LONG(*Original_SCardListReaderGroups)(
+static SCard LONG(STDCALL *Original_SCardListReaderGroups)(
 	IN      SCARDCONTEXT hContext,
 	OUT     LPSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
 	);
 
-LONG SCardListReaderGroups(
+SCard LONG STDCALL SCardListReaderGroups(
 	IN      SCARDCONTEXT hContext,
 	OUT     LPSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
@@ -2270,10 +2270,10 @@ int initialize()
 
 	//Initialization of windows specific funcions
 #if defined (WIN32)
-	Original_SCardStatusA =
+	Original_SCardStatus =
 		(long(STDCALL *)(SCARDHANDLE hCard, LPSTR szReaderName, LPDWORD pcchReaderLen, LPDWORD pdwState, LPDWORD pdwProtocol, LPBYTE pbAtr, LPDWORD pcbAtrLen))
 		load_func(hOriginal, "SCardStatusA");
-	if ((!Original_SCardStatusA)) {
+	if ((!Original_SCardStatus)) {
 		fprintf(stderr, "Could not find SCardStatusA procedure address\n");
 		return FALSE;
 	}
@@ -2294,21 +2294,21 @@ int initialize()
 		return FALSE;
 	}
 
-	Original_SCardListReadersA =
+	Original_SCardListReaders =
 		(long(STDCALL *)(SCARDCONTEXT hContext, LPCSTR mszGroups, LPSTR mszReaders, LPDWORD pcchReaders))
 		load_func(hOriginal, "SCardListReadersA");
-	if ((!Original_SCardListReadersA)) {
+	if ((!Original_SCardListReaders)) {
 		fprintf(stderr, "Could not find SCardListReadersA procedure address\n");
 		return FALSE;
 	}
 
-	Original_SCardListReaderGroupsA =
+	Original_SCardListReaderGroups =
 		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			OUT     LPSTR mszGroups,
 			IN OUT  LPDWORD pcchGroups))
 		load_func(hOriginal, "SCardListReaderGroupsA");
-	if (!Original_SCardListReaderGroupsA) {
+	if (!Original_SCardListReaderGroups) {
 		fprintf(stderr, "Could not find SCardListReaderGroupsA procedure address\n");
 		return FALSE;
 	}
@@ -2324,14 +2324,14 @@ int initialize()
 		return FALSE;
 	}
 
-	Original_SCardListReadersA =
+	Original_SCardListReaders =
 		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR mszGroups,
 			OUT     LPSTR mszReaders,
 			IN OUT  LPDWORD pcchReaders))
 		load_func(hOriginal, "SCardListReadersA");
-	if (!Original_SCardListReadersA) {
+	if (!Original_SCardListReaders) {
 		fprintf(stderr, "Could not find SCardListReadersA procedure address\n");
 		return FALSE;
 	}
@@ -2740,7 +2740,7 @@ int initialize()
 		return FALSE;
 	}
 
-	Original_SCardConnectA =
+	Original_SCardConnect =
 		(LONG(STDCALL *)(
 			IN      SCARDCONTEXT hContext,
 			IN      LPCSTR szReader,
@@ -2749,7 +2749,7 @@ int initialize()
 			OUT     LPSCARDHANDLE phCard,
 			OUT     LPDWORD pdwActiveProtocol))
 		load_func(hOriginal, "SCardConnectA");
-	if (!Original_SCardConnectA) {
+	if (!Original_SCardConnect) {
 		fprintf(stderr, "Could not find SCardConnectA procedure address\n");
 		return FALSE;
 	}
@@ -2789,7 +2789,7 @@ int initialize()
 		return FALSE;
 	}
 
-	Original_SCardStatusA =
+	Original_SCardStatus =
 		(LONG(STDCALL *)(
 			IN SCARDHANDLE hCard,
 			OUT LPSTR szReaderName,
@@ -2799,7 +2799,7 @@ int initialize()
 			OUT LPBYTE pbAtr,
 			IN OUT LPDWORD pcbAtrLen))
 		load_func(hOriginal, "SCardStatusA");
-	if (!Original_SCardStatusA) {
+	if (!Original_SCardStatus) {
 		fprintf(stderr, "Could not find SCardStatusA procedure address\n");
 		return FALSE;
 	}
