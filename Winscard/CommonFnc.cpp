@@ -44,6 +44,17 @@
 #include <filesystem>
 #endif
 
+string_type getCurrentTimeString()
+{
+	time_t end_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::string temp = ctime(&end_time);
+	std::replace(temp.begin(), temp.end(), ' ', '-');
+	std::replace(temp.begin(), temp.end(), ':', '_');
+	temp.erase(std::remove(temp.begin(), temp.end(), '\n'), temp.end());
+	
+	return string_type(temp.begin(), temp.end());
+}
+
 int compareWithNoCase(const char_type* str1, const char_type* str2) {
 	
 	if (type_length(str1) != type_length(str2))

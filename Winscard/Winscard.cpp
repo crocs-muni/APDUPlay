@@ -80,8 +80,8 @@ static SCard \1 (STDCALL *Original_\2)
 #pragma warning(disable:4996)   
 
 static string_type RULE_FILE = _CONV("winscard_rules.txt");
-static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log.txt");
-static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
+static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log");
+static string_type WINSCARD_LOG = _CONV("winscard_log");
 
 // The one and only CWinscardApp object
 
@@ -2731,20 +2731,20 @@ CWinscardApp::CWinscardApp()
         login = pass->pw_name;
 
         RULE_FILE = "/home/";
-        RULE_FILE += login;
-        RULE_FILE += "/Desktop/APDUPlay/winscard_rules.txt";
+        RULE_FILE += login + "/Desktop/APDUPlay/winscard_rules_" + getCurrentTimeString()  + ".txt";
 
         WINSCARD_RULES_LOG = "/home/";
-        WINSCARD_RULES_LOG += login;
-        WINSCARD_RULES_LOG += "/Desktop/APDUPlay/winscard_rules_log.txt";
+        WINSCARD_RULES_LOG += login + "/Desktop/APDUPlay/winscard_rules_log_" + getCurrentTimeString() + ".txt";
 
         WINSCARD_LOG = "/home/";
-        WINSCARD_LOG += login;
-        WINSCARD_LOG += "/Desktop/APDUPlay/winscard_log.txt";
+        WINSCARD_LOG += login + "/Desktop/APDUPlay/winscard_log_" + getCurrentTimeString() + ".txt";
+		
 		LoadRules();
+		
 		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
 		initialize();
 	#endif
+	
 	m_bRulesActive = FALSE;
 	m_processedApduByteCounter = 0;
 }
@@ -2755,7 +2755,10 @@ BOOL CWinscardApp::InitInstance()
 	CWinApp::InitInstance();
 
     srand((int) time(NULL));
-    
+
+	WINSCARD_LOG += _CONV("_") + getCurrentTimeString() + _CONV(".txt");
+	WINSCARD_RULES_LOG += _CONV("_") + getCurrentTimeString() + _CONV(".txt");
+
     // LOAD MODIFICATION RULES
     LoadRules();
 

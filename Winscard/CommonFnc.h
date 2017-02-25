@@ -34,5 +34,6 @@ public:
 };
 
 int compareWithNoCase(const char_type* str1, const char_type* str2);
+string_type getCurrentTimeString();
 
 #endif
