@@ -456,11 +456,15 @@ SCard LONG STDCALL SCardTransmit(
 	//char_type buffer[bufferLength];
 	string_type buffer;
 	char_type  sendBuffer[300];
-	clock_t elapsedCard;
-	clock_t elapsedLibrary;
+	//clock_t elapsedCard;
+	//clock_t elapsedLibrary;
+	typedef std::chrono::high_resolution_clock Clock;
+
+	
 	string_type     message;
 
-	elapsedLibrary = -clock();
+	//elapsedLibrary = -clock();
+	auto lib_timestamp1 = Clock::now();
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
 		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\r\n", hCard);
 		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\r\n"), hCard);
@@ -507,7 +511,8 @@ SCard LONG STDCALL SCardTransmit(
 		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	}
 
-	elapsedCard = -clock();
+	//elapsedCard = -clock();
+	auto card_timestamp1 = Clock::now();
 
 	// INCREASE COUNTER OF THE BYTES SEND TO CARD - IS USED AS MEASUREMENT TRIGGER LATER
 	theApp.m_processedApduByteCounter += cbSendLength;
@@ -589,7 +594,9 @@ SCard LONG STDCALL SCardTransmit(
 
 
 	// SAVE TIME OF CARD RESPONSE
-	elapsedCard += clock();
+	//elapsedCard += clock();
+	auto card_timestamp2 = Clock::now();
+	auto elapsedCard = std::chrono::duration_cast<std::chrono::milliseconds>(card_timestamp2 - card_timestamp1).count();
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
 		//sprintf(buffer, "responseTime:%d#\r\n", elapsedCard);
 		buffer = string_format(_CONV("responseTime:%d#\r\n"), elapsedCard);
@@ -656,7 +663,9 @@ SCard LONG STDCALL SCardTransmit(
 	// increase apdu counter	
 	apduCounter++;
 
-	elapsedLibrary += clock();
+	//elapsedLibrary += clock();
+	auto lib_timestamp2 = Clock::now();
+	auto elapsedLibrary = std::chrono::duration_cast<std::chrono::milliseconds>(lib_timestamp2 - lib_timestamp1).count();
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
 		message = string_format(_CONV("responseTimeLibrary:%d#\r\n"), elapsedLibrary);
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
