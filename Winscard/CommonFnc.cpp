@@ -39,6 +39,7 @@
 #include <fstream>
 #include <cstring>
 #include <iostream>
+#include <chrono>
 
 #if defined (_WIN32)
 #include <filesystem>
