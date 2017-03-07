@@ -21,6 +21,7 @@ public class Settings {
     private int outputTypeMask;
     private int headerLength;
     private int minimalConstantLength;
+    private String dateTimePattern;
     private final GraphSettings graphSettings = new GraphSettings();
 
     public void setDefaults() {
@@ -31,6 +32,7 @@ public class Settings {
         headerLength = 4;
         minimalConstantLength = 0;
         bytesSeparator = " ";
+        dateTimePattern = "yyyy-MM-dd hh:mm:ss";
         
         graphSettings.setRankDir("LR");
         graphSettings.setNodeAttributes("color=lightblue2, style=filled");
@@ -104,5 +106,13 @@ public class Settings {
     
     public void setCheckMinimalLengthOnShorterStreams(boolean check) {
         checkMinimalLengthOnShorterStreams = check;
+    }
+    
+    public void setDateTimePattern(String pattern) {
+        this.dateTimePattern = pattern;
+    }
+    
+    public String getDateTimePattern() {
+        return dateTimePattern;
     }
 }

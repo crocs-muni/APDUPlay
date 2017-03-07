@@ -33,10 +33,11 @@ public class APDUParse {
             settingsLoader.load("APDUParse.conf");
             Gson gson = new Gson();
             settings = gson.fromJson(settingsLoader.getJsonSettings(), Settings.class);
+            logger.setDateTimePattern(settings.getDateTimePattern());
             
         } catch (JsonSyntaxException | IOException ex) {
             logger.error(ex.getMessage());
-            logger.warning("Error ocured while parsing config file. Using default values.");
+            logger.warning("Error ocured while parsing config file. Default values will be used.");
             
             settings = new Settings();
             settings.setDefaults();
