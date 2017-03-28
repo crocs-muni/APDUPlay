@@ -2734,14 +2734,19 @@ CWinscardApp::CWinscardApp()
         pass = getpwuid(getuid());
         login = pass->pw_name;
 
+        std::string date_and_time = getCurrentTimeString();
+
         RULE_FILE = "/home/";
-        RULE_FILE += login + "/Desktop/APDUPlay/winscard_rules_" + getCurrentTimeString()  + ".txt";
+        RULE_FILE += login;
+        RULE_FILE += "/Desktop/APDUPlay/winscard_rules.txt";
 
         WINSCARD_RULES_LOG = "/home/";
-        WINSCARD_RULES_LOG += login + "/Desktop/APDUPlay/winscard_rules_log_" + getCurrentTimeString() + ".txt";
+        WINSCARD_RULES_LOG += login;
+        WINSCARD_RULES_LOG += "/Desktop/APDUPlay/winscard_rules_log_" + date_and_time + ".txt";
 
         WINSCARD_LOG = "/home/";
-        WINSCARD_LOG += login + "/Desktop/APDUPlay/winscard_log_" + getCurrentTimeString() + ".txt";
+        WINSCARD_LOG += login;
+        WINSCARD_LOG += "/Desktop/APDUPlay/winscard_log_" + date_and_time + ".txt";
 		
 		LoadRules();
 		
@@ -2772,8 +2777,10 @@ BOOL CWinscardApp::InitInstance()
 
     srand((int) time(NULL));
 
-	WINSCARD_LOG += _CONV("_") + getCurrentTimeString() + _CONV(".txt");
-	WINSCARD_RULES_LOG += _CONV("_") + getCurrentTimeString() + _CONV(".txt");
+    std::string date_and_time = getCurrentTimeString();
+
+	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
+	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 
     // LOAD MODIFICATION RULES
     LoadRules();
