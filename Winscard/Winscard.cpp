@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include <chrono>
 #include <thread>
+#include <fstream>
 #ifndef INTERFACE_H
 #define INTERFACE_H
 /*
@@ -1828,14 +1829,17 @@ int initialize()
 #endif
 
 #if defined(_WIN32)
+#if _WIN64
 	Original_SCardTransmit =
+		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
+#else	Original_SCardTransmit =
 		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
-		load_func(hOriginal, "SCardTransmit");
+#endif
 #else 
 	Original_SCardTransmit =
 		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST , const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
-		load_func(hOriginal, "SCardTransmit");
 #endif
+	load_func(hOriginal, "SCardTransmit");
 	if ((!Original_SCardTransmit)) {
 #if __linux__
 		error = dlerror();
@@ -2758,6 +2762,18 @@ CWinscardApp::CWinscardApp()
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
+	std::string filePath = "C:\\Users\\xvancik\\Desktop\\Pokus";
+	std::string data = "kinizica bola zavolana";
+	std::ofstream file;
+	file.open(filePath, std::fstream::out | std::fstream::app);
+
+	if (file.is_open()) {
+		file.write(data.c_str(), data.length());
+		file.close();
+	}
+	else {
+		MessageBox(0, "And text here", "MessageBox caption", MB_OK);
+    }
 
     srand((int) time(NULL));
 

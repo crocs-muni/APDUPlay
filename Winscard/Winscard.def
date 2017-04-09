@@ -8,6 +8,7 @@ EXPORTS
 ;
 ; functions to pass transparently
 ;
+;nahodnypokus=original.nahodnypokus @243
 ;SCardAccessNewReaderEvent=original.SCardAccessNewReaderEvent @1
 ;SCardAccessStartedEvent=original.SCardAccessStartedEvent @2
 ;SCardAddReaderToGroupA=original.SCardAddReaderToGroupA @6

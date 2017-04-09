@@ -7,23 +7,33 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Winscard", "Winscard\Winsca
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
 		Debug|Win32 = Debug|Win32
 		Debug|x64 = Debug|x64
+		Release CryptoAmor|ARM = Release CryptoAmor|ARM
 		Release CryptoAmor|Win32 = Release CryptoAmor|Win32
 		Release CryptoAmor|x64 = Release CryptoAmor|x64
+		Release|ARM = Release|ARM
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Debug|ARM.ActiveCfg = Debug|ARM
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Debug|ARM.Build.0 = Debug|ARM
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Debug|Win32.Build.0 = Debug|Win32
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Debug|x64.ActiveCfg = Debug|Win32
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release CryptoAmor|ARM.ActiveCfg = Release CryptoAmor|ARM
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release CryptoAmor|ARM.Build.0 = Release CryptoAmor|ARM
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release CryptoAmor|Win32.ActiveCfg = Release CryptoAmor|Win32
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release CryptoAmor|Win32.Build.0 = Release CryptoAmor|Win32
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release CryptoAmor|x64.ActiveCfg = Release CryptoAmor|Win32
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|ARM.ActiveCfg = Release|ARM
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|ARM.Build.0 = Release|ARM
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|Win32.ActiveCfg = Release|Win32
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|Win32.Build.0 = Release|Win32
-		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|x64.ActiveCfg = Release|Win32
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|x64.ActiveCfg = Release|x64
+		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
