@@ -19,7 +19,7 @@ public class OutputFunction {
     private final BiConsumer<Tree, PrintWriter> receivedFunction;
     
     /**
-     * Creates new instance of ABDUOutputFunction
+     * Creates new instance of OutputFunction
      * 
      * @param transmittedFunction   transmitted data output function
      * @param receivedFunction      receicved data output function

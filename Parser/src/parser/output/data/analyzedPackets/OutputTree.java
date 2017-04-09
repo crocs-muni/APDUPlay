@@ -22,7 +22,7 @@ public class OutputTree {
     private List<OutputPacket> packets;
     
     /**
-     * Creates new instance of ABDUOutputTree
+     * Creates new instance of OutputTree
      * 
      * @param header packet header
      * @param identifier node identifier for output

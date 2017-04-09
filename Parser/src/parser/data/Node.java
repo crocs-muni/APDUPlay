@@ -25,7 +25,7 @@ public class Node {
     public final int identifier;
     
     /**
-     * Creates new instance of ABDUNode with specified byte stream
+     * Creates new instance of Node with specified byte stream
      * 
      * @param data byte stream
      */

@@ -40,6 +40,11 @@ public class APDUSettingsLoader {
         }
     }
     
+    /**
+     * Gets settings in json string format
+     * 
+     * @return settings in json string format
+     */
     public String getJsonSettings() {
         return jsonSettings;
     }

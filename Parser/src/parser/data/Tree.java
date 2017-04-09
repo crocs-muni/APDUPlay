@@ -27,7 +27,7 @@ public class Tree {
     public final List<Packet> streamPackets;
     
     /**
-     * Creates new instance of ABDUTree which represents packets data stream as a tree
+     * Creates new instance of Tree which represents packets data stream as a tree
      * 
      * @param header    packet header
      * @param data      packet data
@@ -67,6 +67,12 @@ public class Tree {
         }
     }
     
+    /**
+     * Sets respnose time and ac for tree to last packet added
+     * 
+     * @param responseTime response time to be set
+     * @param ac ac to be set
+     */
     public void setAdditionalInfoForLastPacket(int responseTime, int ac) {
         if (lastPacket != null) {
             lastPacket.setResponseTime(responseTime);

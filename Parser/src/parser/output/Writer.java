@@ -40,7 +40,7 @@ public class Writer {
     private final ILogger logger;
     
     /**
-     * Creates new instance of ABDUWriter
+     * Creates new instance of Writer
      * 
      * @param settings
      * @param logger

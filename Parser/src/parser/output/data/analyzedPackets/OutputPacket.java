@@ -18,7 +18,7 @@ public class OutputPacket {
     private List<OutputMessage> receivedMessages;
     
     /**
-     * Creates new instance of ABDUOutputPacket
+     * Creates new instance of OutputPacket
      * 
      * @param transmittedMessage transmitted message from packet
      */

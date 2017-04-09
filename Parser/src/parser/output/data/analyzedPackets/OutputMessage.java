@@ -18,7 +18,7 @@ public class OutputMessage {
     private int count;
     
     /**
-     * Creates new instance of ABDUOutputMessage
+     * Creates new instance of OutputMessage
      * 
      * @param message packet message
      * @param identifier node identifier
