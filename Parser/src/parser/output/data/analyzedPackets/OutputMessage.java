@@ -6,6 +6,8 @@
 package parser.output.data.analyzedPackets;
 
 import java.util.Objects;
+import lombok.Getter;
+import lombok.val;
 
 /**
  *
@@ -15,7 +17,12 @@ public class OutputMessage {
     public final String message;
     public final int identifier;
     
-    private int count;
+    /**
+     * Gets count of occurrence of message
+     * 
+     * @return count of occurrence of message
+     */
+    @Getter private int count;
     
     /**
      * Creates new instance of OutputMessage
@@ -27,10 +34,6 @@ public class OutputMessage {
         this.message = message;
         this.identifier = identifier;
         count = 1;
-    }
-    
-    public int getCount() {
-        return count;
     }
     
     /**
@@ -56,7 +59,7 @@ public class OutputMessage {
             return false;
         }
 
-        OutputMessage msg = (OutputMessage)obj;
+        val msg = (OutputMessage)obj;
         return (msg.message == null ? message == null : msg.message.equals(message));
     }
 

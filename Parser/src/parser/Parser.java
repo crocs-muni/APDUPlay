@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Scanner;
 import javafx.util.Pair;
 import javax.xml.bind.DatatypeConverter;
+import lombok.val;
 import parser.logging.ILogger;
 
 /**
@@ -47,9 +48,9 @@ public class Parser {
      * @param path absolute or relative path to file
      */
     public void parseFile(String path) {
-        try (Scanner scanner =  new Scanner(new File(path))){
+        try (val scanner =  new Scanner(new File(path))){
             while(scanner.hasNextLine()) {
-                Pair pair = processLine(scanner.nextLine());
+                val pair = processLine(scanner.nextLine());
                 handleABDULine(pair);
             }
         } catch(Exception ex) {
@@ -61,12 +62,12 @@ public class Parser {
      * Writes stored data
      */
     public void printData() {
-        Writer abduWriter = new Writer(settings, logger);
+        val abduWriter = new Writer(settings, logger);
         abduWriter.write(packets.values());
     }
     
     private Pair processLine(String line) {
-        String[] parts = line.split(":");
+        val parts = line.split(":");
         if (parts.length != 2) {
             return null;
         }
@@ -99,11 +100,11 @@ public class Parser {
     }
     
     private void handleTransmittedData(byte[] data) {
-        byte[] packetHeader = Arrays.copyOfRange(data, 0, settings.getHeaderLength());
-        byte[] packetData = Arrays.copyOfRange(data, settings.getHeaderLength(), data.length);
-        String header = DatatypeConverter.printHexBinary(packetHeader);
+        val packetHeader = Arrays.copyOfRange(data, 0, settings.getHeaderLength());
+        val packetData = Arrays.copyOfRange(data, settings.getHeaderLength(), data.length);
+        val header = DatatypeConverter.printHexBinary(packetHeader);
         
-        Tree existingTree = packets.get(header);
+        val existingTree = packets.get(header);
         if (existingTree == null) {
             Tree tree = new Tree(packetHeader, packetData);
             packets.put(tree.header, tree);
@@ -115,7 +116,7 @@ public class Parser {
     }
     
     private void handleReceivedData(byte[] data) {
-        Tree tree = packets.get(lastProcessedPacket);
+        val tree = packets.get(lastProcessedPacket);
         if (tree == null) {
             logger.error("Packet \"" + DatatypeConverter.printHexBinary(data) + "\" not found as parsed tree");
             return;
@@ -126,7 +127,7 @@ public class Parser {
     
     private void handleResponseTime(String time) {
         time = time.replaceAll("[^0-9]","");
-        Tree tree = packets.get(lastProcessedPacket);
+        val tree = packets.get(lastProcessedPacket);
         
         // Sets also ac
         tree.setAdditionalInfoForLastPacket(Integer.parseInt(time), ac++);

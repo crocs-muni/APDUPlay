@@ -7,6 +7,9 @@ package parser.output.data.analyzedPackets;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.val;
 import parser.data.Node;
 import parser.settings.Settings;
 import tools.SimilarityTool;
@@ -19,7 +22,14 @@ public class OutputTree {
     public final String header;
     public final int identifier;
     private final Settings settings;
-    private List<OutputPacket> packets;
+    
+    /**
+    * Represents transmitted packets with all their respective responsese
+    * 
+    * @param packets transmitted packets with all their respective responsese
+    * @return transmitted packets with all their respective responsese
+    */
+    @Getter @Setter private List<OutputPacket> packets;
     
     /**
      * Creates new instance of OutputTree
@@ -35,14 +45,6 @@ public class OutputTree {
         packets = new ArrayList<>();
     }
     
-    public List<OutputPacket> getPackets() {
-        return packets;
-    }
-    
-    public void setPackets(List<OutputPacket> packets) {
-        this.packets = packets;
-    }
-    
     /**
      * Adds output packet into this tree
      * 
@@ -55,9 +57,9 @@ public class OutputTree {
             return;
         }
         
-        OutputPacket p = packets.get(index);
-        p.getTransmittedMessage().increaseCount(packet.getTransmittedMessage().getCount());
-        p.addReceivedMessages(packet.getReceivedMessages());
+        val outputPackets = packets.get(index);
+        outputPackets.getTransmittedMessage().increaseCount(packet.getTransmittedMessage().getCount());
+        outputPackets.addReceivedMessages(packet.getReceivedMessages());
     }
 
     /**
@@ -66,7 +68,7 @@ public class OutputTree {
      * @return prepared output of the current tree
      */
     public String prepareOutput() {
-        StringBuilder sb = new StringBuilder();
+        val sb = new StringBuilder();
         sb.append(String.format("\t%d [label=\"%s\"];%s", identifier, header, System.lineSeparator()));
         
         List<OutputMessage> transmittedMessages = new ArrayList<>();
@@ -80,8 +82,8 @@ public class OutputTree {
     }
     
     private void prepare(StringBuilder sb, int parentIdentifier, List<OutputMessage> msgs, boolean generateIdentifier) {
-        String[] strings = new String[msgs.size()];
-        String[] invertedStrings = new String[msgs.size()];
+        val strings = new String[msgs.size()];
+        val invertedStrings = new String[msgs.size()];
         for (int i = 0; i < msgs.size(); i++) {
             strings[i] = msgs.get(i).message;
             invertedStrings[i] = new StringBuilder(strings[i]).reverse().toString();
@@ -90,7 +92,7 @@ public class OutputTree {
         int left = longestCommonPrefix(strings);
         int right = longestCommonPrefix(invertedStrings);
         
-        String color = getColorForMidStream(msgs, left, right);
+        val color = getColorForMidStream(msgs, left, right);
         msgs.forEach((msg) -> {
             int msgLength = msg.message.length();
             int nodeIdentifier = generateIdentifier ? new Node(null).identifier : msg.identifier;
@@ -143,7 +145,7 @@ public class OutputTree {
         }
         
         boolean returnIndex = end >= settings.getMinimalConstantLength() * 3;
-        if (!returnIndex && !settings.getCheckMinimalLengthOnShorterStreams()) {
+        if (!returnIndex && !settings.isCheckMinimalLengthOnShorterStreams()) {
             returnIndex = end >= minStr.length();
         }
         

@@ -5,15 +5,46 @@
  */
 package parser.data;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  *
  * @author Andrej
  */
 public class Packet {
-    private Node transmittedLeafNode;
-    private Node receivedLeafNode;
-    private int responseTime;
-    private int ac;
+    
+    /**
+     * Represents the leaf node of transmitted data stream
+     * 
+     * @param transmittedLeafNode leaf node of transmitted data stream
+     * @return leaf node of transmitted data stream
+     */
+    @Getter @Setter private Node transmittedLeafNode;
+    
+    /**
+     * Represents the leaf node of received data stream
+     * 
+     * @param receivedLeafNode leaf node of received data stream
+     * @return leaf node of received data stream
+     */
+    @Getter @Setter private Node receivedLeafNode;
+    
+    /**
+     * Represents respnose time between transmitting and receiving data
+     * 
+     * @param time response time to be set
+     * @return respnose time between transmitting and receiving data
+     */
+    @Getter @Setter private int responseTime;
+    
+    /**
+     * Represents ac of transmitted and received data
+     * 
+     * @param ac ac of transmitted and received data
+     * @return ac of transmitted and received data
+     */
+    @Getter @Setter private int ac;
       
     /**
      * Creates new instance with specified leafnode
@@ -22,77 +53,5 @@ public class Packet {
      */
     public Packet(Node transmittedLeafNode) {
         this.transmittedLeafNode = transmittedLeafNode;
-    }
-    
-    /**
-     * Sets the leaf node of transmitted data stream
-     * 
-     * @param node leaf node of transmitted data stream
-     */
-    public void setTransmittedLeafNode(Node node) {
-        this.transmittedLeafNode = node;
-    }
-    
-    /**
-     * Gets the leaf node of transmitted data stream
-     * 
-     * @return leaf node of transmitted data stream
-     */
-    public Node getTransmittedLeafNode() {
-        return transmittedLeafNode;
-    }
-    
-    /**
-     * Sets the leaf node of received data stream
-     * 
-     * @param node leaf node of received data stream
-     */
-    public void setReceivedLeafNode(Node node) {
-        this.receivedLeafNode = node;
-    }
-    
-    /**
-     * Gets the leaf node of received data stream
-     * 
-     * @return leaf node of received data stream
-     */
-    public Node getReceivedLeafNode() {
-        return receivedLeafNode;
-    }
-    
-    /**
-     * Sets respnose time between transmitting and receiving data
-     * 
-     * @param time response time to be set
-     */
-    public void setResponseTime(int time) {
-        responseTime = time;
-    }
-    
-    /**
-     * Gets respnose time between transmitting and receiving data
-     * 
-     * @return respnose time between transmitting and receiving data
-     */
-    public int getResponseTime() {
-        return responseTime;
-    }
-    
-    /**
-     * Sets ac of transmitted and received data
-     * 
-     * @param ac ac of transmitted and received data
-     */
-    public void setAc(int ac) {
-        this.ac = ac;
-    }
-    
-    /**
-     * Gets ac of transmitted and received data
-     * 
-     * @return ac of transmitted and received data
-     */
-    public int getAc() {
-        return ac;
     }
 }

@@ -22,12 +22,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Stack;
+import lombok.val;
 import parser.data.Node;
 import parser.data.Packet;
 import parser.data.Tree;
 import parser.logging.ILogger;
 import parser.output.data.analyzedPackets.OutputMessage;
-import parser.settings.graph.GraphSettings;
 
 /**
  *
@@ -56,14 +56,14 @@ public class Writer {
      * @param packets packets to write
      */
     public void write(Collection<Tree> packets) {
-        File file = new File(settings.getOutputDirectory());
+        val file = new File(settings.getOutputDirectory());
         file.mkdirs();
 
-        if (settings.simpleNodes()) {
+        if (settings.isSimpleNodes()) {
             packets.forEach((tree) -> tree.simplifyNodes());
         }
         
-        if (!settings.separatePackets()) {
+        if (!settings.isSeparatePackets()) {
             writeInOneFile(packets, file.getAbsolutePath());
         } else {
             writeSeparated(packets, file.getAbsolutePath());
@@ -87,6 +87,9 @@ public class Writer {
                     case OutputType.PACKETS_ANALYZED:
                         functions.add(new OutputFunction((tree, writer) -> printAnalyzedPackets(tree, writer), null));
                         break;
+                    case OutputType.PACKETS_ANALYZED_TEXT:
+                        functions.add(new OutputFunction((tree, writer) -> printAnalyzedPacketsAsText(tree, writer), null));
+                        break;
                 }
             }
         }
@@ -95,7 +98,7 @@ public class Writer {
     }
     
     private void writeInOneFile(Collection<Tree> packets, String directoryPath) {
-        List<OutputFunction> outputFunctions = getOutputFunctions();
+        val outputFunctions = getOutputFunctions();
         
         for (int i = 0; i < outputFunctions.size(); i++) {
             if (outputFunctions.get(i).hasTransmittedFunction()) {
@@ -129,7 +132,7 @@ public class Writer {
     }
     
     private void writeSeparated(Collection<Tree> packets, String directoryPath) {
-        List<OutputFunction> outputFunctions = getOutputFunctions();
+        val outputFunctions = getOutputFunctions();
         for (int i = 0; i < outputFunctions.size(); i++) {
             for (Tree tree : packets) {
                
@@ -165,36 +168,36 @@ public class Writer {
         
         Map<String, Map<String, List<Packet>>> streams = new HashMap<>();
         tree.streamPackets.forEach((packet) -> {
-            byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
-            byte[] received = getDataFromLeafNode(packet.getReceivedLeafNode());
+            val transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
+            val received = getDataFromLeafNode(packet.getReceivedLeafNode());
             
             String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
             String receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
-            Map<String, List<Packet>> val = streams.get(transmittedStr);
-            if (val != null) {
-                List<Packet> p = val.get(receivedStr);
+            Map<String, List<Packet>> value = streams.get(transmittedStr);
+            if (value != null) {
+                List<Packet> p = value.get(receivedStr);
                 if (p == null) {
                     p = new LinkedList<>();
-                    val.put(receivedStr, p);
+                    value.put(receivedStr, p);
                 }
                 p.add(packet);
             } else {
-                val = new HashMap<>();
+                value = new HashMap<>();
                 List<Packet> p = new LinkedList<>();
                 p.add(packet);
-                val.put(receivedStr, p);
-                streams.put(transmittedStr, val);
+                value.put(receivedStr, p);
+                streams.put(transmittedStr, value);
             }
         });
         
         streams.entrySet().forEach((item) -> {
             // To generate identifier
-            Node transmittedNode = new Node(null);
+            val transmittedNode = new Node(null);
             writer.println(String.format("\t%d [label=\"%s\"];", transmittedNode.identifier, item.getKey()));
             
             item.getValue().forEach((received, packets) -> {
-                Node receivedNode = new Node(null);
+                val receivedNode = new Node(null);
                 writer.println(String.format("\t%d [label=\"%s\"];", receivedNode.identifier, received));
                 
                 packets.forEach((packet) -> {
@@ -206,22 +209,26 @@ public class Writer {
     }
     
     private void printAnalyzedPackets(Tree tree, PrintWriter writer) {
-        OutputTree outputTree = new OutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier, settings);
+        val outputTree = new OutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier, settings);
         
         tree.streamPackets.forEach((packet) -> {
-            byte[] transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
-            byte[] received = getDataFromLeafNode(packet.getReceivedLeafNode());
+            val transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
+            val received = getDataFromLeafNode(packet.getReceivedLeafNode());
             
-            String transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
-            String receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
+            val transmittedStr = toHexBinaryString(Arrays.copyOfRange(transmitted, settings.getHeaderLength(), transmitted.length));
+            val receivedStr = toHexBinaryString(Arrays.copyOfRange(received, settings.getHeaderLength(), received.length));
             
-            OutputPacket p = new OutputPacket(new OutputMessage(transmittedStr, packet.getTransmittedLeafNode().identifier));
+            val p = new OutputPacket(new OutputMessage(transmittedStr, packet.getTransmittedLeafNode().identifier));
             p.addReceivedMessage(new OutputMessage(receivedStr, packet.getReceivedLeafNode().identifier));
             
             outputTree.addPacket(p);
         });
         
         writer.println(outputTree.prepareOutput());
+    }
+    
+    private void printAnalyzedPacketsAsText(Tree tree, PrintWriter writer) {
+        
     }
     
     private byte[] getDataFromLeafNode(Node node) {
@@ -231,10 +238,10 @@ public class Writer {
         while (node != null) {
             data.add(node.getData());    
             size += node.getData().length;
-            node = node.getParentNode();
+            node = node.getParent();
         }
         
-        byte[] array = new byte[size];
+        val array = new byte[size];
         size = 0;
         for (int i = data.size() - 1; i >= 0; i--) {
             for (byte b : data.get(i)) {
@@ -284,7 +291,7 @@ public class Writer {
             writer.println(toPrint.get(toPrint.size() - 1).identifier + ";");
             toPrint.clear();
             if (!stack.isEmpty()) {
-                toPrint.add(stack.peek().getParentNode());
+                toPrint.add(stack.peek().getParent());
             }
         }
     }
@@ -302,26 +309,26 @@ public class Writer {
     private void printFlow(Node node, int packetsCount, PrintWriter writer) {
         List<Node> nodes = new ArrayList<>();
         List<Node> childNodes = new ArrayList<>();
-        StringBuilder labels = new StringBuilder();
-        StringBuilder graph = new StringBuilder();
+        val labels = new StringBuilder();
+        val graph = new StringBuilder();
         nodes.add(node);
         while(!nodes.isEmpty()) {
             Map<String, Integer> map = new HashMap<>();
             for (int i = 0; i < nodes.size(); i++) {
                 node = nodes.get(i);
                 childNodes.addAll(node.getChildNodes());
-                String val = toHexBinaryString(node.getData());
-                Integer count = map.get(val);
+                String value = toHexBinaryString(node.getData());
+                Integer count = map.get(value);
                 if (count != null) {
-                    map.put(val, count + node.getCount());
+                    map.put(value, count + node.getCount());
                     continue;
                 }
 
-                map.put(val, node.getCount());
+                map.put(value, node.getCount());
             }
             
-            Entry<String, Integer> max = Collections.max(map.entrySet(), (Entry<String, Integer> o1, Entry<String, Integer> o2) -> o1.getValue().compareTo(o2.getValue()));
-            String hexColor = String.format("#%06X", 0xFFFFFF & java.awt.Color.HSBtoRGB((float)max.getValue() / packetsCount / 3f, 1f, 1f));
+            val max = Collections.max(map.entrySet(), (Entry<String, Integer> o1, Entry<String, Integer> o2) -> o1.getValue().compareTo(o2.getValue()));
+            val hexColor = String.format("#%06X", 0xFFFFFF & java.awt.Color.HSBtoRGB((float)max.getValue() / packetsCount / 3f, 1f, 1f));
             labels.append(String.format("\t%d [label=\"%s\" style=filled fillcolor=\"%s\"];%s", flowIndex, max.getKey(), hexColor, System.lineSeparator()));
             graph.append(String.format("%d -> ", flowIndex++));
             
@@ -334,7 +341,7 @@ public class Writer {
     }
     
     private void printGraphSettings(PrintWriter writer) {
-        GraphSettings graphSettings = settings.getGraphSettings();
+        val graphSettings = settings.getGraphSettings();
         
         if (graphSettings.getRankDir() != null) {
             writer.println(String.format("\trankdir=%s;", graphSettings.getRankDir()));
@@ -355,7 +362,7 @@ public class Writer {
             separator = "";
         }
         
-        StringBuilder str = new StringBuilder(bytes.length * (separator.length() + 2));
+        val str = new StringBuilder(bytes.length * (separator.length() + 2));
         for(byte b : bytes) {
             str.append(String.format("%02X%s", b, separator));
         }

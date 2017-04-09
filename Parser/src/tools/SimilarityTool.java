@@ -8,6 +8,7 @@ package tools;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.val;
 
 /**
  *
@@ -22,10 +23,9 @@ public class SimilarityTool {
      * @param str2
      * @return percentage match from 0.0 to 1.0 where 1.0 is 100%
      */
-    public static double compareStrings(String str1, String str2)
-    {
-        List<String> pairs1 = wordLetterPairs(str1.trim());
-        List<String> pairs2 = wordLetterPairs(str2.trim());
+    public static double compareStrings(String str1, String str2) {
+        val pairs1 = wordLetterPairs(str1.trim());
+        val pairs2 = wordLetterPairs(str2.trim());
 
         int intersection = 0;
         int union = pairs1.size() + pairs2.size();
@@ -44,11 +44,10 @@ public class SimilarityTool {
             }
         }
 
-        return (2.0 * intersection) / union;
+        return (2. * intersection) / union;
     }
     
-    private static List<String> wordLetterPairs(String str)
-    {
+    private static List<String> wordLetterPairs(String str) {
         // All stream strings are already pairs so we just split them
         return new ArrayList(Arrays.asList(str.split(" ")));
     }

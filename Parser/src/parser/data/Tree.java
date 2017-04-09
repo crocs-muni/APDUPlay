@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import javax.xml.bind.DatatypeConverter;
+import lombok.val;
 
 /**
  *
@@ -33,10 +34,10 @@ public class Tree {
      * @param data      packet data
      */
     public Tree(byte[] header, byte[] data) {
-        ByteBuffer wrapped = ByteBuffer.wrap(header);
+        val wrapped = ByteBuffer.wrap(header);
         this.header = DatatypeConverter.printHexBinary(header);
         root = new Node(wrapped.array());
-        Node node = new Node(data);
+        val node = new Node(data);
         root.addChild(node);
         receivedRoot = new Node(wrapped.array());
         streamPackets = new LinkedList<>();
@@ -49,7 +50,7 @@ public class Tree {
      * @param stream byte stream to merge
      */
     public void merge(byte[] stream) {
-        Node node = merge(root, stream);
+        val node = merge(root, stream);
         lastPacket = new Packet(node);
         streamPackets.add(lastPacket);
         packetsCount++;
@@ -61,7 +62,7 @@ public class Tree {
      * @param data byte stream do add
      */
     public void addReceivedData(byte[] data) {
-        Node node = merge(receivedRoot, data);
+        val node = merge(receivedRoot, data);
         if (node != null && lastPacket != null) {
             lastPacket.setReceivedLeafNode(node);
         }
@@ -110,7 +111,7 @@ public class Tree {
         queue.addAll(node.getChildNodes());
         while(!queue.isEmpty()) {
             node = queue.remove();
-            byte[] data = node.getData();
+            val data = node.getData();
             if (data.length > 1) {
                 Node firstNode = new Node(Arrays.copyOfRange(data, 0, 1));
                 Node lastNode = firstNode;
@@ -121,9 +122,9 @@ public class Tree {
                     lastNode = n;
                 }
                 
-                node.getParentNode().addChild(firstNode);
+                node.getParent().addChild(firstNode);
                 node.setData(lastNode.getData());
-                lastNode.getParentNode().addChild(node);
+                lastNode.getParent().addChild(node);
             }
             
             queue.addAll(node.getChildNodes());
@@ -161,7 +162,7 @@ public class Tree {
             if (data[currentIndex] != stream[i]) {
                 currentNode.divide(currentIndex);
                 lastNode = new Node(Arrays.copyOfRange(stream, i, stream.length));
-                currentNode.getParentNode().addChild(lastNode);
+                currentNode.getParent().addChild(lastNode);
                 break;
             }
             

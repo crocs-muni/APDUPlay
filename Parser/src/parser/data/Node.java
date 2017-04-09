@@ -9,6 +9,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.val;
 
 /**
  *
@@ -16,13 +19,31 @@ import java.util.Map;
  */
 public class Node {
     private static int nextIdentifier = 0;
-    
-    private byte[] data;
-    private Node parent;
     private final Map<Byte, Node> childNodes;
-    private int count;
-    
     public final int identifier;
+    
+    /**
+     * Represents data byte stream stored in node
+     * 
+     * @param data byte stream
+     * @return byte stream
+     */
+    @Getter @Setter private byte[] data;
+    
+    /**
+     * Gets parent node
+     * 
+     * @return parent node
+     */
+    @Getter private Node parent;
+    
+    /**
+     * Represents occurence count
+     * 
+     * @param count occurence count
+     * @return occurence count
+     */
+    @Getter @Setter private int count;
     
     /**
      * Creates new instance of Node with specified byte stream
@@ -44,41 +65,6 @@ public class Node {
     }
     
     /**
-     * Sets occurence count
-     * 
-     * @param count occurence count
-     */
-    public void setCount(int count) {
-        this.count = count;
-    }
-    
-    /**
-     * Gets ocurrence count
-     * @return occurence count
-     */
-    public int getCount() {
-        return count;
-    }
-    
-    /**
-     * Sets byte stream
-     * 
-     * @param data byte stream
-     */
-    public void setData(byte[] data) {
-        this.data = data;
-    }
-    
-    /**
-     * Gets byte stream
-     * 
-     * @return byte stream
-     */
-    public byte[] getData() {
-        return data;
-    }
-    
-    /**
      * Splits node into 2 nodes from specified data index
      * 
      * @param index index to divide data stream from
@@ -90,8 +76,8 @@ public class Node {
             throw new IllegalArgumentException("Index out of range of data array");
         }
         
-        byte[] subArray = Arrays.copyOfRange(data, 0, index);
-        Node node = new Node(subArray);
+        val subArray = Arrays.copyOfRange(data, 0, index);
+        val node = new Node(subArray);
         
         parent.addChild(node);
         data = Arrays.copyOfRange(data, index, data.length);
@@ -155,14 +141,5 @@ public class Node {
      */
     public Collection<Node> getChildNodes() {
         return childNodes.values();
-    }
-    
-    /**
-     * Gets parent node
-     * 
-     * @return parent node
-     */
-    public Node getParentNode() {
-        return parent;
     }
 }

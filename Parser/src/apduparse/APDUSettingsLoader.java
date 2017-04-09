@@ -8,6 +8,8 @@ package apduparse;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import lombok.Getter;
+import lombok.val;
 
 /**
  *
@@ -15,7 +17,12 @@ import java.io.IOException;
  */
 public class APDUSettingsLoader {
     
-    private String jsonSettings;
+    /**
+     * Gets settings in json string format
+     * 
+     * @return settings in json string format
+     */
+    @Getter private String jsonSettings;
     
     /**
      * Loads settings from file
@@ -24,8 +31,8 @@ public class APDUSettingsLoader {
      * @throws IOException
      */
     public void load(String fileName) throws IOException {
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            StringBuilder sb = new StringBuilder();
+        try (val br = new BufferedReader(new FileReader(fileName))) {
+            val sb = new StringBuilder();
             String line;
             while ((line = br.readLine()) != null) {
                line = line.trim();
@@ -38,14 +45,5 @@ public class APDUSettingsLoader {
             
             jsonSettings = sb.toString();
         }
-    }
-    
-    /**
-     * Gets settings in json string format
-     * 
-     * @return settings in json string format
-     */
-    public String getJsonSettings() {
-        return jsonSettings;
     }
 }

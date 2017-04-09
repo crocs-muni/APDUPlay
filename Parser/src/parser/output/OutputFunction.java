@@ -42,7 +42,7 @@ public class OutputFunction {
     }
     
     /**
-     * nvokes received data output function
+     * Invokes received data output function
      * 
      * @param tree      tree which output function will use
      * @param writer    writer which output function will use

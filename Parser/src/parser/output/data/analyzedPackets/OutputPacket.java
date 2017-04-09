@@ -8,14 +8,31 @@ package parser.output.data.analyzedPackets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.val;
 
 /**
  *
  * @author Andrej
  */
 public class OutputPacket {
-    private OutputMessage transmittedMessage;
-    private List<OutputMessage> receivedMessages;
+    
+    /**
+     *  Represents transmitted message
+     * 
+     *  @param transmittedMessage transmitted message
+     *  @return transmittedMessage message
+     */
+    @Getter @Setter private OutputMessage transmittedMessage;
+    
+    /**
+     * Represents received messages for transmitted message represented in transmittedMessage
+     * 
+     * @param receivedMessages received messages to be set
+     * @return received messages
+     */
+    @Getter @Setter private List<OutputMessage> receivedMessages;
     
     /**
      * Creates new instance of OutputPacket
@@ -25,22 +42,6 @@ public class OutputPacket {
     public OutputPacket(OutputMessage transmittedMessage) {
         this.transmittedMessage = transmittedMessage;
         receivedMessages = new ArrayList<>();
-    }
-    
-    public OutputMessage getTransmittedMessage() {
-        return transmittedMessage;
-    }
-    
-    public void setTransmittedMessage(OutputMessage msg) {
-        transmittedMessage = msg;
-    }
-    
-    public List<OutputMessage> getReceivedMessages() {
-        return receivedMessages;
-    }
-    
-    public void setReceivedMessages(List<OutputMessage> msgs) {
-        receivedMessages = msgs;
     }
     
     /**
@@ -81,7 +82,7 @@ public class OutputPacket {
             return false;
         }
 
-        OutputPacket packet = (OutputPacket)obj;
+        val packet = (OutputPacket)obj;
         return (packet.transmittedMessage == null ? transmittedMessage == null : packet.transmittedMessage.equals(transmittedMessage));
     }
 

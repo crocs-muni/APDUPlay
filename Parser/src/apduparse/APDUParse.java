@@ -8,6 +8,7 @@ package apduparse;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import lombok.val;
 import parser.logging.Logger;
 import parser.Parser;
 import parser.settings.Settings;
@@ -26,12 +27,12 @@ public class APDUParse {
             throw new IllegalArgumentException("Path to file to parse is required as an argument");
         }
         
-        Logger logger = new Logger("Output/log.txt");
-        APDUSettingsLoader settingsLoader = new APDUSettingsLoader();
+        val logger = new Logger("Output/log.txt");
+        val settingsLoader = new APDUSettingsLoader();
         Settings settings;
         try {
             settingsLoader.load("APDUParse.conf");
-            Gson gson = new Gson();
+            val gson = new Gson();
             settings = gson.fromJson(settingsLoader.getJsonSettings(), Settings.class);
             logger.setDateTimePattern(settings.getDateTimePattern());
             
@@ -43,7 +44,7 @@ public class APDUParse {
             settings.setDefaults();
         }
         
-        Parser parser = new Parser(settings, logger);
+        val parser = new Parser(settings, logger);
         parser.parseFile(args[0]);
         parser.printData();
     }
