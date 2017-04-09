@@ -5,8 +5,8 @@
  */
 package parser.output;
 
-import parser.output.data.analyzedPackets.OutputPacket;
-import parser.output.data.analyzedPackets.OutputTree;
+import parser.output.data.OutputPacket;
+import parser.output.data.OutputTree;
 import parser.settings.Settings;
 import java.io.File;
 import java.io.PrintWriter;
@@ -27,7 +27,7 @@ import parser.data.Node;
 import parser.data.Packet;
 import parser.data.Tree;
 import parser.logging.ILogger;
-import parser.output.data.analyzedPackets.OutputMessage;
+import parser.output.data.OutputMessage;
 
 /**
  *
@@ -88,7 +88,7 @@ public class Writer {
                         functions.add(new OutputFunction((tree, writer) -> printAnalyzedPackets(tree, writer), null));
                         break;
                     case OutputType.PACKETS_ANALYZED_TEXT:
-                        functions.add(new OutputFunction((tree, writer) -> printAnalyzedPacketsAsText(tree, writer), null));
+                        functions.add(new OutputFunction((tree, writer) -> printAnalyzedPacketsAsText(tree, writer), null, false));
                         break;
                 }
             }
@@ -103,12 +103,18 @@ public class Writer {
         for (int i = 0; i < outputFunctions.size(); i++) {
             if (outputFunctions.get(i).hasTransmittedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_transmitted(%d).dot", directoryPath, i), "UTF-8")) {
-                    writer.println("digraph packets {");
-                    printGraphSettings(writer);
+                    if (outputFunctions.get(i).wrapGraphvizOutput) {
+                        writer.println("digraph packets {");
+                        printGraphSettings(writer);
+                    }
+                    
                     for (Tree tree : packets) {
                         outputFunctions.get(i).invokeTransmitted(tree, writer);
                     }
-                    writer.println("}");
+                    
+                    if (outputFunctions.get(i).wrapGraphvizOutput) {
+                        writer.println("}");
+                    }
                 }
                 catch (Exception ex) {
                     logger.error(ex.getMessage());
@@ -117,12 +123,18 @@ public class Writer {
             
             if (outputFunctions.get(i).hasReceivedFunction()) {
                 try (PrintWriter writer = new PrintWriter(String.format("%s/packets_received(%d).dot",directoryPath, i), "UTF-8")) {
-                    writer.println("digraph packets {");
-                    printGraphSettings(writer);
+                    if (outputFunctions.get(i).wrapGraphvizOutput) {
+                        writer.println("digraph packets {");
+                        printGraphSettings(writer);
+                    }
+                    
                     for (Tree tree : packets) {
                         outputFunctions.get(i).invokeReceived(tree, writer);
                     }
-                    writer.println("}");
+                    
+                    if (outputFunctions.get(i).wrapGraphvizOutput) {
+                        writer.println("}");
+                    }
                 }
                 catch (Exception ex) {
                     logger.error(ex.getMessage());
@@ -138,10 +150,16 @@ public class Writer {
                
                 if (outputFunctions.get(i).hasTransmittedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%s_transmitted(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
-                        writer.println("digraph transmitted {");
-                        printGraphSettings(writer);
+                        if (outputFunctions.get(i).wrapGraphvizOutput) {
+                            writer.println("digraph transmitted {");
+                            printGraphSettings(writer);
+                        }
+                        
                         outputFunctions.get(i).invokeTransmitted(tree, writer);
-                        writer.println("}");
+                        
+                        if (outputFunctions.get(i).wrapGraphvizOutput) {
+                            writer.println("}");
+                        }
                     }
                     catch (Exception ex) {
                         logger.error(ex.getMessage());
@@ -150,10 +168,16 @@ public class Writer {
 
                 if (outputFunctions.get(i).hasReceivedFunction()) {
                     try (PrintWriter writer = new PrintWriter(String.format("%s/%s_received(%d).dot", directoryPath, tree.header, i), "UTF-8")) {
-                        writer.println("digraph received {");
-                        printGraphSettings(writer);
+                        if (outputFunctions.get(i).wrapGraphvizOutput) {
+                            writer.println("digraph received {");
+                            printGraphSettings(writer);
+                        }
+                        
                         outputFunctions.get(i).invokeReceived(tree, writer);
-                        writer.println("}");
+                        
+                        if (outputFunctions.get(i).wrapGraphvizOutput) {
+                            writer.println("}");
+                        }
                     }
                     catch (Exception ex) {
                         logger.error(ex.getMessage());
@@ -208,9 +232,8 @@ public class Writer {
         });
     }
     
-    private void printAnalyzedPackets(Tree tree, PrintWriter writer) {
+    private OutputTree prepareAnalyzedPackets(Tree tree) {
         val outputTree = new OutputTree(toHexBinaryString(tree.root.getData()), tree.root.identifier, settings);
-        
         tree.streamPackets.forEach((packet) -> {
             val transmitted = getDataFromLeafNode(packet.getTransmittedLeafNode());
             val received = getDataFromLeafNode(packet.getReceivedLeafNode());
@@ -224,11 +247,15 @@ public class Writer {
             outputTree.addPacket(p);
         });
         
-        writer.println(outputTree.prepareOutput());
+        return outputTree;
+    }
+    
+    private void printAnalyzedPackets(Tree tree, PrintWriter writer) {
+        writer.println(prepareAnalyzedPackets(tree).prepareOutput());
     }
     
     private void printAnalyzedPacketsAsText(Tree tree, PrintWriter writer) {
-        
+        writer.println(prepareAnalyzedPackets(tree).prepareTextOutput());
     }
     
     private byte[] getDataFromLeafNode(Node node) {

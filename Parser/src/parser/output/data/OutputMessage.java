@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package parser.output.data.analyzedPackets;
+package parser.output.data;
 
 import java.util.Objects;
 import lombok.Getter;

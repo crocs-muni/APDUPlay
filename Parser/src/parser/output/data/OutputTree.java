@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package parser.output.data.analyzedPackets;
+package parser.output.data;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +77,19 @@ public class OutputTree {
             prepare(sb, packet.getTransmittedMessage().identifier, packet.getReceivedMessages(), true);
         });
         prepare(sb, identifier, transmittedMessages, false);
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Prepares output of the current tree in text form
+     * 
+     * @return prepared output of the current tree in text form
+     */
+    public String prepareTextOutput() {
+        val sb = new StringBuilder();
+       
+        /// TODO
         
         return sb.toString();
     }

@@ -14,9 +14,13 @@ import parser.data.Tree;
  * @author Andrej
  */
 public class OutputFunction {
-    
     private final BiConsumer<Tree, PrintWriter> transmittedFunction;
     private final BiConsumer<Tree, PrintWriter> receivedFunction;
+    
+    /**
+     * Determines if output should be wrapped as graphviz output
+     */
+    public final boolean wrapGraphvizOutput;
     
     /**
      * Creates new instance of OutputFunction
@@ -25,8 +29,20 @@ public class OutputFunction {
      * @param receivedFunction      receicved data output function
      */
     public OutputFunction(BiConsumer<Tree, PrintWriter> transmittedFunction, BiConsumer<Tree, PrintWriter> receivedFunction) {
+        this(transmittedFunction, receivedFunction, true);
+    }
+    
+    /**
+     * Creates new instance of OutputFunction
+     * 
+     * @param transmittedFunction   transmitted data output function
+     * @param receivedFunction      receicved data output function
+     * @param wrapGraphvizOutput    determines if output should be wrapped as graphviz output
+     */
+    public OutputFunction(BiConsumer<Tree, PrintWriter> transmittedFunction, BiConsumer<Tree, PrintWriter> receivedFunction, boolean wrapGraphvizOutput) {
         this.transmittedFunction = transmittedFunction;
         this.receivedFunction = receivedFunction;
+        this.wrapGraphvizOutput = wrapGraphvizOutput;
     }
     
     /**
