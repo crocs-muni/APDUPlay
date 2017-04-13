@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 import parser.output.OutputType;
 import parser.settings.graph.GraphSettings;
+import parser.settings.output.TextOutputSettings;
 
 /**
  *
@@ -94,6 +95,13 @@ public class Settings {
      * @return Graphviz settings
      */
     @Getter private final GraphSettings graphSettings = new GraphSettings();
+    
+    /**
+     * Gets Graphviz settings
+     * 
+     * @return Graphviz settings
+     */
+    @Getter private final TextOutputSettings textOutputSettings = new TextOutputSettings();
 
     /**
      * Sets default values for all properties
@@ -112,5 +120,11 @@ public class Settings {
         graphSettings.setNodeAttributes("color=lightblue2, style=filled");
         graphSettings.setRandomByteStreamColor("red");
         graphSettings.setSimilarByteStreamColor("darkorchid4");
+        
+        textOutputSettings.setBytesSeparator(";");
+        textOutputSettings.setByteEnumerationSeparator(",");
+        textOutputSettings.setRandomByteValue("x");
+        textOutputSettings.setEmptyByteValue("-");
+        textOutputSettings.setEmptyByteIncluded(true);
     }
 }

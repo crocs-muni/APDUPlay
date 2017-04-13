@@ -135,7 +135,7 @@ public class OutputTree {
     }
     
     private String splitAndJoinString(String str) {
-        return String.join(";", str.split(" "));
+        return String.join(settings.getTextOutputSettings().getBytesSeparator(), str.split(" "));
     }
     
     private String analyzeMessages(List<OutputMessage> msgs, int leftIndex, int rightIndex) {
@@ -175,33 +175,33 @@ public class OutputTree {
             }
             
             if (returnStr.length() > 0) {
-                returnStr.append(";");
+                returnStr.append(settings.getTextOutputSettings().getBytesSeparator());
             }
             
-            if (addEmptyByte) {
-                bytes.add("");
+            if (addEmptyByte && settings.getTextOutputSettings().isEmptyByteIncluded()) {
+                bytes.add(settings.getTextOutputSettings().getEmptyByteValue());
             }
             
             if (bytes.size() == 1) {
-                returnStr.append(String.join(",", bytes));
+                returnStr.append(String.join(settings.getTextOutputSettings().getByteEnumerationSeparator(), bytes));
                 continue;
             }
             
             if (bytes.size() > 20 || bytes.size() / msgsCount > 0.33) {
-                returnStr.append("-1");
+                returnStr.append(settings.getTextOutputSettings().getRandomByteValue());
                 continue;
             }
             
-            returnStr.append(String.join(",", bytes));
+            returnStr.append(String.join(settings.getTextOutputSettings().getByteEnumerationSeparator(), bytes));
         }
         
         if (returnStr.length() != 0) {
             if (appendPrefix) {
-                returnStr.insert(0, ";");
+                returnStr.insert(0, settings.getTextOutputSettings().getBytesSeparator());
             }
             
             if (appendSuffix) {
-                returnStr.append(";");
+                returnStr.append(settings.getTextOutputSettings().getBytesSeparator());
             }
         }
         return returnStr.toString();
