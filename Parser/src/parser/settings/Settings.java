@@ -106,7 +106,7 @@ public class Settings {
         headerLength = 4;
         minimalConstantLength = 0;
         bytesSeparator = " ";
-        dateTimePattern = "yyyy-MM-dd hh:mm:ss";
+        dateTimePattern = "yyyy-MM-dd HH:mm:ss";
         
         graphSettings.setRankDir("LR");
         graphSettings.setNodeAttributes("color=lightblue2, style=filled");

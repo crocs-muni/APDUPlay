@@ -6,7 +6,10 @@
 package parser.output.data;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import javafx.util.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
@@ -88,13 +91,123 @@ public class OutputTree {
      */
     public String prepareTextOutput() {
         val sb = new StringBuilder();
-       
-        /// TODO
+        sb.append(header);
+        sb.append(":");
         
+        List<OutputMessage> transmittedMessages = new ArrayList<>();
+        List<OutputMessage> receivedMessages = new ArrayList<>();
+        
+        packets.forEach((packet) -> {
+            transmittedMessages.add(packet.getTransmittedMessage());
+            receivedMessages.addAll(packet.getReceivedMessages());
+        });
+        
+        val prefixes = longestCommonPrefixes(transmittedMessages);
+        val receivedPrefixes = longestCommonPrefixes(receivedMessages);
+        int leftTransmitted = (int)prefixes.getKey();
+        int rightTransmitted = (int)prefixes.getValue();
+        int leftReceived = (int)receivedPrefixes.getKey();
+        int rightReceived = (int)receivedPrefixes.getValue();
+        
+        val firstTransmitted = transmittedMessages.get(0).message;
+        val firstReceived = receivedMessages.get(0).message;
+        sb.append("{");
+        val transmittedMid = analyzeMessages(transmittedMessages, leftTransmitted, rightTransmitted);
+        if (transmittedMid.length() == 0) {
+            sb.append(splitAndJoinString(firstTransmitted));
+        } else {
+            sb.append(splitAndJoinString(firstTransmitted.substring(0, leftTransmitted)));
+            sb.append(transmittedMid);
+            sb.append(splitAndJoinString(firstTransmitted.substring(firstTransmitted.length() - rightTransmitted)));
+        }
+        
+        sb.append("}{");
+        val receivedMid = analyzeMessages(receivedMessages, leftReceived, rightReceived);
+        if (receivedMid.length() == 0) {
+            sb.append(splitAndJoinString(firstReceived));
+        } else {
+            sb.append(splitAndJoinString(firstReceived.substring(0, leftReceived)));
+            sb.append(receivedMid);
+            sb.append(splitAndJoinString(firstReceived.substring(firstReceived.length() - rightReceived)));
+        }
+        sb.append("}");
         return sb.toString();
     }
     
-    private void prepare(StringBuilder sb, int parentIdentifier, List<OutputMessage> msgs, boolean generateIdentifier) {
+    private String splitAndJoinString(String str) {
+        return String.join(";", str.split(" "));
+    }
+    
+    private String analyzeMessages(List<OutputMessage> msgs, int leftIndex, int rightIndex) {
+        StringBuilder returnStr = new StringBuilder("");
+        
+        // get rid of space
+        boolean appendSuffix = false, appendPrefix = false;
+        
+        if (leftIndex > 0) {
+            leftIndex++;
+            appendPrefix = true;
+        }
+        
+        if (rightIndex > 0) {
+            rightIndex++;
+            appendSuffix = true;
+        }
+        
+        while(true) {
+            Set<String> bytes = new HashSet<>();
+            int msgsCount = 0;
+            boolean addEmptyByte = false;
+            for(val msg : msgs) {
+                if(msg.message.length() > leftIndex + rightIndex) {
+                    val curByte = msg.message.substring(leftIndex, leftIndex + 2);
+                    bytes.add(curByte);
+                } else if (!addEmptyByte) {
+                    addEmptyByte = true;
+                }
+                
+                msgsCount += msg.getCount();
+            }
+            
+            leftIndex += 3;
+            if (bytes.isEmpty()) {
+                break;
+            }
+            
+            if (returnStr.length() > 0) {
+                returnStr.append(";");
+            }
+            
+            if (addEmptyByte) {
+                bytes.add("");
+            }
+            
+            if (bytes.size() == 1) {
+                returnStr.append(String.join(",", bytes));
+                continue;
+            }
+            
+            if (bytes.size() > 20 || bytes.size() / msgsCount > 0.33) {
+                returnStr.append("-1");
+                continue;
+            }
+            
+            returnStr.append(String.join(",", bytes));
+        }
+        
+        if (returnStr.length() != 0) {
+            if (appendPrefix) {
+                returnStr.insert(0, ";");
+            }
+            
+            if (appendSuffix) {
+                returnStr.append(";");
+            }
+        }
+        return returnStr.toString();
+    }
+    
+    private Pair longestCommonPrefixes(List<OutputMessage> msgs) {
         val strings = new String[msgs.size()];
         val invertedStrings = new String[msgs.size()];
         for (int i = 0; i < msgs.size(); i++) {
@@ -105,7 +218,15 @@ public class OutputTree {
         int left = longestCommonPrefix(strings);
         int right = longestCommonPrefix(invertedStrings);
         
+        return new Pair(left, right);
+    }
+    
+    private void prepare(StringBuilder sb, int parentIdentifier, List<OutputMessage> msgs, boolean generateIdentifier) {
+        val prefixes = longestCommonPrefixes(msgs);
+        int left = (int)prefixes.getKey();
+        int right = (int)prefixes.getValue();
         val color = getColorForMidStream(msgs, left, right);
+        
         msgs.forEach((msg) -> {
             int msgLength = msg.message.length();
             int nodeIdentifier = generateIdentifier ? new Node(null).identifier : msg.identifier;
@@ -114,14 +235,9 @@ public class OutputTree {
                 sb.append(String.format("\t%d [label=\"%s\"];", nodeIdentifier, msg.message));
             } else {
                 sb.append(String.format("\t%d [label=<", nodeIdentifier));
-                if (left > 0) {
-                    sb.append(msg.message.substring(0, left));
-                }
-                
+                sb.append(msg.message.substring(0, left));
                 sb.append(String.format("<font color=\"%s\">%s</font>", color, msg.message.substring(left, msgLength - right)));
-                if (right > 0) {
-                    sb.append(msg.message.substring(msgLength - right));
-                }
+                sb.append(msg.message.substring(msgLength - right));
                 
                 sb.append(">];");
             }
@@ -162,7 +278,15 @@ public class OutputTree {
             returnIndex = end >= minStr.length();
         }
         
-        return returnIndex && end > 1 ? end - 1 : 0; // ignore last space
+        if (!returnIndex) {
+            return 0;
+        }
+        
+        if (end >= minStr.length()) {
+            return minStr.length();
+        }
+        
+        return end > 1 ? end - 1 : 0; // ignore last space
     }
     
     private String getColorForMidStream(List<OutputMessage> msgs, int leftIndex, int rightIndex) {
