@@ -53,4 +53,28 @@ public class TextOutputSettings {
      * @return true if empty byte should be included in the output, otherwise false
      */
     @Getter @Setter private boolean emptyByteIncluded;
+    
+    /**
+     * Defines value which will be prepended before data stream
+     * 
+     * @param beforeDataStream value to prepend
+     * @return value to prepend
+     */
+    @Getter @Setter private String beforeDataStream;
+    
+    /**
+     * Defines value which will be appendeded after data stream
+     * 
+     * @param afterDataStream value to append
+     * @return value to append
+     */
+    @Getter @Setter private String afterDataStream;
+    
+    /**
+     * Defines if byte index of data stream should be included in output
+     * 
+     * @param dataByteIndexIncluded
+     * @return true if byte index of data stream should be included in output, otherwise false
+     */
+    @Getter @Setter private boolean dataByteIndexIncluded;
 }

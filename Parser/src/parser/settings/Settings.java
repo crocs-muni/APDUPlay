@@ -126,5 +126,8 @@ public class Settings {
         textOutputSettings.setRandomByteValue("x");
         textOutputSettings.setEmptyByteValue("-");
         textOutputSettings.setEmptyByteIncluded(true);
+        textOutputSettings.setBeforeDataStream("");
+        textOutputSettings.setAfterDataStream("");
+        textOutputSettings.setDataByteIndexIncluded(false);
     }
 }

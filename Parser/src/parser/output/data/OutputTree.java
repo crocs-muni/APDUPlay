@@ -112,46 +112,53 @@ public class OutputTree {
         val firstTransmitted = transmittedMessages.get(0).message;
         val firstReceived = receivedMessages.get(0).message;
         sb.append("{");
+        sb.append(settings.getTextOutputSettings().getBeforeDataStream());
         val transmittedMid = analyzeMessages(transmittedMessages, leftTransmitted, rightTransmitted);
         if (transmittedMid.length() == 0) {
             sb.append(splitAndJoinString(firstTransmitted));
         } else {
-            sb.append(splitAndJoinString(firstTransmitted.substring(0, leftTransmitted)));
-            sb.append(transmittedMid);
-            sb.append(splitAndJoinString(firstTransmitted.substring(firstTransmitted.length() - rightTransmitted)));
+            sb.append(splitAndJoinString(String.format("%s %s %s",
+                    firstTransmitted.substring(0, leftTransmitted).trim(), 
+                    transmittedMid.trim(),
+                    firstTransmitted.substring(firstTransmitted.length() - rightTransmitted).trim())));
         }
         
+        sb.append(settings.getTextOutputSettings().getAfterDataStream());
         sb.append("}{");
+        sb.append(settings.getTextOutputSettings().getBeforeDataStream());
+        
         val receivedMid = analyzeMessages(receivedMessages, leftReceived, rightReceived);
         if (receivedMid.length() == 0) {
             sb.append(splitAndJoinString(firstReceived));
         } else {
-            sb.append(splitAndJoinString(firstReceived.substring(0, leftReceived)));
-            sb.append(receivedMid);
-            sb.append(splitAndJoinString(firstReceived.substring(firstReceived.length() - rightReceived)));
+            sb.append(splitAndJoinString(String.format("%s %s %s",
+                    firstReceived.substring(0, leftReceived).trim(), 
+                    receivedMid.trim(),
+                    firstReceived.substring(firstReceived.length() - rightReceived).trim())));
         }
+        sb.append(settings.getTextOutputSettings().getAfterDataStream());
         sb.append("}");
         return sb.toString();
     }
     
     private String splitAndJoinString(String str) {
-        return String.join(settings.getTextOutputSettings().getBytesSeparator(), str.split(" "));
+        String[] values = str.split(" ");
+        if (settings.getTextOutputSettings().isDataByteIndexIncluded()) {
+            for (int i = 0; i < values.length; i++) {
+                values[i] = String.format("%04d: %s", i, values[i]);
+            }
+        }
+        return String.join(settings.getTextOutputSettings().getBytesSeparator(), values);
     }
     
     private String analyzeMessages(List<OutputMessage> msgs, int leftIndex, int rightIndex) {
         StringBuilder returnStr = new StringBuilder("");
-        
-        // get rid of space
-        boolean appendSuffix = false, appendPrefix = false;
-        
         if (leftIndex > 0) {
             leftIndex++;
-            appendPrefix = true;
         }
         
         if (rightIndex > 0) {
             rightIndex++;
-            appendSuffix = true;
         }
         
         while(true) {
@@ -175,7 +182,7 @@ public class OutputTree {
             }
             
             if (returnStr.length() > 0) {
-                returnStr.append(settings.getTextOutputSettings().getBytesSeparator());
+                returnStr.append(" ");
             }
             
             if (addEmptyByte && settings.getTextOutputSettings().isEmptyByteIncluded()) {
@@ -183,7 +190,7 @@ public class OutputTree {
             }
             
             if (bytes.size() == 1) {
-                returnStr.append(String.join(settings.getTextOutputSettings().getByteEnumerationSeparator(), bytes));
+                returnStr.append(bytes.iterator().next());
                 continue;
             }
             
@@ -195,15 +202,6 @@ public class OutputTree {
             returnStr.append(String.join(settings.getTextOutputSettings().getByteEnumerationSeparator(), bytes));
         }
         
-        if (returnStr.length() != 0) {
-            if (appendPrefix) {
-                returnStr.insert(0, settings.getTextOutputSettings().getBytesSeparator());
-            }
-            
-            if (appendSuffix) {
-                returnStr.append(settings.getTextOutputSettings().getBytesSeparator());
-            }
-        }
         return returnStr.toString();
     }
     
