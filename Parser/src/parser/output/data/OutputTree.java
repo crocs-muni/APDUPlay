@@ -142,7 +142,7 @@ public class OutputTree {
     }
     
     private String splitAndJoinString(String str) {
-        String[] values = str.split(" ");
+        String[] values = str.trim().split(" ");
         if (settings.getTextOutputSettings().isDataByteIndexIncluded()) {
             for (int i = 0; i < values.length; i++) {
                 values[i] = String.format("%04d: %s", i, values[i]);
