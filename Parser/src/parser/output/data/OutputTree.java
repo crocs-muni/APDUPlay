@@ -142,7 +142,8 @@ public class OutputTree {
     }
     
     private String splitAndJoinString(String str) {
-        String[] values = str.trim().split(" ");
+        // split on any whitespace so we do not rely on just one space
+        String[] values = str.trim().split("\\s+");
         if (settings.getTextOutputSettings().isDataByteIndexIncluded()) {
             for (int i = 0; i < values.length; i++) {
                 values[i] = String.format("%04d: %s", i, values[i]);
