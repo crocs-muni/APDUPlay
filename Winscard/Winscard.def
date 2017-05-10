@@ -8,7 +8,6 @@ EXPORTS
 ;
 ; functions to pass transparently
 ;
-;nahodnypokus=original.nahodnypokus @243
 ;SCardAccessNewReaderEvent=original.SCardAccessNewReaderEvent @1
 ;SCardAccessStartedEvent=original.SCardAccessStartedEvent @2
 ;SCardAddReaderToGroupA=original.SCardAddReaderToGroupA @6
@@ -82,7 +81,6 @@ SCardListReadersW @44
 SCardFreeMemory @22
 
 
-SCardAccessNewReaderEvent @1
 SCardAccessStartedEvent @2
 SCardAddReaderToGroupA @6
 SCardAddReaderToGroupW @7
@@ -126,9 +124,7 @@ SCardListReadersW @44
 SCardLocateCardsA @45
 SCardLocateCardsW @46
 SCardReconnect @47
-SCardReleaseAllEvents @3
 SCardReleaseContext @48
-SCardReleaseNewReaderEvent @4
 SCardReleaseStartedEvent @5
 SCardRemoveReaderFromGroupA @49
 SCardRemoveReaderFromGroupW @50

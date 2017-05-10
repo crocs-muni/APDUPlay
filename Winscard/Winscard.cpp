@@ -80,9 +80,11 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-static string_type RULE_FILE = _CONV("winscard_rules.txt");
+static string_type RULE_FILE = _CONV("C:\\Users\\xvancik\\Desktop\\winscard_rules.txt");
 static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log");
 static string_type WINSCARD_LOG = _CONV("winscard_log");
+static std::string INSTRUCTION_FILE = "C:\\Users\\xvancik\\Desktop\\instructions.txt";
+static std::string DEBUG_FILE = "C:\\Users\\xvancik\\Desktop\\Debug.txt";
 
 // The one and only CWinscardApp object
 
@@ -341,6 +343,9 @@ SCard LONG STDCALL SCardSetAttrib(
 
 CWinscardApp::~CWinscardApp()
 {
+
+	iniparser_freedict(instructionDict);
+
 #ifdef __linux
 	dlclose(hOriginal);
 #else
@@ -363,6 +368,22 @@ CWinscardApp::~CWinscardApp()
 		if (ptr != NULL) delete[] ptr;
 	}
 	m_wcharAllocatedMemoryList.clear();
+}
+
+void CWinscardApp::WriteDescription(BYTE insByte)
+{
+	char sec_and_key[256];
+	string_type hexNum = string_format(_CONV("%.2x"), insByte);
+	char* section_name = "Instructions";
+	const char* description;
+
+	type_copy(sec_and_key, section_name);
+	description = iniparser_getstring(instructionDict, type_cat(sec_and_key, hexNum.c_str()), "");
+
+	if (type_length(description) != 0)
+	{
+		CCommonFnc::File_AppendString(WINSCARD_LOG, description);
+	}
 }
 
 static SCard LONG(STDCALL *Original_SCardFreeMemory)(
@@ -482,6 +503,8 @@ SCard LONG STDCALL SCardTransmit(
 		//sprintf(buffer, "totalBytesINCounter:%d#\r\n", theApp.m_processedApduByteCounter + 1);
 		buffer = string_format(_CONV("totalBytesINCounter:%d#\r\n"), theApp.m_processedApduByteCounter + 1);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+
+		theApp.WriteDescription((BYTE)pbSendBuffer[1]); // Send the INS BYTE to the function
 
 		CCommonFnc::File_AppendString(WINSCARD_LOG, txMsg);
 
@@ -2749,6 +2772,12 @@ CWinscardApp::CWinscardApp()
         WINSCARD_LOG += "/Desktop/APDUPlay/winscard_log_" + date_and_time + ".txt";
 		
 		LoadRules();
+
+		if (!m_winscardConfig.sLOG_BASE_PATH.empty())
+		{
+			WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log_%s.txt"), m_winscardConfig.sLOG_BASE_PATH, date_and_time);
+			WINSCARD_LOG = string_format(_CONV("%swinscard_log_%s.txt"), m_winscardConfig.sLOG_BASE_PATH, date_and_time);
+        }
 		
 		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
 		initialize();
@@ -2762,18 +2791,6 @@ CWinscardApp::CWinscardApp()
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
-	std::string filePath = "C:\\Users\\xvancik\\Desktop\\Pokus";
-	std::string data = "kinizica bola zavolana";
-	std::ofstream file;
-	file.open(filePath, std::fstream::out | std::fstream::app);
-
-	if (file.is_open()) {
-		file.write(data.c_str(), data.length());
-		file.close();
-	}
-	else {
-		MessageBox(0, "And text here", "MessageBox caption", MB_OK);
-    }
 
     srand((int) time(NULL));
 
@@ -2784,6 +2801,14 @@ BOOL CWinscardApp::InitInstance()
 
     // LOAD MODIFICATION RULES
     LoadRules();
+
+	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
+	}
+
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("path to log file is %s\n", WINSCARD_RULES_LOG.c_str()));
 
     // CONNECT TO SCSAT04 IF REQUIRED
     if (m_scsat04Config.bRedirect) {
@@ -2906,12 +2931,24 @@ int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
                 // IF ALL MATCH THEN APPLY CHANGE RULES
                 if (bAllMatch) {
                     // LOG ACTON
-                    string_type message; message = string_format(_CONV("   rule applied: %s\n"), iter->ruleName);
+                    string_type message; message = string_format(_CONV("   name of rule applied: %s\n"), iter->ruleName);
                     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+					for (auto iter8 = iter->matchRules.begin(); iter8 != iter->matchRules.end(); iter8++) {
+						message = string_format(_CONV("  match element: %d value: %02X\n"), iter8->element, iter8->value);
+						CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+					}
                 
                     for (iter2 = iter->actionRules.begin(); iter2 != iter->actionRules.end(); iter2++) {
+
+						message = string_format(_CONV("pozrem ci je validne\n"));
+
                         singleRule = *iter2;
                         if (singleRule.valid) {
+
+							message = string_format(_CONV("  action element: %d value: %02X\n"), iter2->element, iter2->value);
+							CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
                             if (singleRule.element == LE_ELEM) *pcbLength = singleRule.value;
                             else newBuffer[singleRule.element] = singleRule.value;
                         }
@@ -3076,8 +3113,12 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	int value;
 	string_type section_name_string = section_name;
 
+    CCommonFnc::File_AppendString(DEBUG_FILE, string_format("Load rule called with section name: %s\n", section_name));
+
 	if (compareWithNoCase(section_name, _CONV("WINSCARD")) == 0)
 	{
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("parsing section Winscard: \n"));
+
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":AUTO_REQUEST_DATA")), 2)) != 2)
 		{
@@ -3099,6 +3140,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_EXCHANGED_APDU")), 2)) != 2)
 		{
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format("LOG_EXCHANGED_APDU value is: %d\n", value));
 			m_winscardConfig.bLOG_EXCHANGED_APDU = value;
 		}
 
@@ -3106,6 +3148,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":LOG_BASE_PATH")), "");
 		if(type_length(char_value) != 0)
 		{
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format("LOG_BASE_PATH value is: %s\n", char_value));
 			m_winscardConfig.sLOG_BASE_PATH = char_value;
 		}
 		
@@ -3113,11 +3156,6 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":MODIFY_APDU_BY_RULES")), 2)) != 2)
 		{
 			m_winscardConfig.bMODIFY_APDU_BY_RULES = value;
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format("Našlo sa to s hodnotou %d\n", value));
-		}
-		else
-		{
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Nenašlo sa to\n");
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -3200,12 +3238,14 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0)
 	{
 		// COMMON RULE
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("parsing rule\n"));
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":USAGE")), "");
 		if (type_length(char_value) != 0)
 		{
 			rule.usage = type_to_int(char_value, NULL, 10);
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format("iusage is %s\n", char_value));
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -3236,26 +3276,35 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		{
 			ruleString = char_value;
 			ruleString += _CONV(" ");
+			
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" rule string is %s\n"), ruleString.c_str()));
 
 			// FIND HISTORY ELEMENT, WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
 			if ((pos = ruleString.find(_CONV("t="))) != string_type::npos)
 			{
 				//singleRule.history = atoi(ruleString.substr(pos + (int) type_length(_CONV("t="))).c_str());
 				singleRule.history = type_to_int(ruleString.substr(pos + (int)type_length(_CONV("t="))).c_str(), NULL, 10);
-				ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
+				ruleString.erase(pos, ruleString.find(_CONV(","), pos) - pos + 1); // remove from rule string
+
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("rule string after first erase %s\n"), ruleString.c_str()));
+
 			}
 			// FIND DIRECTION ELEMENT (IN/OUT), WILL BE SAME FOR ALL OTHER ELEMENTAREY RULES
 			if ((pos = ruleString.find(_CONV("in="))) != string_type::npos)
 			{
 				singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int) type_length(_CONV("in="))).c_str(), NULL, 10);
-				ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1); // remove from rule string
+				ruleString.erase(pos, ruleString.find(_CONV(","), pos) - pos + 1); // remove from rule string
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("in is %d\n"), singleRule.apduDirection));
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("rule string after second erase %s\n"), ruleString.c_str()));
 			}
 
 			// PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
 			pos2 = 0;
-			while ((pos = ruleString.find(_CONV(";"), pos2)) != -1)
+			while ((pos = ruleString.find(_CONV(","), pos2)) != string_type::npos)
 			{
 				rulePart = ruleString.substr(pos2, pos - pos2 + 1);
+
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" rule part is %s\n"), rulePart.c_str()));
 
 				//elemName = rulePart.Left(rulePart.Find("="));
 				elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
@@ -3266,6 +3315,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
 					singleRule.valid = TRUE;
 					rule.matchRules.push_back(singleRule);
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" CLA is %s\n"), rulePart.substr(rulePart.find(_CONV("=")) + 1, 2)));
 				}
 				if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0)
 				{
@@ -3273,6 +3323,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
 					singleRule.valid = TRUE;
 					rule.matchRules.push_back(singleRule);
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" INS is %s\n"), rulePart.substr(rulePart.find(_CONV("=")) + 1, 2)));
 				}
 				if (compareWithNoCase(elemName.c_str(), _CONV("P1")) == 0)
 				{
@@ -3280,6 +3331,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
 					singleRule.valid = TRUE;
 					rule.matchRules.push_back(singleRule);
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" P1 is %s\n"), rulePart.substr(rulePart.find(_CONV("=")) + 1, 2)));
 				}
 				if (compareWithNoCase(elemName.c_str(), _CONV("P2")) == 0)
 				{
@@ -3287,6 +3339,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
 					singleRule.valid = TRUE;
 					rule.matchRules.push_back(singleRule);
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" P2 is %s\n"), rulePart.substr(rulePart.find(_CONV("=")) + 1, 2)));
 				}
 				if (compareWithNoCase(elemName.c_str(), _CONV("LC")) == 0)
 				{
@@ -3295,18 +3348,30 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					singleRule.valid = TRUE;
 					rule.matchRules.push_back(singleRule);
 				}
-				if (compareWithNoCase(elemName.substr(0, (int) type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0)
+
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("element name %s\n"), elemName.substr(0, (int)type_length(_CONV("DATA"))).c_str()));
+
+				if (compareWithNoCase(elemName.substr(0, (int)type_length(_CONV("DATA"))).c_str(), _CONV("DATA")) == 0)
 				{
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("parsing data\n")));
 					// DATA CAN BE WRITTEN IN MORE VALUES AT ONCE, STARTING ON POSITION DATAx
 					// CREATE SEPARATE ELEMENT FOR EACH
-					int offset = type_to_int(elemName.substr(section_name_string.find_first_of(_CONV("0123456789")), 0).c_str(), NULL, 10);
+					int offset = type_to_int(elemName.substr(elemName.find_first_of(_CONV("0123456789")), 0).c_str(), NULL, 10);
 					// GO OVER ALL MATCH DATA
 					string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
 					//data.Replace(";", "");
-					data.erase(std::remove(data.begin(), data.end(), ';'), data.end());
+					data.erase(std::remove(data.begin(), data.end(), ','), data.end());
 					BYTE dataBuffer[300];
 					DWORD dataBufferLen = 300;
+					//CCommonFnc::File_AppendString(filePath, string_format(_CONV(" data su: %s\n"), data.c_str()));
 					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("parsed data%: "), offset));
+					
+					for (int i = 0; i < dataBufferLen; i++)
+					{
+						CCommonFnc::File_AppendString(DEBUG_FILE, string_format("%02X", dataBuffer[i]));
+					}
+
 					for (DWORD i = 0; i < dataBufferLen; i++)
 					{
 						if (singleRule.apduDirection == INPUT_APDU) singleRule.element = offset + OFFSET_CDATA;
@@ -3335,7 +3400,9 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, ":ACTION"), "");
 		if (type_length(char_value) != 0)
 		{
-			ruleString = buffer;
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("parsing action\n")));
+
+			ruleString = char_value;
 			ruleString += _CONV(" ");
 			// PARSE RULE AND CREATE ELEMENTARY RULES FOREACH BYTE
 			singleRule.clear();
@@ -3344,11 +3411,13 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 			{
 				singleRule.apduDirection = type_to_int(ruleString.substr(pos + (int) type_length(_CONV("in="))).c_str(), NULL, 10);
 				//ruleString.Delete(pos, ruleString.find(";", pos) - pos + 1); // remove from rule string
-				ruleString.erase(pos, ruleString.find(_CONV(";"), pos) - pos + 1);
+				ruleString.erase(pos, ruleString.find(_CONV(","), pos) - pos + 1);
 			}
 			pos2 = 0;
-			while ((pos = ruleString.find(_CONV(";"), pos2)) != string_type::npos)
+			while ((pos = ruleString.find(_CONV(","), pos2)) != string_type::npos)
 			{
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("in action while\n")));
+
 				rulePart = ruleString.substr(pos2, pos - pos2 + 1);
 
 				elemName = rulePart.substr(0, rulePart.find(_CONV("=")));
@@ -3359,6 +3428,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					CCommonFnc::BYTE_ConvertFromHexNumToByte(rulePart.substr(rulePart.find(_CONV("=")) + 1, 2), &(singleRule.value));
 					singleRule.valid = TRUE;
 					rule.actionRules.push_back(singleRule);
+					CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV(" CLA in action rule is %s\n"), rulePart.substr(rulePart.find(_CONV("=")) + 1, 2)));
 				}
 				if (compareWithNoCase(elemName.c_str(), _CONV("INS")) == 0)
 				{
@@ -3403,7 +3473,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					// GO OVER ALL MATCH DATA
 					string_type data = rulePart.substr(rulePart.find(_CONV("=")) + 1);
 					//data.Replace(";", "");
-					data.erase(std::remove(data.begin(), data.end(), ';'), data.end());
+					data.erase(std::remove(data.begin(), data.end(), ','), data.end());
 					BYTE dataBuffer[300];
 					DWORD dataBufferLen = 300;
 					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
@@ -3432,7 +3502,20 @@ int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
 	//string_type filePath;
 
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("number of sections is: "));
+
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
+
+	std::fstream instruction_file;
+	instruction_file.open(INSTRUCTION_FILE);
+
+	if (instruction_file.is_open())
+	{
+		CCommonFnc::File_AppendString(DEBUG_FILE, "Instruction file found");
+		instruction_file.close();
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
+		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
+	}
 
 	if (FILE *file = fopen(RULE_FILE.c_str(), "r")) {
 		fclose(file);
@@ -3444,6 +3527,8 @@ int CWinscardApp::LoadRules() {
 		dictionary* dict = iniparser_load((const char*)RULE_FILE.c_str());
 
 		int number_of_sections = iniparser_getnsec(dict);
+
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("number of sections is: %d", number_of_sections));
 
 		for (int i = 0; i < number_of_sections; ++i)
 		{
@@ -3460,11 +3545,6 @@ int CWinscardApp::LoadRules() {
 	}
 
 	//printf("\n_____%s_____\n", m_winscardConfig.sLOG_BASE_PATH);
-	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
-	{
-		WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-		WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-	}
     return status;
 }
 #endif

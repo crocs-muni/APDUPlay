@@ -82,6 +82,7 @@ int compareWithNoCase(const char_type* str1, const char_type* str2) {
 	}
 
 	int result = type_compare(str1_2, str2_2);
+
 	delete[] str1_2;
 	delete[] str2_2;
 	return result;
@@ -237,6 +238,7 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
 	if (string_type::npos != startpos) {
 		hexaString = hexaString.substr(startpos);
 	}
+
     hexaString += _CONV(" ");
     hexaString.length();
 
@@ -258,8 +260,8 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
             }
             pos2 = pos + 1;
         }*/
-		while ((pos = hexaString.find(' ', pos2)) != string_type::npos) {
-			hexNum = hexaString.substr((pos2, pos - pos2));
+		while ((pos = hexaString.find(' ', pos2)) != -1) {
+			hexNum = hexaString.substr(pos2, pos - pos2);
 			hexNum.erase(hexNum.find_last_not_of(_CONV(" ")) + 1);
 			size_t startpos2 = hexNum.find_first_not_of(_CONV(" "));
 			if (string_type::npos != startpos2) {
@@ -286,7 +288,6 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
 
         if (pTempArray) delete[] pTempArray;
     }
-
     return status;
 }
 

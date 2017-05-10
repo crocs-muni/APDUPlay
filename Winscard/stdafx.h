@@ -114,7 +114,7 @@ typedef std::list<APDU_BUFFER>    lab;
 #define LE_ELEM         299
 
 typedef struct _APDU_SINGLE_RULE {
-    bool    valid;          // true when used
+    bool    valid = false;          // true when used
     int     history;        // number of target apdu in history (current == 0)
     int     apduDirection;  // 1 .. input, 0... output
     int     element;        // type of refered element, also equal to ordinary number of byte in apdu stream
