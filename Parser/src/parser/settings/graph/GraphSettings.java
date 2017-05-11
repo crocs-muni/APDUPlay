@@ -53,4 +53,12 @@ public class GraphSettings {
      * @return color of bytes that have been analyzed as similar
      */
     @Getter @Setter private String similarByteStreamColor;
+    
+    /**
+     * Represents the number of bytes after which the output should be wrapped
+     * 
+     * @param wrapAfter number of bytes after which the output get wrapped
+     * @return number of bytes after which the output get wrapped
+     */
+    @Getter @Setter private int wrapAfter;
 }

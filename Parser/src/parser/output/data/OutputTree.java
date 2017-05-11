@@ -16,6 +16,7 @@ import lombok.val;
 import parser.data.Node;
 import parser.settings.Settings;
 import tools.SimilarityTool;
+import tools.StringUtil;
 
 /**
  *
@@ -231,12 +232,12 @@ public class OutputTree {
             int nodeIdentifier = generateIdentifier ? new Node(null).identifier : msg.identifier;
             
             if (left + right + 1 >= msgLength) {
-                sb.append(String.format("\t%d [label=\"%s\"];", nodeIdentifier, msg.message));
+                sb.append(String.format("\t%d [label=\"%s\"];", nodeIdentifier, StringUtil.wrapText(msg.message, settings.getGraphSettings().getWrapAfter() * 3)));
             } else {
                 sb.append(String.format("\t%d [label=<", nodeIdentifier));
-                sb.append(msg.message.substring(0, left));
-                sb.append(String.format("<font color=\"%s\">%s</font>", color, msg.message.substring(left, msgLength - right)));
-                sb.append(msg.message.substring(msgLength - right));
+                sb.append(StringUtil.wrapText(msg.message.substring(0, left), settings.getGraphSettings().getWrapAfter() * 3));
+                sb.append(String.format("<font color=\"%s\">%s</font>", color, StringUtil.wrapText(msg.message.substring(left, msgLength - right), settings.getGraphSettings().getWrapAfter() * 3)));
+                sb.append(StringUtil.wrapText(msg.message.substring(msgLength - right), settings.getGraphSettings().getWrapAfter() * 3));
                 
                 sb.append(">];");
             }
