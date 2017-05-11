@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Winscard", "Winscard\Winscard.vcxproj", "{288B9CA9-1B07-4E09-873B-761E2474085F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinscardTests", "WinscardTests\WinscardTests.vcxproj", "{413DFACB-F519-443D-A0DE-25F8F9DB487C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -34,6 +36,22 @@ Global
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|Win32.Build.0 = Release|Win32
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|x64.ActiveCfg = Release|x64
 		{288B9CA9-1B07-4E09-873B-761E2474085F}.Release|x64.Build.0 = Release|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Debug|ARM.ActiveCfg = Debug|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Debug|Win32.Build.0 = Debug|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Debug|x64.ActiveCfg = Debug|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Debug|x64.Build.0 = Debug|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release CryptoAmor|ARM.ActiveCfg = Release|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release CryptoAmor|ARM.Build.0 = Release|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release CryptoAmor|Win32.ActiveCfg = Release|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release CryptoAmor|Win32.Build.0 = Release|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release CryptoAmor|x64.ActiveCfg = Release|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release CryptoAmor|x64.Build.0 = Release|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release|ARM.ActiveCfg = Release|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release|Win32.ActiveCfg = Release|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release|Win32.Build.0 = Release|Win32
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release|x64.ActiveCfg = Release|x64
+		{413DFACB-F519-443D-A0DE-25F8F9DB487C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

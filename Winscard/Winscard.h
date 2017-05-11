@@ -36,6 +36,7 @@ public:
     lab     apduInList;    
     lab     apduOutList;    
     BOOL    m_bRulesActive;
+	dictionary* instructionDict;
 
 #if defined (_WIN32)
     SCSAT04_CONFIG  m_scsat04Config;
@@ -54,6 +55,8 @@ public:
     int LoadRule(const char_type* section_name, dictionary* dict);
 	int LoadRule(string_type ruleName, string_type filePath);
 	int LoadRules();
+
+	void WriteDescription(BYTE insByte);
 
     int ApplyRules(BYTE* pbSendBuffer, DWORD* pcbSendLength, int direction);
     int GetApduFromHistory(BYTE* buffer, int history, int apduDirection);
