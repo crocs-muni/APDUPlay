@@ -36,7 +36,7 @@ public:
     lab     apduInList;    
     lab     apduOutList;    
     BOOL    m_bRulesActive;
-	dictionary* instructionDict;
+	dictionary* instructionDict = nullptr;
 
 #if defined (_WIN32)
     SCSAT04_CONFIG  m_scsat04Config;

@@ -83,7 +83,7 @@ static SCard \1 (STDCALL *Original_\2)
 static string_type RULE_FILE = _CONV("C:\\Users\\xvancik\\Desktop\\winscard_rules.txt");
 static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log");
 static string_type WINSCARD_LOG = _CONV("winscard_log");
-static std::string INSTRUCTION_FILE = "C:\\Users\\xvancik\\Desktop\\instructions.txt";
+static std::string INSTRUCTION_FILE = "C:\\Users\\xvancik\\Desktop\\Instructions.txt";
 static std::string DEBUG_FILE = "C:\\Users\\xvancik\\Desktop\\Debug.txt";
 
 // The one and only CWinscardApp object
@@ -372,17 +372,27 @@ CWinscardApp::~CWinscardApp()
 
 void CWinscardApp::WriteDescription(BYTE insByte)
 {
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("entering write decription function with byte %.2x\n", insByte));
+
 	char sec_and_key[256];
 	string_type hexNum = string_format(_CONV("%.2x"), insByte);
-	char* section_name = "Instructions";
+	char* section_name = "instructions:";
 	const char* description;
 
 	type_copy(sec_and_key, section_name);
-	description = iniparser_getstring(instructionDict, type_cat(sec_and_key, hexNum.c_str()), "");
+	type_cat(sec_and_key, hexNum.c_str());
+
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("section with key name is %s\n", sec_and_key));
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("name of section in iniparser dictionary is %s\n", iniparser_getsecname(instructionDict, 0)));
+
+	description = iniparser_getstring(instructionDict, sec_and_key, "");
 
 	if (type_length(description) != 0)
 	{
+		CCommonFnc::File_AppendString(DEBUG_FILE, "found key in dictionary\n");
+		CCommonFnc::File_AppendString(DEBUG_FILE, description);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, description);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 	}
 }
 
@@ -1829,7 +1839,6 @@ static q load_func = GetProcAddress;
 */
 int initialize()
 {
-    printf("Initialization\n");
 	char *error = "";
 #ifdef __linux__ 
 	hOriginal = dlopen("/lib/x86_64-linux-gnu/original.so", RTLD_LAZY);
@@ -3502,12 +3511,12 @@ int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
 	//string_type filePath;
 
-	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("number of sections is: "));
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format("entering load rules function\n"));
 
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
 
 	std::fstream instruction_file;
-	instruction_file.open(INSTRUCTION_FILE);
+	instruction_file.open(INSTRUCTION_FILE, std::ios::in);
 
 	if (instruction_file.is_open())
 	{
@@ -3515,20 +3524,25 @@ int CWinscardApp::LoadRules() {
 		instruction_file.close();
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
 		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
+
+
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("first key in section is %s\n", instructionDict->key[0]));
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("second key in section is %s\n", instructionDict->key[1]));
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("third key in section is %s\n", instructionDict->key[2]));
+
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("number of keys in section is %d\n", iniparser_getsecnkeys(instructionDict, iniparser_getsecname(instructionDict, 0))));
 	}
 
 	if (FILE *file = fopen(RULE_FILE.c_str(), "r")) {
 		fclose(file);
 
-		string_type message;
-		message = _CONV("Rules file found\n");
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file found\n"));
 
 		dictionary* dict = iniparser_load((const char*)RULE_FILE.c_str());
 
 		int number_of_sections = iniparser_getnsec(dict);
 
-		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("number of sections is: %d", number_of_sections));
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format("number of sections is: %d\n", number_of_sections));
 
 		for (int i = 0; i < number_of_sections; ++i)
 		{
