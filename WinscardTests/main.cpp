@@ -6,7 +6,9 @@
 
 
 #include "catch.hpp"
+#if defined(_WIN32)
 #include <windows.h>
+#endif
 #include <iostream>
 #include <fstream>
 #include <winscard.h>
@@ -15,21 +17,41 @@
 #include "./../Shared/globals.h"
 
 
-#ifdef __linux__ 
+#ifdef __linux__
+#include <sys/types.h>
 #include <dirent.h>
+#include <dlfcn.h>
+#include <pwd.h>
+
+std::string GetLogsPath()
+{
+    char* login;
+    struct passwd *pass;
+    pass = getpwuid(getuid());
+    login = pass->pw_name;
+
+    std::string value;
+    value = "/home/";
+    value += login;
+    value += "/Desktop/APDUPlay/";
+    return value;
+}
+
 static void* (*load_func)(void*, const char*) = dlsym;
 
-std::string findRuleFileLinux()
+std::string FindlogFileLinux()
 {
-	dirp = opendir(".");
+	DIR* dirp = opendir(GetLogsPath().c_str());
 	dirent* dp;
-	std::string strSearch = "winscard_rules";
+	std::string strSearch = "winscard_rules_log";
 
 	while (dirp) {
 		errno = 0;
 		if ((dp = readdir(dirp)) != NULL) {
+            printf("%s\n", dp->d_name);
 			if (strncmp(dp->d_name, strSearch.c_str(), strSearch.length()) == 0) {
 				std::string name = dp->d_name;
+                printf("found %s\n", name.c_str());
 				closedir(dirp);
 				return name;
 			}
@@ -44,15 +66,15 @@ std::string findRuleFileLinux()
 		}
 	}
 
-	return OPEN_ERROR;
+	return "";
 }
 #else
 typedef FARPROC(STDCALL *q) (HMODULE, LPCSTR);
 static q load_func = GetProcAddress;
 
-std::string findRuleFileWindows()
+std::string FindlogFileWindows()
 {
-	std::string strSearch = "./winscard_rules*";
+	std::string strSearch = "./winscard_rules_log*";
 	WIN32_FIND_DATAA ffd;
 	HANDLE hFind = FindFirstFileA(strSearch.c_str(), &ffd);
 	std::string strFile = "";
@@ -65,12 +87,12 @@ std::string findRuleFileWindows()
 }
 #endif
 
-std::string findRuleFile()
+std::string FindlogFile()
 {
 #ifdef __linux__ 
-	return findRuleFileLinux();
+	return FindlogFileLinux();
 #else
-	return findRuleFileWindows();
+	return FindlogFileWindows();
 #endif
 }
 
@@ -92,10 +114,25 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 {
 	SECTION("Aplly rules test")
 	{
+        ofstream myfile;
+        myfile.open(GetLogsPath() + "winscard_rules.txt");
 
-#ifdef __linux__ 
-		void* hOriginal = dlopen("/libpcsclite.so", RTLD_LAZY);
-		char *delimeter = ": ";
+        myfile << "[WINSCARD]\n";
+        myfile << "LOG_EXCHANGED_APDU = 1\n";
+        myfile << "MODIFY_APDU_BY_RULES = 1\n";
+        myfile << "LOG_FUNCTIONS_CALLS = 1\n";
+        myfile << "[RULE1]\n";
+        myfile << "MATCH1=in=1,cla=80,ins=ca,p1=9f,p2=17,data0=90 00,\n";
+        myfile << "ACTION=in=1,cla=80,ins=cb,p1=9f,p2=17,data0=97 00,\n";
+        myfile << "USAGE = 1\n";
+        myfile << "APDUIN = 1\n";
+
+        myfile.close();
+
+
+#ifdef __linux__
+        void* hOriginal = dlopen("./../../cmake-build-debug/libpcsclite.so", RTLD_LAZY);
+
 #else 
 		HMODULE hOriginal = LoadLibrary(_CONV("./Winscard.dll"));
 		char *delimeter = "";
@@ -112,20 +149,6 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 	    load_func(hOriginal, "SCardTransmit");
 
 		CHECK(Original_SCardTransmit != NULL);
-
-		ofstream myfile;
-		myfile.open("winscard_rules.txt");
-		
-		myfile << "[WINSCARD]\n";
-		myfile << "LOG_EXCHANGED_APDU = 1\n";
-		myfile << "MODIFY_APDU_BY_RULES = 1\n";
-		myfile << "[RULE1]\n";
-		myfile << "MATCH1=in=1,cla=80,ins=ca,p1=9f,p2=17,data0=90 00,\n";
-		myfile << "ACTION=in=1,cla=80,ins=cb,p1=9f,p2=17,data0=97 00,\n";
-		myfile << "USAGE = 1\n";
-		myfile << "APDUIN = 1\n";
-
-		myfile.close();
 
 		SCARD_IO_REQUEST pioRecvPci;
 
@@ -146,24 +169,28 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 			pbSendBuffer, dwSendLength,
 			NULL, pbRecvBuffer, &dwRecvLength);
 
-		std::string strFile = findRuleFile();
+		std::string strFile = GetLogsPath() + FindlogFile();
 
-		ifstream rulefile;
-		rulefile.open(strFile.c_str());
+		ifstream logFile;
+		logFile.open(strFile.c_str());
+
+        CHECK(logFile.is_open());
+
 		string line;
 		char* search = "80 cb 9f 17 02 97 00";
 
 		bool found = false;
 
 		unsigned int curLine = 0;
-		while (getline(rulefile, line)) {
+		while (getline(logFile, line)) {
+            printf("%s\n", line.c_str());
 			if (line.find(search, 0) != string::npos) {
 				found = true;
-				rulefile.close();
 				break;
 			}
 		}
 
+        logFile.close();
 		CHECK(found == true);
 	}
 }

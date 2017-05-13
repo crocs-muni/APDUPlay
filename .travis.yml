@@ -1,0 +1,26 @@
+language: cpp
+
+os:
+  - linux
+  
+compiler:
+  - gcc 
+  
+before_install:
+  - git clone git://anonscm.debian.org/pcsclite/PCSC.git
+  - cd PCSC
+install:  
+  - ./bootstrap
+  - ./configure
+  - make
+  - sudo apt install cmake
+script:     
+  - cmake CMakeLists.txt cmake-build-debug/
+  - cd cmake-build-debug/
+  - make
+  - cd ..
+  - cd WinscardTests/
+  - cmake CMakeLists.txt cmake-build-debug/
+  - cd cmake-build-debug/
+  - make
+  - ./WinscardTests

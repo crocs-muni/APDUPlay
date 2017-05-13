@@ -1,0 +1,3 @@
+/home/xvancik/CLionProjects/APDUPlay/CMakeFiles/rebuild_cache.dir
+/home/xvancik/CLionProjects/APDUPlay/CMakeFiles/edit_cache.dir
+/home/xvancik/CLionProjects/APDUPlay/CMakeFiles/pcsclite.dir
