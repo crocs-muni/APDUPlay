@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC  -std=c++11 -g  -shared -Wl,-soname,libpcsclite.so -o libpcsclite.so CMakeFiles/pcsclite.dir/Shared/status.cpp.o CMakeFiles/pcsclite.dir/Winscard/CommonFnc.cpp.o CMakeFiles/pcsclite.dir/Winscard/stdafx.cpp.o CMakeFiles/pcsclite.dir/Winscard/Winscard.cpp.o 
