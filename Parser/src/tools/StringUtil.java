@@ -15,6 +15,7 @@ public class StringUtil {
     
     /**
      * Wraps text
+     * 
      * @param str text to be wrapped
      * @param wrapAfter number of chars after which the new line will be appended
      * @return wrapped text
@@ -45,6 +46,12 @@ public class StringUtil {
         return sb.toString();
     }
     
+    /**
+     * Trims trailing whitespace of StringBuilder
+     * 
+     * @param sb StringBuilder to be trimmed
+     * @return this StringBuilder
+     */
     public static StringBuilder trimEnd(StringBuilder sb)
     {
         if (sb == null || sb.length() == 0) {
