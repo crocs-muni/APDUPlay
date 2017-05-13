@@ -232,6 +232,7 @@ pip-log.txt
 ##CMAKE
 #############
 
+CMakeFiles/
 cmake-build-debug/
 
 #############
