@@ -5,7 +5,6 @@
  */
 package tools;
 
-import lombok.val;
 
 
 /**
@@ -21,8 +20,9 @@ public class StringUtil {
      * @return wrapped text
      */
     public static String wrapText(String str, int wrapAfter) {
-        if (wrapAfter <= 0)
+        if (wrapAfter <= 0) {
             return str;
+        }
         
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < str.length(); i += wrapAfter) {
@@ -33,15 +33,35 @@ public class StringUtil {
             sb.append(str.substring(i, i + wrapAfter));
             
             if (str.length() != i + wrapAfter) {
-                sb.append("\n");
+                trimEnd(sb).append("\n");
             }
         }
         
-        val missingChars = str.length() % wrapAfter;
+        int missingChars = str.length() % wrapAfter;
         if (missingChars > 0) {
             sb.append(str.substring(str.length() - missingChars));
         }
         
         return sb.toString();
+    }
+    
+    public static StringBuilder trimEnd(StringBuilder sb)
+    {
+        if (sb == null || sb.length() == 0) {
+            return sb;
+        }
+
+        int i = sb.length();
+        for (; i > 0; i--) {
+            if (!Character.isWhitespace(sb.charAt(i - 1))) {
+                break;
+            }
+        }
+
+        if (i < sb.length()) {
+            sb.delete(i, sb.length());
+        }
+        
+        return sb;
     }
 }
