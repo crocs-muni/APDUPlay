@@ -81,13 +81,12 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-//static string_type RULE_FILE = _CONV("C:\\Users\\xvancik\\Desktop\\winscard_rules.txt");
 static string_type RULE_FILE = _CONV("winscard_rules.txt");
-static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log");
-static string_type WINSCARD_LOG = _CONV("winscard_log");
-static std::string INSTRUCTION_FILE = "C:\\Users\\xvancik\\Desktop\\Instructions.txt";
-//static std::string DEBUG_FILE = "C:\\Users\\xvancik\\Desktop\\Debug.txt";
-static std::string DEBUG_FILE = "/home/xvancik/Desktop/APDUPlay/Debug.txt";
+static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log.txt");
+static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
+static std::string INSTRUCTION_FILE = "Instructions.txt";
+static string_type DEBUG_FILE = _CONV("C:\\Users\\xvancik\\Desktop\\Debug.txt");
+//static std::string DEBUG_FILE = "/home/xvancik/Desktop/APDUPlay/Debug.txt";
 
 // The one and only CWinscardApp object
 
@@ -375,21 +374,36 @@ CWinscardApp::~CWinscardApp()
 
 void CWinscardApp::WriteDescription(BYTE insByte)
 {
-	char sec_and_key[256];
+	char_type sec_and_key[256];
 	string_type hexNum = string_format(_CONV("%.2x"), insByte);
-	char* section_name = "instructions:";
+	char_type* section_name = _CONV("instructions:");
 	const char* description;
 
 	type_copy(sec_and_key, section_name);
 	type_cat(sec_and_key, hexNum.c_str());
 
+#ifdef UNICODE
+	char sec_and_key_char[256];
+	wcstombs(sec_and_key_char, sec_and_key, type_length(sec_and_key));
+	description = iniparser_getstring(instructionDict, sec_and_key_char, "");
+
+	std::string tmp(description);
+
+	if (strlen(description) != 0)
+	{
+		CCommonFnc::File_AppendString(WINSCARD_LOG, std::wstring(tmp.begin(), tmp.end()));
+		CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
+	}
+
+#else
 	description = iniparser_getstring(instructionDict, sec_and_key, "");
 
-	if (type_length(description) != 0)
+	if (strlen(description) != 0)
 	{
 		CCommonFnc::File_AppendString(WINSCARD_LOG, description);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 	}
+#endif
 }
 
 static SCard LONG(STDCALL *Original_SCardFreeMemory)(
@@ -779,7 +793,7 @@ SCard LONG STDCALL SCardListReaders(
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListReaders called\n"));
 
 	int  status = SCARD_S_SUCCESS;
-	lcs     readersList;
+	ls     readersList;
 
 	if (*pcchReaders == SCARD_AUTOALLOCATE) {
 		// NO BUFFER IS SUPPLIED
@@ -869,13 +883,13 @@ SCard LONG STDCALL SCardListReaders(
 		}
 	}
 
-	lcs::iterator   iter;
-	string_type         availableReaders = _CONV("-> Found readers: ");
+	ls::iterator   iter;
+	std::string    availableReaders = "-> Found readers: ";
 	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
 		availableReaders += *iter;
-		availableReaders += _CONV(", ");
+		availableReaders += ", ";
 	}
-	availableReaders += _CONV("\n");
+	availableReaders += "\n";
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
 
 	return status;
@@ -984,7 +998,7 @@ SCard LONG STDCALL SCardListReadersW(
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 	LONG    status = SCARD_S_SUCCESS;
-	lcs     readersList;
+	lws     readersList;
 
 	if (*pcchReaders == SCARD_AUTOALLOCATE) {
 		// NO BUFFER IS SUPPLIED
@@ -1078,13 +1092,13 @@ SCard LONG STDCALL SCardListReadersW(
 		}
 	}
 
-	lcs::iterator   iter;
-	string_type         availableReaders = _CONV("-> Found readers: ");
+	lws::iterator   iter;
+	std::wstring availableReaders = L"-> Found readers: ";
 	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
 		availableReaders += *iter;
-		availableReaders += _CONV(", ");
+		availableReaders += L", ";
 	}
-	availableReaders += _CONV("\n");
+	availableReaders += L"\n";
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
 
 	return status;
@@ -1838,6 +1852,10 @@ static q load_func = GetProcAddress;
 */
 int initialize()
 {
+#ifdef LOG_DEBUG_INFO
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("inicializujem\n")));
+#endif
+
 	char *error = "";
 #ifdef __linux__ 
 	hOriginal = dlopen("/lib/x86_64-linux-gnu/original.so", RTLD_LAZY);
@@ -1859,18 +1877,21 @@ int initialize()
 	dlerror();    // Clear any existing errors
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_WIN64)
+	Original_SCardTransmit =
+		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		load_func(hOriginal, "SCardTransmit");
+#endif
 #if _WIN64
 	Original_SCardTransmit =
 		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
-#else	Original_SCardTransmit =
-		(long(STDCALL *)(unsigned long, const struct _SCARD_IO_REQUEST *, const unsigned char *, unsigned long, struct _SCARD_IO_REQUEST *, unsigned char *, unsigned long *))
+		load_func(hOriginal, "SCardTransmit");
 #endif
-#else 
+#if __linux__
 	Original_SCardTransmit =
-		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST , const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
+		(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
+		load_func(hOriginal, "SCardTransmit");
 #endif
-	load_func(hOriginal, "SCardTransmit");
 	if ((!Original_SCardTransmit)) {
 #if __linux__
 		error = dlerror();
@@ -2759,6 +2780,8 @@ CWinscardApp::CWinscardApp()
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 
+m_bRulesActive = FALSE;
+
 	#ifdef __linux__
         char* login;
         struct passwd *pass;
@@ -2778,9 +2801,6 @@ CWinscardApp::CWinscardApp()
         WINSCARD_LOG = "/home/";
         WINSCARD_LOG += login;
         WINSCARD_LOG += "/Desktop/APDUPlay/winscard_log_" + date_and_time + ".txt";
-
-
-        m_bRulesActive = FALSE;
 		
 		LoadRules();
 
@@ -2801,13 +2821,29 @@ CWinscardApp::CWinscardApp()
 }
 
 #if defined (_WIN32)
+std::string ExePath() 
+{
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+	return std::string(buffer).substr(0, pos);
+}
+
+char_type* GetDesktopPath()
+{
+	char_type appData[MAX_PATH];
+	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);
+	type_cat(appData, _CONV("/APDUPlay/"));
+	return appData;
+}
+
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
     srand((int) time(NULL));
 
-    std::string date_and_time = getCurrentTimeString();
+    string_type date_and_time = getCurrentTimeString();
 
 	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
@@ -2820,10 +2856,26 @@ BOOL CWinscardApp::InitInstance()
 		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
 		WINSCARD_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
 	}
+	else
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_LOG.c_str());
+	}
 
 #ifdef LOG_DEBUG_INFO
-    CCommonFnc::File_AppendString(DEBUG_FILE, string_format("path to log file is %s\n", WINSCARD_RULES_LOG.c_str()));
+    CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("path to log file is %s\n"), WINSCARD_RULES_LOG.c_str()));
 #endif
+
+	std::fstream instruction_file;
+	instruction_file.open(INSTRUCTION_FILE, std::ios::in);
+
+	if (instruction_file.is_open())
+	{
+		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
+		instruction_file.close();
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
+		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
+	}
 
     // CONNECT TO SCSAT04 IF REQUIRED
     if (m_scsat04Config.bRedirect) {
@@ -3480,13 +3532,26 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 
 int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
+	FILE *file = NULL;
+	char_type path[256];
+	type_copy(path, RULE_FILE.c_str());
+	
+	//std::string path = ExePath() + std::string("\\") + RULE_FILE;
 
-    if (FILE *file = fopen(RULE_FILE.c_str(), "r")) {
+	if (!(file = fopen(path, "r"))) // try to open file in actual directory
+	{
+		type_copy(path, GetDesktopPath());
+		type_cat(path, RULE_FILE.c_str());
+		file = fopen(path, "r"); // try to open file on desktop
+	}
+
+    if (file) {
 		fclose(file);
 
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file found\n"));
-
-		dictionary* dict = iniparser_load((const char*)RULE_FILE.c_str());
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("Rules file found with path %s\n"), path));
+#endif
+		dictionary* dict = iniparser_load(path);
 
 		int number_of_sections = iniparser_getnsec(dict);
 
@@ -3502,18 +3567,10 @@ int CWinscardApp::LoadRules() {
 	}
 	else {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("Rules file NOT found with path %s and error%s\n"), path, strerror(errno)));
+#endif
 	}
-
-    std::fstream instruction_file;
-    instruction_file.open(INSTRUCTION_FILE, std::ios::in);
-
-    if (instruction_file.is_open())
-    {
-        theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
-        instruction_file.close();
-        CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
-        instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
-    }
 
 	//printf("\n_____%s_____\n", m_winscardConfig.sLOG_BASE_PATH);
     return status;
@@ -3534,7 +3591,16 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 	APDU_RULE   rule;
 	APDU_SINGLE_RULE    singleRule;
 
+#ifdef LOG_DEBUG_INFO	
+	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("loading %s\n"), ruleName.c_str()));
+#endif
+
 	if (compareWithNoCase(ruleName.c_str(), _CONV("WINSCARD")) == 0) {
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("in winscard\n")));
+#endif
+
+
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("AUTO_REQUEST_DATA"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
 			m_winscardConfig.bAUTO_REQUEST_DATA = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
 		}
@@ -3549,6 +3615,9 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_BASE_PATH"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
 			m_winscardConfig.sLOG_BASE_PATH = buffer;
+#ifdef LOG_DEBUG_INFO	
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("LOG_BASE_PATH value %s\n"), buffer));
+#endif
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MODIFY_APDU_BY_RULES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
 			m_winscardConfig.bMODIFY_APDU_BY_RULES = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
@@ -3772,6 +3841,13 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 	return status;
 }
 
+std::wstring ExePath() {
+	wchar_t buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	std::wstring::size_type pos = std::wstring(buffer).find_last_of(_CONV("\\/"));
+	return std::wstring(buffer).substr(0, pos);
+}
+
 int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
 	char_type    buffer[10000];
@@ -3783,30 +3859,42 @@ int CWinscardApp::LoadRules() {
 	
 	const int buffsize = 4096;
 	TCHAR buf[buffsize] = _CONV("");
-
+	
+	std::wstring path = ExePath() + std::wstring(_CONV("\\")) + RULE_FILE;
+	
 	memset(buffer, 0, cBuffer);
 
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
 
-	// OBTAIN FULL FILE PATH FOR RULES FILE
-	if (FILE *file = type_fopen(RULE_FILE.c_str(), _CONV("r"))) {
+	if (FILE *file = type_fopen(path.c_str(), _CONV("r"))) {
+
+		// OBTAIN FULL FILE PATH FOR RULES FILE
+		if (FILE *file = type_fopen(path.c_str(), _CONV("r"))) {
 		
-		GetFullPathName(RULE_FILE.c_str(), buffsize, buf, NULL);
-		fclose(file);
+			GetFullPathName(RULE_FILE.c_str(), buffsize, buf, NULL);
+			fclose(file);
 
-		filePath = string_type(buf);
+			filePath = string_type(buf);
 
-		string_type message;
-		message = string_format(_CONV("Rules file found: %s\n"), filePath);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			string_type message;
+			message = string_format(_CONV("Rules file found: %s\n"), filePath.c_str());
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
-		// OBTAIN SECTION NAMES
-		if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, filePath.c_str())) != 0) {
-			// PARSE SECTION NAMES, TRY TO LOAD EACH RULE
-			CCommonFnc::String_ParseNullSeparatedArray((BYTE*)buffer, cBuffer, &valuesList);
+			// OBTAIN SECTION NAMES
+			if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, path.c_str())) != 0) {
+				// PARSE SECTION NAMES, TRY TO LOAD EACH RULE
 
-			for (iter = valuesList.begin(); iter != valuesList.end(); iter++) {
-				LoadRule(*iter, filePath);
+	#ifdef LOG_DEBUG_INFO	
+				CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("obtain sections names\n")));
+	#endif
+				CCommonFnc::String_ParseNullSeparatedArray(buffer, cBuffer, &valuesList);
+
+				for (iter = valuesList.begin(); iter != valuesList.end(); iter++) {
+	#ifdef LOG_DEBUG_INFO	
+					CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("caling load rule\n")));
+	#endif
+					LoadRule(*iter, path);
+				}
 			}
 		}
 
@@ -3815,11 +3903,11 @@ int CWinscardApp::LoadRules() {
 	else {
 		// NO RULES DETECTED
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
+
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("Rules file NOT found with path %s/%s and error%s\n"), path.c_str(), strerror(errno)));
+#endif
 	}
-
-	WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-	WINSCARD_LOG = string_format(_CONV("%swinscard_log.txt"), m_winscardConfig.sLOG_BASE_PATH);
-
 
 	return status;
 }
