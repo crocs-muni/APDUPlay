@@ -6,9 +6,10 @@
 class CCommonFnc {
 public:
 #if defined(_WIN32)
-    static int File_GetAvailableFileName(string_type baseFile, string_type* pFreeFileName);
+	static int File_GetAvailableFileName(string_type baseFile, string_type* pFreeFileName);
 #endif
-    static int File_AppendString(string_type filePath, string_type data);
+    static int File_AppendString(string_type filePath, std::string data);
+	static int File_AppendString(string_type filePath, std::wstring data);
 #if defined(_WIN32)
     static int File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
     static int File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
@@ -20,8 +21,8 @@ public:
 
     static int APDU_ConvertToString(CARDAPDU* pAPDU, string_type* pString, BOOL toSendAPDU);
 	
-    static int String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString);
-    static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString);
+    static int String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls* pValueString);
+    static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lws* pValueString);
 
 #if defined(_WIN32)
     static int SCSAT_SaveSamples(string_type filePath, SAMPLE_PLOT* pSample, int startOffset = 0, int endOffset = -1);

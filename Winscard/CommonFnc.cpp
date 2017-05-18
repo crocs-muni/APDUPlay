@@ -103,7 +103,7 @@ int compareWithNoCase(const char_type* str1, const char_type* str2) {
 
 }*/
 
-int CCommonFnc::File_AppendString(string_type filePath, string_type data) {
+/*int CCommonFnc::File_AppendString(string_type filePath, string_type data) {
 	int             status = STAT_OK;
 	ofstream_type file;
 	file.open(filePath, std::fstream::out | std::fstream::app);
@@ -116,6 +116,42 @@ int CCommonFnc::File_AppendString(string_type filePath, string_type data) {
         fprintf(stderr, "could not open the file with path: %s\n", filePath.c_str());
         status = STAT_FILE_OPEN_FAIL;
     }
+
+	return status;
+}*/
+
+
+int CCommonFnc::File_AppendString(string_type filePath, std::string data) {
+	int             status = STAT_OK;
+	ofstream_type file;
+	file.open(filePath, std::fstream::out | std::fstream::app);
+
+	if (file.is_open()) {
+		file.write((LPCTSTR)data.c_str(), data.length());
+		file.close();
+	}
+	else {
+		fprintf(stderr, "could not open the file with path: %s\n", filePath.c_str());
+		status = STAT_FILE_OPEN_FAIL;
+	}
+
+	return status;
+}
+
+
+int CCommonFnc::File_AppendString(string_type filePath, std::wstring data) {
+	int             status = STAT_OK;
+	ofstream_type file;
+	file.open(filePath, std::fstream::out | std::fstream::app);
+
+	if (file.is_open()) {
+		file.write((LPCTSTR)data.c_str(), data.length());
+		file.close();
+	}
+	else {
+		fprintf(stderr, "could not open the file with path: %s\n", filePath.c_str());
+		status = STAT_FILE_OPEN_FAIL;
+	}
 
 	return status;
 }
@@ -348,20 +384,20 @@ int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen,
     return status;
 }
 
-int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs* pValueString) {
+int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
-	string_type itemName;
+	std::string itemName;
 
 	pos = 0;
-	itemName = _CONV("");
+	itemName = "";
 	
 	if (arraySize > 0) {
-		while (pos <= (arraySize-1)) {	// -1 belong to special end zero
+		while ((array[pos] != '\0' || array[pos + 1] != '\0') && pos <= (arraySize - 1)) {	// -1 belong to special end zero
 			if (array[pos] == '\0') {	// end of one item
-				if (itemName != _CONV("")) pValueString->push_back(itemName);
+				if (itemName != "") pValueString->push_back(itemName);
 
-				itemName = _CONV("");
+				itemName = "";
 			} 
 			else itemName += array[pos];
 
@@ -373,20 +409,20 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, lcs
     return status;
 }
 
-int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lcs* pValueString) {
+int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lws* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
-	string_type itemName;
+	std::wstring itemName;
 
 	pos = 0;
-	itemName = _CONV("");
+	itemName = L"";
 	
 	if (arraySize > 0) {
-		while (pos <= (arraySize-1)) {	// -1 belong to special end zero
-			if (array[pos] == '\0') {	// end of one item
-				if (itemName != _CONV("")) pValueString->push_back(itemName);
+		while ((array[pos] != L'\0' || array[pos + 1] != L'\0') && pos <= (arraySize - 1)) {	// -1 belong to special end zero
+			if (array[pos] == L'\0') {	// end of one item
+				if (itemName.length() != 0) pValueString->push_back(itemName);
 
-				itemName = _CONV("");
+				itemName = L"";
 			} 
 			else itemName += array[pos];
 

@@ -91,7 +91,8 @@ string_type string_format(const string_type& format, Args ... args) {
 	return string_type(buf.get(), buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-typedef std::list<string_type>       lcs;
+typedef std::list<std::string>       ls;
+typedef std::list<std::wstring>      lws;
 
 #define MAX_APDU_LENGTH     300 
 #define OFFSET_CDATA        5

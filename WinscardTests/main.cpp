@@ -72,6 +72,11 @@ std::string FindlogFileLinux()
 typedef FARPROC(STDCALL *q) (HMODULE, LPCSTR);
 static q load_func = GetProcAddress;
 
+std::string GetLogsPath()
+{
+	return "./";
+}
+
 std::string FindlogFileWindows()
 {
 	std::string strSearch = "./winscard_rules_log*";
