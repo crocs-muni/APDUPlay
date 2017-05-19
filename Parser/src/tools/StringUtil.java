@@ -5,6 +5,7 @@
  */
 package tools;
 
+import lombok.val;
 
 
 /**
@@ -18,15 +19,30 @@ public class StringUtil {
      * 
      * @param str text to be wrapped
      * @param wrapAfter number of chars after which the new line will be appended
-     * @return wrapped text
+     * @param firstWrap first wrap point
+     * @return wrapped text with remaining wrap after
      */
-    public static String wrapText(String str, int wrapAfter) {
+    public static Pair<String, Integer> wrapText(String str, int wrapAfter, int firstWrap) {
         if (wrapAfter <= 0) {
-            return str;
+            return Pair.of(str, wrapAfter);
         }
         
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < str.length(); i += wrapAfter) {
+        if (firstWrap < 0) {
+            firstWrap = wrapAfter;
+        }
+        
+        val sb = new StringBuilder();
+        if (str.length() < firstWrap) {
+            sb.append(str);
+            return Pair.of(sb.toString(), firstWrap - str.length()); 
+        }
+        
+        sb.append(str.substring(0, firstWrap));
+        if (str.length() != firstWrap) {
+            sb.append("<br/>");
+        }
+        
+        for (int i = firstWrap; i < str.length(); i += wrapAfter) {
             if (str.length() < i + wrapAfter) {
                 break;
             }
@@ -34,41 +50,16 @@ public class StringUtil {
             sb.append(str.substring(i, i + wrapAfter));
             
             if (str.length() != i + wrapAfter) {
-                trimEnd(sb).append("\n");
+                sb.append("<br/>");
             }
         }
         
-        int missingChars = str.length() % wrapAfter;
+        val missingChars = (str.length() - firstWrap) % wrapAfter;
         if (missingChars > 0) {
             sb.append(str.substring(str.length() - missingChars));
+            return Pair.of(sb.toString(), wrapAfter - missingChars); 
         }
         
-        return sb.toString();
-    }
-    
-    /**
-     * Trims trailing whitespace of StringBuilder
-     * 
-     * @param sb StringBuilder to be trimmed
-     * @return this StringBuilder
-     */
-    public static StringBuilder trimEnd(StringBuilder sb)
-    {
-        if (sb == null || sb.length() == 0) {
-            return sb;
-        }
-
-        int i = sb.length();
-        for (; i > 0; i--) {
-            if (!Character.isWhitespace(sb.charAt(i - 1))) {
-                break;
-            }
-        }
-
-        if (i < sb.length()) {
-            sb.delete(i, sb.length());
-        }
-        
-        return sb;
+        return Pair.of(sb.toString(), 0);
     }
 }

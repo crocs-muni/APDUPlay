@@ -219,11 +219,11 @@ public class Writer {
         streams.entrySet().forEach((item) -> {
             // To generate identifier
             val transmittedNode = new Node(null);
-            writer.println(String.format("\t%d [label=\"%s\"];", transmittedNode.identifier, StringUtil.wrapText(item.getKey(), settings.getGraphSettings().getWrapAfter() * 3)));
+            writer.println(String.format("\t%d [label=<%s>];", transmittedNode.identifier, StringUtil.wrapText(item.getKey(), settings.getGraphSettings().getWrapAfter() * 3, -1).left));
             
             item.getValue().forEach((received, packets) -> {
                 val receivedNode = new Node(null);
-                writer.println(String.format("\t%d [label=\"%s\"];", receivedNode.identifier, StringUtil.wrapText(received, settings.getGraphSettings().getWrapAfter() * 3)));
+                writer.println(String.format("\t%d [label=<%s>];", receivedNode.identifier, StringUtil.wrapText(received, settings.getGraphSettings().getWrapAfter() * 3, -1).left));
                 
                 packets.forEach((packet) -> {
                     writer.println(String.format("\t%d -> %d [label=\"[ac=%d]\"];", tree.root.identifier, transmittedNode.identifier, packet.getAc()));
@@ -329,7 +329,7 @@ public class Writer {
         queue.add(node);
         while(!queue.isEmpty()) {
             node = queue.remove();
-            writer.println(String.format("\t%d [label=\"%s\"];", node.identifier, StringUtil.wrapText(toHexBinaryString(node.getData()), settings.getGraphSettings().getWrapAfter() * 3)));
+            writer.println(String.format("\t%d [label=<%s>];", node.identifier, StringUtil.wrapText(toHexBinaryString(node.getData()), settings.getGraphSettings().getWrapAfter() * 3, -1).left));
             queue.addAll(node.getChildNodes());
         }
     }
@@ -357,7 +357,7 @@ public class Writer {
             
             val max = Collections.max(map.entrySet(), (Entry<String, Integer> o1, Entry<String, Integer> o2) -> o1.getValue().compareTo(o2.getValue()));
             val hexColor = String.format("#%06X", 0xFFFFFF & java.awt.Color.HSBtoRGB((float)max.getValue() / packetsCount / 3f, 1f, 1f));
-            labels.append(String.format("\t%d [label=\"%s\" style=filled fillcolor=\"%s\"];%s", flowIndex, StringUtil.wrapText(max.getKey(), settings.getGraphSettings().getWrapAfter() * 3), hexColor, System.lineSeparator()));
+            labels.append(String.format("\t%d [label=<%s> style=filled fillcolor=\"%s\"];%s", flowIndex, StringUtil.wrapText(max.getKey(), settings.getGraphSettings().getWrapAfter() * 3, -1).left, hexColor, System.lineSeparator()));
             graph.append(String.format("%d -> ", flowIndex++));
             
             nodes = childNodes;

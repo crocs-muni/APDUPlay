@@ -9,12 +9,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javafx.util.Pair;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
 import parser.data.Node;
 import parser.settings.Settings;
+import tools.Pair;
 import tools.SimilarityTool;
 import tools.StringUtil;
 
@@ -105,37 +105,33 @@ public class OutputTree {
         
         val prefixes = longestCommonPrefixes(transmittedMessages);
         val receivedPrefixes = longestCommonPrefixes(receivedMessages);
-        int leftTransmitted = (int)prefixes.getKey();
-        int rightTransmitted = (int)prefixes.getValue();
-        int leftReceived = (int)receivedPrefixes.getKey();
-        int rightReceived = (int)receivedPrefixes.getValue();
         
         val firstTransmitted = transmittedMessages.get(0).message;
         val firstReceived = receivedMessages.get(0).message;
         sb.append("{");
         sb.append(settings.getTextOutputSettings().getBeforeDataStream());
-        val transmittedMid = analyzeMessages(transmittedMessages, leftTransmitted, rightTransmitted);
+        val transmittedMid = analyzeMessages(transmittedMessages, prefixes.left, prefixes.right);
         if (transmittedMid.length() == 0) {
             sb.append(splitAndJoinString(firstTransmitted));
         } else {
             sb.append(splitAndJoinString(String.format("%s %s %s",
-                    firstTransmitted.substring(0, leftTransmitted).trim(), 
+                    firstTransmitted.substring(0, prefixes.left).trim(), 
                     transmittedMid.trim(),
-                    firstTransmitted.substring(firstTransmitted.length() - rightTransmitted).trim())));
+                    firstTransmitted.substring(firstTransmitted.length() - prefixes.right).trim())));
         }
         
         sb.append(settings.getTextOutputSettings().getAfterDataStream());
         sb.append("}{");
         sb.append(settings.getTextOutputSettings().getBeforeDataStream());
         
-        val receivedMid = analyzeMessages(receivedMessages, leftReceived, rightReceived);
+        val receivedMid = analyzeMessages(receivedMessages, receivedPrefixes.left, receivedPrefixes.right);
         if (receivedMid.length() == 0) {
             sb.append(splitAndJoinString(firstReceived));
         } else {
             sb.append(splitAndJoinString(String.format("%s %s %s",
-                    firstReceived.substring(0, leftReceived).trim(), 
+                    firstReceived.substring(0, receivedPrefixes.left).trim(), 
                     receivedMid.trim(),
-                    firstReceived.substring(firstReceived.length() - rightReceived).trim())));
+                    firstReceived.substring(firstReceived.length() - receivedPrefixes.right).trim())));
         }
         sb.append(settings.getTextOutputSettings().getAfterDataStream());
         sb.append("}");
@@ -207,7 +203,7 @@ public class OutputTree {
         return returnStr.toString();
     }
     
-    private Pair longestCommonPrefixes(List<OutputMessage> msgs) {
+    private Pair<Integer, Integer> longestCommonPrefixes(List<OutputMessage> msgs) {
         val strings = new String[msgs.size()];
         val invertedStrings = new String[msgs.size()];
         for (int i = 0; i < msgs.size(); i++) {
@@ -223,21 +219,22 @@ public class OutputTree {
     
     private void prepare(StringBuilder sb, int parentIdentifier, List<OutputMessage> msgs, boolean generateIdentifier) {
         val prefixes = longestCommonPrefixes(msgs);
-        int left = (int)prefixes.getKey();
-        int right = (int)prefixes.getValue();
-        val color = getColorForMidStream(msgs, left, right);
+        val color = getColorForMidStream(msgs, prefixes.left, prefixes.right);
         
         msgs.forEach((msg) -> {
             int msgLength = msg.message.length();
             int nodeIdentifier = generateIdentifier ? new Node(null).identifier : msg.identifier;
             
-            if (left + right + 1 >= msgLength) {
-                sb.append(String.format("\t%d [label=\"%s\"];", nodeIdentifier, StringUtil.wrapText(msg.message, settings.getGraphSettings().getWrapAfter() * 3)));
+            if (prefixes.left + prefixes.right + 1 >= msgLength) {
+                sb.append(String.format("\t%d [label=<%s>];", nodeIdentifier, StringUtil.wrapText(msg.message, settings.getGraphSettings().getWrapAfter() * 3, -1).left));
             } else {
                 sb.append(String.format("\t%d [label=<", nodeIdentifier));
-                sb.append(StringUtil.wrapText(msg.message.substring(0, left), settings.getGraphSettings().getWrapAfter() * 3));
-                sb.append(String.format("<font color=\"%s\">%s</font>", color, StringUtil.wrapText(msg.message.substring(left, msgLength - right), settings.getGraphSettings().getWrapAfter() * 3)));
-                sb.append(StringUtil.wrapText(msg.message.substring(msgLength - right), settings.getGraphSettings().getWrapAfter() * 3));
+                Pair<String, Integer> wrappedText = StringUtil.wrapText(msg.message.substring(0, prefixes.left), settings.getGraphSettings().getWrapAfter() * 3, -1);
+                sb.append(wrappedText.left);
+                
+                wrappedText = StringUtil.wrapText(msg.message.substring(prefixes.left, msgLength - prefixes.right), settings.getGraphSettings().getWrapAfter() * 3, wrappedText.right);
+                sb.append(String.format("<font color=\"%s\">%s</font>", color, wrappedText.left));
+                sb.append(StringUtil.wrapText(msg.message.substring(msgLength - prefixes.right), settings.getGraphSettings().getWrapAfter() * 3, wrappedText.right).left);
                 
                 sb.append(">];");
             }
