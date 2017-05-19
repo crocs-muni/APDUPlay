@@ -214,7 +214,7 @@ public class OutputTree {
         int left = longestCommonPrefix(strings);
         int right = longestCommonPrefix(invertedStrings);
         
-        return new Pair(left, right);
+        return Pair.of(left, right);
     }
     
     private void prepare(StringBuilder sb, int parentIdentifier, List<OutputMessage> msgs, boolean generateIdentifier) {
@@ -258,8 +258,12 @@ public class OutputTree {
         
         int end = minStr.length();
         for (String str : strs) {
-            int j;
-            for (j = 0; end != 0 && j < end + 1; j += 3) {
+            if (str.equals(minStr)) {
+                continue;
+            }
+            
+            int j = 0;
+            for (; end != 0 && j < end + 1; j += 3) {
                 if (minStr.charAt(j) != str.charAt(j) || minStr.charAt(j + 1) != str.charAt(j + 1)) {
                     break;
                 }
@@ -298,8 +302,11 @@ public class OutputTree {
                 }
                 
                 String msg1 = msgs.get(i).message;
+                msg1 = msg1.length() > leftIndex + rightIndex + 1 ? msg1.substring(leftIndex, msg1.length() - rightIndex) : "";
                 String msg2 = msgs.get(j).message;
-                double currentRank = SimilarityTool.compareStrings(msg1.substring(leftIndex, msg1.length() - rightIndex), msg2.substring(leftIndex, msg2.length() - rightIndex));
+                msg2 = msg2.length() > leftIndex + rightIndex + 1 ? msg2.substring(leftIndex, msg2.length() - rightIndex) : "";
+                
+                double currentRank = SimilarityTool.compareStrings(msg1, msg2);
                 int msgCount = msgs.get(i).getCount() * msgs.get(j).getCount();
 
                 similarityRank += currentRank * msgCount;
