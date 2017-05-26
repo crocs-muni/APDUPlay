@@ -372,12 +372,38 @@ CWinscardApp::~CWinscardApp()
 	m_wcharAllocatedMemoryList.clear();
 }
 
+
+void ConvertOuterParenthessis(std::string& description)
+{
+	int count = 0;
+	for (int i = 0; i < description.length(); ++i)
+	{
+		if (description[i] == _CONV('('))
+		{
+			if (count == 0)
+			{
+				description[i] = _CONV('[');
+			}
+			++count;
+		}
+		else if (description[i] == _CONV(')'))
+		{
+			if (count == 1)
+			{
+				description[i] = _CONV(']');
+			}
+			--count;
+		}
+	}
+}
+
 void CWinscardApp::WriteDescription(BYTE insByte)
 {
 	char_type sec_and_key[256];
 	string_type hexNum = string_format(_CONV("%.2x"), insByte);
 	char_type* section_name = _CONV("instructions:");
 	const char* description;
+	string_type prefix = _CONV("instruction info: ");
 
 	type_copy(sec_and_key, section_name);
 	type_cat(sec_and_key, hexNum.c_str());
@@ -391,16 +417,19 @@ void CWinscardApp::WriteDescription(BYTE insByte)
 
 	if (strlen(description) != 0)
 	{
-		CCommonFnc::File_AppendString(WINSCARD_LOG, std::wstring(tmp.begin(), tmp.end()));
+		ConvertOuterParenthessis(tmp);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, prefix + std::wstring(tmp.begin(), tmp.end()));
 		CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 	}
 
 #else
 	description = iniparser_getstring(instructionDict, sec_and_key, "");
+	std::string tmp(description);
 
 	if (strlen(description) != 0)
 	{
-		CCommonFnc::File_AppendString(WINSCARD_LOG, description);
+		ConvertOuterParenthessis(tmp);
+		CCommonFnc::File_AppendString(WINSCARD_LOG, prefix + tmp);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 	}
 #endif
@@ -556,6 +585,7 @@ SCard LONG STDCALL SCardTransmit(
 	// APPLY INCOMING RULES
 	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
         theApp.ApplyRules((BYTE*)sendBuffer, &cbSendLength, INPUT_APDU);
+		CCommonFnc::File_AppendString(DEBUG_FILE, "after aplly rules\n");
 		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)sendBuffer, cbSendLength, &message);
 		//message.Insert(0, "   "); message += "\n";
 		message.insert(0, _CONV("   ")); message += _CONV("\n");
@@ -2783,37 +2813,7 @@ CWinscardApp::CWinscardApp()
 m_bRulesActive = FALSE;
 
 	#ifdef __linux__
-        char* login;
-        struct passwd *pass;
-        pass = getpwuid(getuid());
-        login = pass->pw_name;
-
-        std::string date_and_time = getCurrentTimeString();
-
-        RULE_FILE = "/home/";
-        RULE_FILE += login;
-        RULE_FILE += "/Desktop/APDUPlay/winscard_rules.txt";
-
-        WINSCARD_RULES_LOG = "/home/";
-        WINSCARD_RULES_LOG += login;
-        WINSCARD_RULES_LOG += "/Desktop/APDUPlay/winscard_rules_log_" + date_and_time + ".txt";
-
-        WINSCARD_LOG = "/home/";
-        WINSCARD_LOG += login;
-        WINSCARD_LOG += "/Desktop/APDUPlay/winscard_log_" + date_and_time + ".txt";
-		
 		LoadRules();
-
-		if (!m_winscardConfig.sLOG_BASE_PATH.empty())
-		{
-			WINSCARD_RULES_LOG = string_format(_CONV("%swinscard_rules_log_%s.txt"), m_winscardConfig.sLOG_BASE_PATH, date_and_time);
-			WINSCARD_LOG = string_format(_CONV("%swinscard_log_%s.txt"), m_winscardConfig.sLOG_BASE_PATH, date_and_time);
-        }
-		
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
-
-        CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
-
 		initialize();
 	#endif
 
@@ -2821,20 +2821,25 @@ m_bRulesActive = FALSE;
 }
 
 #if defined (_WIN32)
-std::string ExePath() 
-{
-	char buffer[MAX_PATH];
-	GetModuleFileName(NULL, buffer, MAX_PATH);
-	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
-	return std::string(buffer).substr(0, pos);
-}
 
 char_type* GetDesktopPath()
 {
+#ifdef __linux__
+	char* login;
+	struct passwd *pass;
+	pass = getpwuid(getuid());
+	login = pass->pw_name;
+
+	string_type path = "/home/";
+	path += login;
+	path += "/Desktop/APDUPlay/";
+	return path.c_str();
+#else
 	char_type appData[MAX_PATH];
 	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);
 	type_cat(appData, _CONV("/APDUPlay/"));
 	return appData;
+#endif
 }
 
 BOOL CWinscardApp::InitInstance()
@@ -2843,39 +2848,8 @@ BOOL CWinscardApp::InitInstance()
 
     srand((int) time(NULL));
 
-    string_type date_and_time = getCurrentTimeString();
-
-	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
-	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
-
     // LOAD MODIFICATION RULES
     LoadRules();
-
-	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
-	{
-		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
-		WINSCARD_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
-	}
-	else
-	{
-		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_RULES_LOG.c_str());
-		WINSCARD_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_LOG.c_str());
-	}
-
-#ifdef LOG_DEBUG_INFO
-    CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("path to log file is %s\n"), WINSCARD_RULES_LOG.c_str()));
-#endif
-
-	std::fstream instruction_file;
-	instruction_file.open(INSTRUCTION_FILE, std::ios::in);
-
-	if (instruction_file.is_open())
-	{
-		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
-		instruction_file.close();
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
-		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
-	}
 
     // CONNECT TO SCSAT04 IF REQUIRED
     if (m_scsat04Config.bRedirect) {
@@ -2963,9 +2937,11 @@ int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, st
 int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
     int             status = STAT_OK;
 
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("entering apply rules\n")));
+
     if (m_bRulesActive) {
-        lar::iterator   iter;
-        lasr::iterator  iter2;
+        //lar::iterator   iter;
+        //lasr::iterator  iter2;
         APDU_SINGLE_RULE    singleRule;    
         BYTE            tempBuffer[MAX_APDU_LENGTH];
         BYTE            newBuffer[MAX_APDU_LENGTH];
@@ -2975,45 +2951,52 @@ int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
         memcpy(newBuffer, pbBuffer, *pcbLength);
         
         // PROCESS ALL RULES, IF MATCH THEN MODIFY BUFFER
-        for (iter = rulesList.begin(); iter != rulesList.end(); iter++) {
+        for (auto iter = rulesList.begin(); iter != rulesList.end(); iter++) {
+			//CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("predfaza s menom %s\n"), iter->ruleName.c_str()));
             if ((iter->direction == direction) && (iter->usage == 1)) {
                 //TEST ALL MATCH RULES
                 BOOL    bAllMatch = TRUE;
-                for (iter2 = iter->matchRules.begin(); iter2 != iter->matchRules.end(); iter2++) {
+                for (auto iter2 = iter->matchRules.begin(); iter2 != iter->matchRules.end(); iter2++) {
+					//CCommonFnc::File_AppendString(DEBUG_FILE, "comparing rules\n");
                     singleRule = *iter2;
                     // OBTAIN REFFERED APDU FROM HISTORY
                     memset(tempBuffer, 0, MAX_APDU_LENGTH);
                     GetApduFromHistory(tempBuffer, singleRule.history, singleRule.apduDirection);
-                    
+					//CCommonFnc::File_AppendString(DEBUG_FILE, "rules compared\n");
                     if (tempBuffer[singleRule.element] == singleRule.value) {
-                        // RULE MATCH       
+                        // RULE MATCH     
+						//CCommonFnc::File_AppendString(DEBUG_FILE, "rule match\n");
                     }
                     else {
+						//CCommonFnc::File_AppendString(DEBUG_FILE, "rule not match\n");
                         bAllMatch = FALSE; 
                         break;
                     }
                 }
+
+				/*CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("medzifaza\n")));
+				CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("medzifaza s menom %s\n"), iter->ruleName));*/
                 
                 // IF ALL MATCH THEN APPLY CHANGE RULES
                 if (bAllMatch) {
                     // LOG ACTON
-                    string_type message; message = string_format(_CONV("   name of rule applied: %s\n"), iter->ruleName);
-                    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+                    /*string_type message; message = string_format(_CONV("   name of rule applied: %s\n"), iter->ruleName);
+                    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);*/
 
 					for (auto iter8 = iter->matchRules.begin(); iter8 != iter->matchRules.end(); iter8++) {
-						message = string_format(_CONV("  match element: %d value: %02X\n"), iter8->element, iter8->value);
-						CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+						/*message = string_format(_CONV("  match element: %d value: %02X\n"), iter8->element, iter8->value);
+						CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);*/
 					}
                 
-                    for (iter2 = iter->actionRules.begin(); iter2 != iter->actionRules.end(); iter2++) {
+                    for (auto iter2 = iter->actionRules.begin(); iter2 != iter->actionRules.end(); iter2++) {
 
-						message = string_format(_CONV("pozrem ci je validne\n"));
+						/*message = string_format(_CONV("pozrem ci je validne\n"));*/
 
                         singleRule = *iter2;
                         if (singleRule.valid) {
 
-							message = string_format(_CONV("  action element: %d value: %02X\n"), iter2->element, iter2->value);
-							CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+							/*message = string_format(_CONV("  action element: %d value: %02X\n"), iter2->element, iter2->value);
+							CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);*/
 
                             if (singleRule.element == LE_ELEM) *pcbLength = singleRule.value;
                             else newBuffer[singleRule.element] = singleRule.value;
@@ -3179,8 +3162,16 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	int value;
 	string_type section_name_string = section_name;
 
+#ifdef LOG_DEBUG_INFO	
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("parsujem sekciu\n")));
+#endif
+
 	if (compareWithNoCase(section_name, _CONV("WINSCARD")) == 0)
 	{
+
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("som vo winscard\n")));
+#endif
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":AUTO_REQUEST_DATA")), 2)) != 2)
 		{
@@ -3297,6 +3288,11 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	
 	if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0)
 	{
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("som v rule\n")));
+#endif
+
+
 		// COMMON RULE
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":USAGE")), "");
@@ -3321,6 +3317,10 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 
 		// SET RULE NAME FOR FUTURE IDENTIFICATION
 		rule.ruleName = section_name_string;
+
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("rule name is %s\n"), section_name_string.c_str()));
+#endif
 
 		// LOAD MATCH RULES
 		int counter = 1;
@@ -3525,6 +3525,10 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 			}
 		}
 		rulesList.push_back(rule);
+
+#ifdef LOG_DEBUG_INFO	
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("rule name after push is %s\n"), rule.ruleName.c_str()));
+#endif
 	}
 
 	return status;
@@ -3535,9 +3539,12 @@ int CWinscardApp::LoadRules() {
 	FILE *file = NULL;
 	char_type path[256];
 	type_copy(path, RULE_FILE.c_str());
-	
-	//std::string path = ExePath() + std::string("\\") + RULE_FILE;
 
+	string_type date_and_time = getCurrentTimeString();
+
+	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
+	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
+	
 	if (!(file = fopen(path, "r"))) // try to open file in actual directory
 	{
 		type_copy(path, GetDesktopPath());
@@ -3555,8 +3562,19 @@ int CWinscardApp::LoadRules() {
 
 		int number_of_sections = iniparser_getnsec(dict);
 
+		if (dict == NULL)
+		{
+#ifdef LOG_DEBUG_INFO	
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("Something is terribly wrong\n")));
+#endif
+		}
+
 		for (int i = 0; i < number_of_sections; ++i)
 		{
+#ifdef LOG_DEBUG_INFO	
+			CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("idem parsovat sekciu\n")));
+#endif
+
 			const char* section_name = iniparser_getsecname(dict, i);
 			LoadRule(section_name, dict);
 		}
@@ -3572,12 +3590,39 @@ int CWinscardApp::LoadRules() {
 #endif
 	}
 
-	//printf("\n_____%s_____\n", m_winscardConfig.sLOG_BASE_PATH);
+	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
+		INSTRUCTION_FILE = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), INSTRUCTION_FILE.c_str());
+	}
+	else
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_LOG.c_str());
+		INSTRUCTION_FILE = string_format(_CONV("%s%s"), GetDesktopPath(), INSTRUCTION_FILE.c_str());
+	}
+
+#ifdef LOG_DEBUG_INFO
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("path to log file is %s\n"), WINSCARD_RULES_LOG.c_str()));
+#endif
+
+	std::fstream instruction_file;
+	instruction_file.open(INSTRUCTION_FILE, std::ios::in);
+
+	if (instruction_file.is_open())
+	{
+		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
+		instruction_file.close();
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
+		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
+	}
+
     return status;
 }
 #endif
 
-#if defined(_WIN32) && defined(UNICODE)
+#if defined(_WIN32) && defined(_UNICODE)
 int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 	int     status = STAT_OK;
 	char_type    buffer[10000];
@@ -3841,72 +3886,97 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 	return status;
 }
 
-std::wstring ExePath() {
-	wchar_t buffer[MAX_PATH];
-	GetModuleFileName(NULL, buffer, MAX_PATH);
-	std::wstring::size_type pos = std::wstring(buffer).find_last_of(_CONV("\\/"));
-	return std::wstring(buffer).substr(0, pos);
-}
-
 int CWinscardApp::LoadRules() {
+
 	int status = STAT_OK;
 	char_type    buffer[10000];
 	DWORD   cBuffer = 10000;
 	DWORD   cReaded = 0;
-	lcs     valuesList;
-	lcs::iterator   iter;
+	lws     valuesList;
 	string_type filePath;
+	FILE* file;
 	
 	const int buffsize = 4096;
 	TCHAR buf[buffsize] = _CONV("");
 	
-	std::wstring path = ExePath() + std::wstring(_CONV("\\")) + RULE_FILE;
-	
 	memset(buffer, 0, cBuffer);
 
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("#########################################\n"));
+	char_type path[256];
+	type_copy(path, RULE_FILE.c_str());
 
-	if (FILE *file = type_fopen(path.c_str(), _CONV("r"))) {
+	string_type date_and_time = getCurrentTimeString();
+
+	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
+	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
+
+	if (!(file = type_fopen(path, _CONV("r")))) // try to open file in current directory
+	{
+		type_copy(path, GetDesktopPath());
+		type_cat(path, RULE_FILE.c_str());
+		file = type_fopen(path, _CONV("r")); // try to open file on desktop
+	}
+
+	if (file) {
 
 		// OBTAIN FULL FILE PATH FOR RULES FILE
-		if (FILE *file = type_fopen(path.c_str(), _CONV("r"))) {
-		
-			GetFullPathName(RULE_FILE.c_str(), buffsize, buf, NULL);
-			fclose(file);
+		GetFullPathName(RULE_FILE.c_str(), buffsize, buf, NULL);
+		fclose(file);
 
-			filePath = string_type(buf);
+		filePath = string_type(buf);
 
-			string_type message;
-			message = string_format(_CONV("Rules file found: %s\n"), filePath.c_str());
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		string_type message;
+		message = string_format(_CONV("Rules file found: %s\n"), filePath.c_str());
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
-			// OBTAIN SECTION NAMES
-			if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, path.c_str())) != 0) {
-				// PARSE SECTION NAMES, TRY TO LOAD EACH RULE
+		// OBTAIN SECTION NAMES
+		if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, path)) != 0) {
+			// PARSE SECTION NAMES, TRY TO LOAD EACH RULE
 
-	#ifdef LOG_DEBUG_INFO	
-				CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("obtain sections names\n")));
-	#endif
-				CCommonFnc::String_ParseNullSeparatedArray(buffer, cBuffer, &valuesList);
+#ifdef LOG_DEBUG_INFO	
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("obtain sections names\n")));
+#endif
+			CCommonFnc::String_ParseNullSeparatedArray(buffer, cBuffer, &valuesList);
 
-				for (iter = valuesList.begin(); iter != valuesList.end(); iter++) {
-	#ifdef LOG_DEBUG_INFO	
-					CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("caling load rule\n")));
-	#endif
-					LoadRule(*iter, path);
-				}
+			for (auto iter = valuesList.begin(); iter != valuesList.end(); iter++) {
+#ifdef LOG_DEBUG_INFO	
+				CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, string_format(_CONV("caling load rule\n")));
+#endif
+				LoadRule(*iter, path);
 			}
 		}
-
 		m_bRulesActive = TRUE;
 	}
 	else {
-		// NO RULES DETECTED
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
-
 #ifdef LOG_DEBUG_INFO	
-		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("Rules file NOT found with path %s/%s and error%s\n"), path.c_str(), strerror(errno)));
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("Rules file NOT found with path %s and error%s\n"), path, strerror(errno)));
 #endif
+	}
+
+	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
+	}
+	else
+	{
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_LOG.c_str());
+	}
+
+#ifdef LOG_DEBUG_INFO
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("path to log file is %s\n"), WINSCARD_RULES_LOG.c_str()));
+#endif
+
+	std::fstream instruction_file;
+	instruction_file.open(INSTRUCTION_FILE, std::ios::in);
+
+	if (instruction_file.is_open())
+	{
+		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
+		instruction_file.close();
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
+		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
 	}
 
 	return status;

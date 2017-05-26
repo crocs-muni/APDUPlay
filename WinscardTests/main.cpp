@@ -126,6 +126,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         myfile << "LOG_EXCHANGED_APDU = 1\n";
         myfile << "MODIFY_APDU_BY_RULES = 1\n";
         myfile << "LOG_FUNCTIONS_CALLS = 1\n";
+		myfile << "LOG_BASE_PATH = ./\n";
         myfile << "[RULE1]\n";
         myfile << "MATCH1=in=1,cla=80,ins=ca,p1=9f,p2=17,data0=90 00,\n";
         myfile << "ACTION=in=1,cla=80,ins=cb,p1=9f,p2=17,data0=97 00,\n";
@@ -140,7 +141,6 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
 #else 
 		HMODULE hOriginal = LoadLibrary(_CONV("./Winscard.dll"));
-		char *delimeter = "";
 #endif 
 		CHECK(hOriginal != NULL);
 
@@ -198,4 +198,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         logFile.close();
 		CHECK(found == true);
 	}
+
+	char c;
+	std::cin >> c;
 }
