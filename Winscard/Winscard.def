@@ -67,19 +67,40 @@ EXPORTS
 ;
 ; initialized shared data symbols
 ;
-g_rgSCardRawPci=original.g_rgSCardRawPci @58 DATA
-g_rgSCardT0Pci=original.g_rgSCardT0Pci @59 DATA
-g_rgSCardT1Pci=original.g_rgSCardT1Pci @60 DATA
+;g_rgSCardRawPci=original.g_rgSCardRawPci @58 DATA
+;g_rgSCardT0Pci=original.g_rgSCardT0Pci @59 DATA
+;g_rgSCardT1Pci=original.g_rgSCardT1Pci @60 DATA
 ;
 ; functions to be intercepted
 ;
+
+SCardAudit=original.SCardAudit@8
+SCardGetDeviceTypeIdA=original.SCardGetDeviceTypeIdA@12
+SCardGetDeviceTypeIdW=original.SCardGetDeviceTypeIdW@12
+SCardGetReaderDeviceInstanceIdA=original.SCardGetReaderDeviceInstanceIdA@16
+SCardGetReaderDeviceInstanceIdW=original.SCardGetReaderDeviceInstanceIdW@16
+SCardGetReaderIconA=original.SCardGetReaderIconA@16
+SCardGetReaderIconW=original.SCardGetReaderIconW@16
+SCardGetTransmitCount=original.SCardGetTransmitCount@8
+SCardListReadersWithDeviceInstanceIdA=original.SCardListReadersWithDeviceInstanceIdA@16
+SCardListReadersWithDeviceInstanceIdW=original.SCardListReadersWithDeviceInstanceIdW@16
+SCardLocateCardsByATRA=original.SCardLocateCardsByATRA@20
+SCardLocateCardsByATRW=original.SCardLocateCardsByATRW@20
+SCardReadCacheA=original.SCardReadCacheA@24
+SCardReadCacheW=original.SCardReadCacheW@24
+SCardWriteCacheA=original.SCardWriteCacheA@24
+SCardWriteCacheW=original.SCardWriteCacheW@24
+
+g_rgSCardRawPci=original.g_rgSCardRawPci DATA
+g_rgSCardT0Pci=original.g_rgSCardT0Pci DATA
+g_rgSCardT1Pci=original.g_rgSCardT1Pci DATA
+
 SCardTransmit @57
 SCardConnectW @11
 SCardDisconnect @13
 SCardListReadersA @43
 SCardListReadersW @44
 SCardFreeMemory @22
-
 
 SCardAccessStartedEvent @2
 SCardAddReaderToGroupA @6
