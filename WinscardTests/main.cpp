@@ -155,9 +155,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
 		CHECK(Original_SCardTransmit != NULL);
 
-		SCARD_IO_REQUEST pioRecvPci;
-
-		DWORD dwActiveProtocol, dwSendLength, dwRecvLength;
+		DWORD dwSendLength, dwRecvLength;
 		BYTE pbRecvBuffer[16];
 		BYTE pbSendBuffer[] = { (BYTE)0x80, (BYTE)0xca,(BYTE)0x9f, (BYTE)0x17, (BYTE)0x02 , (BYTE)0x90 , (BYTE)0x00 };
 

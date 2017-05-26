@@ -376,7 +376,7 @@ CWinscardApp::~CWinscardApp()
 void ConvertOuterParenthessis(std::string& description)
 {
 	int count = 0;
-	for (int i = 0; i < description.length(); ++i)
+	for (unsigned int i = 0; i < description.length(); ++i)
 	{
 		if (description[i] == _CONV('('))
 		{
@@ -3147,8 +3147,6 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
 #if !defined(_WIN32) || !defined(UNICODE)
 int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*string_type filePath*/) {
 	int status = STAT_OK;
-	char_type buffer[10000];
-	DWORD cBuffer = 10000;
 	string_type valueName;
 	string_type rulePart;
 	string_type ruleString;
