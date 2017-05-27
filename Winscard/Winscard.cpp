@@ -2821,7 +2821,7 @@ m_bRulesActive = FALSE;
 }
 
 
-const char_type* GetDesktopPath()
+void GetDesktopPath(char_type* path)
 {
 #ifdef __linux__
 	char* login;
@@ -2829,15 +2829,15 @@ const char_type* GetDesktopPath()
 	pass = getpwuid(getuid());
 	login = pass->pw_name;
 
-	string_type path = "/home/";
-	path += login;
-	path += "/Desktop/APDUPlay/";
-	return path.c_str();
+	string_type stringPath = "/home/";
+    stringPath += login;
+    stringPath += "/Desktop/APDUPlay/";
+    type_copy(path, stringPath.c_str());
 #else
 	char_type appData[MAX_PATH];
 	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);
-	type_cat(appData, _CONV("/APDUPlay/"));
-	return appData;
+	type_copy(path, appData);
+	type_cat(path, _CONV("/APDUPlay/"));
 #endif
 }
 
@@ -3162,14 +3162,14 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	string_type section_name_string = section_name;
 
 #ifdef LOG_DEBUG_INFO	
-	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("parsujem sekciu\n")));
+	CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("parsing section\n")));
 #endif
 
 	if (compareWithNoCase(section_name, _CONV("WINSCARD")) == 0)
 	{
 
 #ifdef LOG_DEBUG_INFO	
-		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("som vo winscard\n")));
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("in section winscard\n")));
 #endif
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":AUTO_REQUEST_DATA")), 2)) != 2)
@@ -3288,7 +3288,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	if (compareWithNoCase(section_name_string.substr(0, (int) type_length(_CONV("RULE"))).c_str(), _CONV("RULE")) == 0)
 	{
 #ifdef LOG_DEBUG_INFO	
-		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("som v rule\n")));
+		CCommonFnc::File_AppendString(DEBUG_FILE, string_format(_CONV("in section rule\n")));
 #endif
 
 
@@ -3546,7 +3546,7 @@ int CWinscardApp::LoadRules() {
 	
 	if (!(file = fopen(path, "r"))) // try to open file in actual directory
 	{
-		type_copy(path, GetDesktopPath());
+		GetDesktopPath(path);
 		type_cat(path, RULE_FILE.c_str());
 		file = fopen(path, "r"); // try to open file on desktop
 	}
@@ -3597,9 +3597,10 @@ int CWinscardApp::LoadRules() {
 	}
 	else
 	{
-		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_RULES_LOG.c_str());
-		WINSCARD_LOG = string_format(_CONV("%s%s"), GetDesktopPath(), WINSCARD_LOG.c_str());
-		INSTRUCTION_FILE = string_format(_CONV("%s%s"), GetDesktopPath(), INSTRUCTION_FILE.c_str());
+        GetDesktopPath(path);
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), path, WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), path, WINSCARD_LOG.c_str());
+		INSTRUCTION_FILE = string_format(_CONV("%s%s"), path, INSTRUCTION_FILE.c_str());
 	}
 
 #ifdef LOG_DEBUG_INFO

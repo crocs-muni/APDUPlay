@@ -40,15 +40,15 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="Winscard.cpp" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Winscard.cpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Winscard/Winscard.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="42450">
-              <caret line="2830" column="0" lean-forward="false" selection-start-line="2830" selection-start-column="0" selection-end-line="2830" selection-end-column="0" />
+            <state relative-caret-position="288">
+              <caret line="3604" column="0" lean-forward="true" selection-start-line="3604" selection-start-column="0" selection-end-line="3604" selection-end-column="0" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
-                <element signature="e#91450#91639#0" expanded="true" />
-                <element signature="e#91672#95190#0" expanded="true" />
+                <element signature="e#91496#91692#0" expanded="true" />
+                <element signature="e#91725#95243#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -116,7 +116,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="true">
+      <file leaf-file-name="CMakeLists.txt" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/WinscardTests/CMakeLists.txt">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="195">
@@ -162,8 +162,8 @@
       <find>Modify by rules</find>
       <find>m_bRulesActive = FALSE</find>
       <find>DEBUG</find>
-      <find>loadRUles</find>
       <find>getDesktop</find>
+      <find>loadRUles</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -180,9 +180,9 @@
         <option value="$PROJECT_DIR$/Winscard/CommonFnc.cpp" />
         <option value="$PROJECT_DIR$/Winscard/Winscard.h" />
         <option value="$PROJECT_DIR$/Winscard/stdafx.h" />
-        <option value="$PROJECT_DIR$/Winscard/Winscard.cpp" />
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/WinscardTests/CMakeLists.txt" />
+        <option value="$PROJECT_DIR$/Winscard/Winscard.cpp" />
       </list>
     </option>
   </component>
@@ -194,8 +194,8 @@
   </component>
   <component name="OCFindUsagesOptions" text="true" ivars="false" properties="true" derivedClasses="false" />
   <component name="ProjectFrameBounds">
-    <option name="x" value="437" />
-    <option name="y" value="99" />
+    <option name="x" value="87" />
+    <option name="y" value="125" />
     <option name="width" value="1855" />
     <option name="height" value="985" />
   </component>
@@ -533,8 +533,8 @@
     <option name="totallyTimeSpent" value="30058000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="437" y="99" width="1855" height="985" extended-state="0" />
-    <editor active="true" />
+    <frame x="87" y="125" width="1855" height="985" extended-state="0" />
+    <editor active="false" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.10889488" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
@@ -593,6 +593,18 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="960">
           <caret line="64" column="22" lean-forward="false" selection-start-line="64" selection-start-column="22" selection-end-line="64" selection-end-column="22" />
+          <folding>
+            <marker date="1495835919732" expanded="true" signature="2961:3260" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="3779:4308" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4170:4194" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4212:4306" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4400:5088" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4668:4692" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4710:5086" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6404:8677" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6816:6840" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6859:8675" ph="{...}" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -602,8 +614,8 @@
           <caret line="17" column="35" lean-forward="false" selection-start-line="17" selection-start-column="35" selection-end-line="17" selection-end-column="35" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
-            <element signature="e#91450#91639#0" expanded="true" />
-            <element signature="e#91672#95190#0" expanded="true" />
+            <element signature="e#91496#91692#0" expanded="true" />
+            <element signature="e#91725#95243#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -661,6 +673,18 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1050">
           <caret line="70" column="41" lean-forward="false" selection-start-line="70" selection-start-column="41" selection-end-line="70" selection-end-column="41" />
+          <folding>
+            <marker date="1495835919732" expanded="true" signature="2961:3260" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="3779:4308" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4170:4194" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4212:4306" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4400:5088" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4668:4692" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4710:5086" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6404:8677" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6816:6840" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6859:8675" ph="{...}" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -677,8 +701,8 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
-            <element signature="e#91450#91639#0" expanded="true" />
-            <element signature="e#91672#95190#0" expanded="true" />
+            <element signature="e#91496#91692#0" expanded="true" />
+            <element signature="e#91725#95243#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -710,8 +734,8 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
-            <element signature="e#91450#91639#0" expanded="true" />
-            <element signature="e#91672#95190#0" expanded="true" />
+            <element signature="e#91496#91692#0" expanded="true" />
+            <element signature="e#91725#95243#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -833,6 +857,18 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3240">
           <caret line="217" column="28" lean-forward="false" selection-start-line="217" selection-start-column="28" selection-end-line="217" selection-end-column="28" />
+          <folding>
+            <marker date="1495835919732" expanded="true" signature="2961:3260" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="3779:4308" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4170:4194" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4212:4306" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4400:5088" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4668:4692" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="4710:5086" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6404:8677" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6816:6840" ph="{...}" />
+            <marker date="1495835919732" expanded="true" signature="6859:8675" ph="{...}" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -859,18 +895,6 @@
         <state relative-caret-position="675">
           <caret line="45" column="13" lean-forward="false" selection-start-line="45" selection-start-column="13" selection-end-line="45" selection-end-column="13" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Winscard/Winscard.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="42450">
-          <caret line="2830" column="0" lean-forward="false" selection-start-line="2830" selection-start-column="0" selection-end-line="2830" selection-end-column="0" />
-          <folding>
-            <element signature="e#0#19#0" expanded="true" />
-            <element signature="e#91450#91639#0" expanded="true" />
-            <element signature="e#91672#95190#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -919,6 +943,18 @@
         <state relative-caret-position="195">
           <caret line="13" column="45" lean-forward="true" selection-start-line="13" selection-start-column="45" selection-end-line="13" selection-end-column="45" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Winscard/Winscard.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="288">
+          <caret line="3604" column="0" lean-forward="true" selection-start-line="3604" selection-start-column="0" selection-end-line="3604" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#91496#91692#0" expanded="true" />
+            <element signature="e#91725#95243#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

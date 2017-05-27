@@ -39,7 +39,6 @@ std::string FindlogFileLinux(std::string strSearch)
 	while (dirp) {
 		errno = 0;
 		if ((dp = readdir(dirp)) != NULL) {
-            printf("%s\n", dp->d_name);
 			if (strncmp(dp->d_name, strSearch.c_str(), strSearch.length()) == 0) {
 				std::string name = dp->d_name;
                 printf("found %s\n", name.c_str());
@@ -173,7 +172,6 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
 		unsigned int curLine = 0;
 		while (getline(logFile, line)) {
-            //printf("%s\n", line.c_str());
 			if (line.find(search, 0) != string::npos) {
 				found = true;
 				break;
