@@ -2820,9 +2820,8 @@ m_bRulesActive = FALSE;
 	m_processedApduByteCounter = 0;
 }
 
-#if defined (_WIN32)
 
-char_type* GetDesktopPath()
+const char_type* GetDesktopPath()
 {
 #ifdef __linux__
 	char* login;
@@ -2841,6 +2840,8 @@ char_type* GetDesktopPath()
 	return appData;
 #endif
 }
+
+#if defined (_WIN32)
 
 BOOL CWinscardApp::InitInstance()
 {
