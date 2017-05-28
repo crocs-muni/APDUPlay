@@ -16,18 +16,17 @@
 #include <sstream>
 #include "./../Shared/globals.h"
 
+std::string GetLogsPath()
+{
+	return "./";
+}
+
 
 #ifdef __linux__
 #include <sys/types.h>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <pwd.h>
-
-
-std::string GetLogsPath()
-{
-    return "./";
-}
 
 static void* (*load_func)(void*, const char*) = dlsym;
 
