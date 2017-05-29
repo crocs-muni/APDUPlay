@@ -16,6 +16,11 @@
 #include <sstream>
 #include "./../Shared/globals.h"
 
+std::string GetLogsPath()
+{
+	return "./";
+}
+
 
 #ifdef __linux__
 #include <sys/types.h>
@@ -23,32 +28,16 @@
 #include <dlfcn.h>
 #include <pwd.h>
 
-std::string GetLogsPath()
-{
-    char* login;
-    struct passwd *pass;
-    pass = getpwuid(getuid());
-    login = pass->pw_name;
-
-    std::string value;
-    value = "/home/";
-    value += login;
-    value += "/Desktop/APDUPlay/";
-    return value;
-}
-
 static void* (*load_func)(void*, const char*) = dlsym;
 
-std::string FindlogFileLinux()
+std::string FindlogFileLinux(std::string strSearch)
 {
 	DIR* dirp = opendir(GetLogsPath().c_str());
 	dirent* dp;
-	std::string strSearch = "winscard_rules_log";
 
 	while (dirp) {
 		errno = 0;
 		if ((dp = readdir(dirp)) != NULL) {
-            printf("%s\n", dp->d_name);
 			if (strncmp(dp->d_name, strSearch.c_str(), strSearch.length()) == 0) {
 				std::string name = dp->d_name;
                 printf("found %s\n", name.c_str());
@@ -72,14 +61,9 @@ std::string FindlogFileLinux()
 typedef FARPROC(STDCALL *q) (HMODULE, LPCSTR);
 static q load_func = GetProcAddress;
 
-std::string GetLogsPath()
+std::string FindlogFileWindows(std::string strSearch)
 {
-	return "./";
-}
-
-std::string FindlogFileWindows()
-{
-	std::string strSearch = "./winscard_rules_log*";
+	strSearch = "./" + strSearch + "*";
 	WIN32_FIND_DATAA ffd;
 	HANDLE hFind = FindFirstFileA(strSearch.c_str(), &ffd);
 	std::string strFile = "";
@@ -92,12 +76,12 @@ std::string FindlogFileWindows()
 }
 #endif
 
-std::string FindlogFile()
+std::string FindlogFile(std::string strSearch)
 {
 #ifdef __linux__ 
-	return FindlogFileLinux();
+	return FindlogFileLinux(strSearch);
 #else
-	return FindlogFileWindows();
+	return FindlogFileWindows(strSearch);
 #endif
 }
 
@@ -120,7 +104,8 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 	SECTION("Aplly rules test")
 	{
         ofstream myfile;
-        myfile.open(GetLogsPath() + "winscard_rules.txt");
+        std::string ruleFilePath = GetLogsPath() + "winscard_rules.txt";
+        myfile.open(ruleFilePath);
 
         myfile << "[WINSCARD]\n";
         myfile << "LOG_EXCHANGED_APDU = 1\n";
@@ -172,7 +157,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 			pbSendBuffer, dwSendLength,
 			NULL, pbRecvBuffer, &dwRecvLength);
 
-		std::string strFile = GetLogsPath() + FindlogFile();
+		std::string strFile = GetLogsPath() + FindlogFile("winscard_rules_log");
 
 		ifstream logFile;
 		logFile.open(strFile.c_str());
@@ -186,7 +171,6 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
 		unsigned int curLine = 0;
 		while (getline(logFile, line)) {
-            printf("%s\n", line.c_str());
 			if (line.find(search, 0) != string::npos) {
 				found = true;
 				break;
@@ -195,7 +179,12 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
         logFile.close();
 		CHECK(found == true);
+
+        std::remove(strFile.c_str());
+        std::remove(ruleFilePath.c_str());
+        std::remove((GetLogsPath() + FindlogFile("winscard_log")).c_str());
 	}
+
 
 	char c;
 	std::cin >> c;
