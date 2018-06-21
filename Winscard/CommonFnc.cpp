@@ -249,7 +249,7 @@ int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, s
 
 int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen) {
     int     status = STAT_OK;
-    size_t   arrayLen = *pbArrayLen;    
+    DWORD   arrayLen = *pbArrayLen;    
     
     status = BYTE_ConvertFromHexStringToArray(hexaString, pArray, &arrayLen);
     if (arrayLen > 0xFF) status = STAT_NOT_ENOUGHT_DATA_TYPE;
@@ -258,7 +258,7 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, size_t* pbArrayLen) {
+int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, DWORD* pbArrayLen) {
     int         status = STAT_OK;
     size_t       pos = 0;
 	size_t       pos2 = 0;
@@ -320,7 +320,7 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
         else {
             memcpy(pArray, pTempArray, tempArrayPos);
         }
-        *pbArrayLen = tempArrayPos;
+        *pbArrayLen = (DWORD) tempArrayPos;
 
         if (pTempArray) delete[] pTempArray;
     }

@@ -15,7 +15,7 @@ public:
     static int File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, size_t startOffset, size_t endOffset, size_t startFileOffset, BOOL bSaveBinary);
 #endif
     static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen);
-    static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, size_t* pbArrayLen);
+    static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, DWORD* pbArrayLen);
     static int BYTE_ConvertFromHexNumToByte(string_type hexaString, BYTE* pByte);
     static int BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string_type* pHexaString);
 
