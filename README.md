@@ -16,16 +16,13 @@ The APDUPlay project is providing following functionality:
 See more details at https://github.com/petrs/APDUPlay/wiki.
 
 ##  Installation  
-1. Copy Winscard.dll from your system folder (see note below to select correct version) to the folder with target application and rename it to original.dll
-2. Copy Winscard.dll from APDUPlay project to the folder with target application (see download below)
+1. Find out if your targeted application is 32 or 64 bit (howto)[https://superuser.com/questions/103071/quick-way-to-tell-if-an-installed-application-is-64-bit-or-32-bit#103073]. 
+1. Copy Winscard.dll from your system folder (c:\Windows\winscard.dll for 32bit target application or c:\Windows\SysWOW64\winscard.dll for 64bit application) to the folder with target application and rename it to original.dll
+2. Copy Winscard.dll from APDUPlay project to the folder with target application
 3. Run the application and inspect resulting files winscard_log.txt and winscard_rules_log.txt
 4. (Optional) Change configuration file winscard_rules.txt to modify default behavior (see below)
 
 The APDUPlay project provides a winscard.dll library which is stub used instead of original winscard.dll provided by Microsoft. For correct usage, you need to find  Microsoft's library and copy it to the folder with an application you are trying to control with APDUPlay. 
-
-If you are using Windows XP or Windows 7 32bit, you can find it at c:\Windows\winscard.dll
-
-If you are using Windows 7, 8 or 10 (64bit), you can find it at c:\Windows\SysWOW64\winscard.dll
 
 ## Troubleshooting
 NOTE: If you use (wrongly) 64bit version of library winscard.dll, it will fail with "The procedure entry point original.g_rgSCardT1Pci could not be located in the dynamic link library WinSCard.dll."  
