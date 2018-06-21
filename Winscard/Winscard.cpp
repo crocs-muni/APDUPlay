@@ -827,7 +827,7 @@ SCard LONG STDCALL SCardListReaders(
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		if ((status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			int     newLen = *pcchReaders + VIRTUAL_READERS_LEN + 2;
+			DWORD     newLen = (DWORD)(*pcchReaders + VIRTUAL_READERS_LEN + 2);
 			char*   readers = new char[newLen];
 			memset(readers, 0, newLen);
 			*pcchReaders = newLen;
@@ -853,7 +853,7 @@ SCard LONG STDCALL SCardListReaders(
 		if ((status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
 			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = realLen + VIRTUAL_READERS_LEN;
+				*pcchReaders = (DWORD) (realLen + VIRTUAL_READERS_LEN);
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
 			}
 			else {
@@ -865,7 +865,7 @@ SCard LONG STDCALL SCardListReaders(
 					// ADD VIRTUAL READER
 					// COPY NAME OF VIRTUAL READERS TO END
 					memcpy(mszReaders + realLen, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
-					*pcchReaders = realLen + strlen(VIRT_READER_NAME) + 1;
+					*pcchReaders = (DWORD) (realLen + strlen(VIRT_READER_NAME) + 1);
 					// ADD TRAILING ZERO
 					mszReaders[*pcchReaders - 1] = 0;
 					/**/
@@ -892,7 +892,7 @@ SCard LONG STDCALL SCardListReaders(
 					// PREFFERED FIRST
 					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length());
 					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
-					offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
+					offset += (DWORD) (theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1);
 					// ORIGINAL PREDECESOR SECOND
 					memcpy(readers + offset, mszReaders, i);
 					offset += i;
@@ -1032,7 +1032,7 @@ SCard LONG STDCALL SCardListReadersW(
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			int     newLen = *pcchReaders + VIRTUAL_READERS_LEN;
+			DWORD     newLen = (DWORD) (*pcchReaders + VIRTUAL_READERS_LEN);
 			WCHAR*   readers = new WCHAR[newLen];
 			memset(readers, 0, newLen * sizeof(WCHAR));
 			*pcchReaders = newLen;
@@ -1060,7 +1060,7 @@ SCard LONG STDCALL SCardListReadersW(
 		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
 			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = realLen + VIRTUAL_READERS_LEN;
+				*pcchReaders = (DWORD) (realLen + VIRTUAL_READERS_LEN);
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
 			}
 			else {
@@ -1073,7 +1073,7 @@ SCard LONG STDCALL SCardListReadersW(
 						for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
 							mszReaders[i + realLen] = VIRT_READER_NAME[i];
 						}
-						*pcchReaders = realLen + strlen(VIRT_READER_NAME) + 1;
+						*pcchReaders = (DWORD)(realLen + strlen(VIRT_READER_NAME) + 1);
 					}
 					else { *pcchReaders = realLen; }
 					// ADD TRAILING ZERO
@@ -1102,7 +1102,7 @@ SCard LONG STDCALL SCardListReadersW(
 					// PREFFERED FIRST
 					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR));
 					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
-					offset += theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1;
+					offset += (DWORD)(theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1);
 					// ORIGINAL PREDECESOR SECOND
 					memcpy(readers + offset, mszReaders, i * sizeof(WCHAR));
 					offset += i;
@@ -3075,7 +3075,7 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
 			}
             if (response.find(SCSAT_GET_APDU_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
-				int position = response.find(_CONV("\n"));
+				size_t position = response.find(_CONV("\n"));
 	            if (position == string_type::npos) {
 					position = -1;
 	            }
@@ -3276,8 +3276,8 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 
 		// LOAD MATCH RULES
 		int counter = 1;
-		int pos = 0;
-		int pos2 = 0;
+		size_t pos = 0;
+		size_t pos2 = 0;
 		valueName = string_format(_CONV(":MATCH%d"), counter);
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, valueName.c_str()), "");
