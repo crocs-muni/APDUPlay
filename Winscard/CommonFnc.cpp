@@ -56,7 +56,7 @@ string_type getCurrentTimeString()
 	return string_type(temp.begin(), temp.end());
 }
 
-int compareWithNoCase(const char_type* str1, const char_type* str2) {
+size_t compareWithNoCase(const char_type* str1, const char_type* str2) {
 	
 	if (type_length(str1) != type_length(str2))
 	{
@@ -197,13 +197,13 @@ int CCommonFnc::File_GetAvailableFileName(string_type baseFile, string_type* pFr
 #endif
 
 #if defined(_WIN32)
-int CCommonFnc::File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary) {
+int CCommonFnc::File_SaveMatrixIntFileOffset(size_t startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, size_t startOffset, size_t endOffset, BOOL bSaveBinary) {
     return File_SaveMatrixInt(filePath, pBlob, startOffset, endOffset, startFileOffset, bSaveBinary);
 }
 
-int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary) {
+int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, size_t startOffset, size_t endOffset, size_t startFileOffset, BOOL bSaveBinary) {
     int     status = STAT_OK;
-    int     i;
+	size_t     i;
 	fstream_type file;
 	string_type value;
 	string_type values = _CONV("");
@@ -249,7 +249,7 @@ int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, i
 
 int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen) {
     int     status = STAT_OK;
-    DWORD   arrayLen = *pbArrayLen;    
+    size_t   arrayLen = *pbArrayLen;    
     
     status = BYTE_ConvertFromHexStringToArray(hexaString, pArray, &arrayLen);
     if (arrayLen > 0xFF) status = STAT_NOT_ENOUGHT_DATA_TYPE;
@@ -258,14 +258,14 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, DWORD* pbArrayLen) {
+int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, size_t* pbArrayLen) {
     int         status = STAT_OK;
-    DWORD       pos = 0;
-    DWORD       pos2 = 0;
+    size_t       pos = 0;
+	size_t       pos2 = 0;
 	string_type     hexNum;
-    DWORD       num;
+	size_t       num;
     BYTE*       pTempArray = NULL;
-    DWORD       tempArrayPos = 0;
+	size_t       tempArrayPos = 0;
 
     // EAT SPACES
     //hexaString.TrimLeft(); hexaString.TrimRight();
@@ -445,7 +445,7 @@ int CCommonFnc::SCSAT_SaveSamples(string_type filePath, SAMPLE_PLOT* pSample, in
     pSample->measureInfo.formatToString(&tmp);
     CCommonFnc::File_AppendString(filePath, tmp);
     
-    int samplesFileOffset = 0;
+    size_t samplesFileOffset = 0;
     if ((status = CCommonFnc::SCSAT_GetPowerSamplesFileOffset(filePath, &samplesFileOffset)) == STAT_OK) {
         if ((status = CCommonFnc::File_SaveMatrixIntFileOffset(samplesFileOffset, filePath, &(pSample->dataBlob), startOffset, endOffset, pSample->measureInfo.bSaveBinary)) == STAT_OK) {
             // store number of written samples
@@ -464,7 +464,7 @@ int CCommonFnc::SCSAT_SaveSamples(string_type filePath, SAMPLE_PLOT* pSample, in
     return status;
 }
 
-int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string_type fileName, int* pOffset) {
+int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string_type fileName, size_t* pOffset) {
     int     status = STAT_OK;
     ifstream_type file;
 	file.open(fileName, std::fstream::in);
@@ -474,7 +474,7 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string_type fileName, int* pOffs
 		string_type dataBlock;
         #define BLOCK_READ_LEN  1000
 		char_type block[BLOCK_READ_LEN + 1];
-        DWORD   len = BLOCK_READ_LEN;
+		std::streamsize   len = BLOCK_READ_LEN;
         DWORD   traceOffset = 0;
         DWORD   baseOffset = 0;
         while (traceOffset == 0) {  
@@ -484,7 +484,7 @@ int CCommonFnc::SCSAT_GetPowerSamplesFileOffset(string_type fileName, int* pOffs
             dataBlock = block;
             if ((dataBlock.find(SCSAT_MEASURE_POWERTRACE) != string_type::npos)) {
                 // we found SCSAT_MEASURE_POWERTRACE string, save its offset
-                *pOffset = baseOffset + dataBlock.find(SCSAT_MEASURE_POWERTRACE) + (int)SCSAT_MEASURE_POWERTRACE.length() + 2; // offset just after POWERTRACE=
+                *pOffset = baseOffset + dataBlock.find(SCSAT_MEASURE_POWERTRACE) + (size_t) SCSAT_MEASURE_POWERTRACE.length() + 2; // offset just after POWERTRACE=
                 break;    
             }
             

@@ -11,11 +11,11 @@ public:
     static int File_AppendString(string_type filePath, std::string data);
 	static int File_AppendString(string_type filePath, std::wstring data);
 #if defined(_WIN32)
-    static int File_SaveMatrixIntFileOffset(int startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, BOOL bSaveBinary);
-    static int File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, int startOffset, int endOffset, int startFileOffset, BOOL bSaveBinary);
+    static int File_SaveMatrixIntFileOffset(size_t startFileOffset, string_type filePath, INT_DATA_BLOB* pBlob, size_t startOffset, size_t endOffset, BOOL bSaveBinary);
+    static int File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, size_t startOffset, size_t endOffset, size_t startFileOffset, BOOL bSaveBinary);
 #endif
     static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, BYTE* pbArrayLen);
-    static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, DWORD* pbArrayLen);
+    static int BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* pArray, size_t* pbArrayLen);
     static int BYTE_ConvertFromHexNumToByte(string_type hexaString, BYTE* pByte);
     static int BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string_type* pHexaString);
 
@@ -26,7 +26,7 @@ public:
 
 #if defined(_WIN32)
     static int SCSAT_SaveSamples(string_type filePath, SAMPLE_PLOT* pSample, int startOffset = 0, int endOffset = -1);
-    static int SCSAT_GetPowerSamplesFileOffset(string_type fileName, int* pOffset);
+    static int SCSAT_GetPowerSamplesFileOffset(string_type fileName, size_t* pOffset);
 	static int SCSAT_EnsureFileHeader(string_type filePath, SCSAT_MEASURE_INFO* pInfo);
 
 	static int Sample_GenerateSampleUniqueID(__int64* id);
@@ -34,7 +34,7 @@ public:
 #endif
 };
 
-int compareWithNoCase(const char_type* str1, const char_type* str2);
+size_t compareWithNoCase(const char_type* str1, const char_type* str2);
 string_type getCurrentTimeString();
 
 #endif
