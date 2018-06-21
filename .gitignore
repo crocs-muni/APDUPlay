@@ -1,4 +1,16 @@
 #################
+## NetBeans #####
+#################
+
+**/nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+
+#################
 ## Eclipse
 #################
 
@@ -222,3 +234,9 @@ pip-log.txt
 
 CMakeFiles/
 cmake-build-debug/
+
+#############
+## Custom
+#############
+
+Parser/output/
