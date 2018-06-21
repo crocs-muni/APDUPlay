@@ -2802,7 +2802,7 @@ CWinscardApp::CWinscardApp()
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 
-m_bRulesActive = FALSE;
+	m_bRulesActive = FALSE;
 
 	#ifdef __linux__
 		LoadRules();

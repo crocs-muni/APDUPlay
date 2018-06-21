@@ -1,0 +1,1 @@
+copy x64\Debug\winscard.dll Debug\winscard.dll 
