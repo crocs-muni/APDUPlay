@@ -70,7 +70,7 @@ size_t compareWithNoCase(const char_type* str1, const char_type* str2) {
 	char_type *str1_2 = new char_type[type_length(str1) + 1];
 	char_type *str2_2 = new char_type[type_length(str2) + 1];
 
-	for (int i = 0; i <= type_length(str1); ++i)
+	for (size_t i = 0; i <= type_length(str1); ++i)
 	{
 #if defined (_WIN32) && defined (UNICODE)
 		str1_2[i] = towupper(str1[i]);

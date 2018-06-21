@@ -330,7 +330,7 @@ static const char * strlwc(const char * in, char *out, unsigned len)
 @return   unsigned New size of the string.
 */
 /*--------------------------------------------------------------------------*/
-static unsigned strstrip(char * s)
+static unsigned int strstrip(char * s)
 {
 	char *last = NULL;
 	char *dest = s;
@@ -347,7 +347,7 @@ static unsigned strstrip(char * s)
 	*last = (char)0;
 
 	memmove(dest, s, last - s + 1);
-	return last - s;
+	return (unsigned int) (last - s);
 }
 
 /*-------------------------------------------------------------------------*/
@@ -884,7 +884,7 @@ static line_status iniparser_line(
 {
 	line_status sta;
 	char * line = NULL;
-	size_t      len;
+	DWORD      len;
 
 	line = xstrdup(input_line);
 	len = strstrip(line);
