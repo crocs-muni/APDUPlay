@@ -99,6 +99,13 @@ static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN OUT LPDWORD pcbRecvLength
 	);
 
+/*
+TEST_CASE("Winscard tests", "[winscard_tests]")
+{
+	SECTION("List readers, connect, transmit")
+	{
+}
+*/
 TEST_CASE("Winscard tests", "[winscard_tests]")
 {
 	SECTION("Aplly rules test")

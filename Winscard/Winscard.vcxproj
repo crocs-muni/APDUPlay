@@ -281,6 +281,8 @@
       <ModuleDefinitionFile>.\Winscard.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
       <Command>

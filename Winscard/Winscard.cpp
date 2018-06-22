@@ -1883,7 +1883,14 @@ int initialize()
 	hOriginal = dlopen("/lib/x86_64-linux-gnu/original.so", RTLD_LAZY);
 	char *delimeter = ": ";
 #else 
-	hOriginal = LoadLibrary(_CONV("original.dll"));
+#if defined (_WIN32) && !defined(_WIN64)
+	hOriginal = LoadLibrary(_CONV("original32.dll"));
+#endif
+#ifdef _WIN64
+	DWORD lastError = 0;
+	hOriginal = LoadLibrary(_CONV("original64.dll"));
+	lastError = GetLastError();
+#endif
 	char *delimeter = "";
 #endif 
 
