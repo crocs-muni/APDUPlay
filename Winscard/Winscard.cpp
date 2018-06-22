@@ -2875,7 +2875,8 @@ int CWinscardApp::ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig) {
     string_type sIP(pSCSATConfig->IP);
     //pSCSATConfig->pSocket = new SocketClient(sIP, atoi(pSCSATConfig->port.c_str()));
 	pSCSATConfig->pSocket = new SocketClient(sIP, type_to_int(pSCSATConfig->port.c_str(), NULL, 10));
-    string_type l = pSCSATConfig->pSocket->ReceiveLine(SCSAT_SOCKET_TIMEOUT);
+	pSCSATConfig->pSocket->SendLine(_CONV("test"));
+	string_type l = pSCSATConfig->pSocket->ReceiveLine(SCSAT_SOCKET_TIMEOUT);
     message = string_format(_CONV("\n> SCSAT connect ... %s"), l.c_str());
     CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
@@ -3049,7 +3050,10 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
         try {
             // FORMAT APDU STRING
             CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) pbSendBuffer, cbSendLength, &value);
-            message = string_format(_CONV("%s %s"), SCSAT_GET_APDU, value);
+			message.insert(0, value);
+			message.insert(0, _CONV("#"));
+			message.insert(0, SCSAT_GET_APDU);
+			//message = string_format(_CONV("%s %s"), SCSAT_GET_APDU, value);
 			string_type l(message);
             pSCSATConfig->pSocket->SendLine(l);
             //message.Insert(0, "\n::-> ");
@@ -3082,7 +3086,7 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
 			}
             if (response.find(SCSAT_GET_APDU_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
-				size_t position = response.find(_CONV("\n"));
+				size_t position = response.find(_CONV("#"));
 	            if (position == string_type::npos) {
 					position = -1;
 	            }
@@ -3199,7 +3203,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2)
 		{
-			m_winscardConfig.bAUTO_REQUEST_DATA = value;
+			m_scsat04Config.bRedirect = value;
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -3213,7 +3217,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":PORT")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.IP = char_value;
+			m_scsat04Config.port = char_value;
 		}
 
 		type_copy(sec_and_key, section_name);

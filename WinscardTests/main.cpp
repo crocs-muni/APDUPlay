@@ -125,7 +125,12 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         myfile << "USAGE = 1\n";
         myfile << "APDUIN = 1\n";
 
-        myfile.close();
+		myfile << "[SCSAT04]\n";
+		myfile << "REDIRECT = 1\n";
+		myfile << "IP = 127.0.0.1\n";
+		myfile << "PORT = 4001\n";
+
+		myfile.close();
 
 
 #ifdef __linux__
@@ -136,7 +141,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 #endif 
 		CHECK(hOriginal != NULL);
 
-#if defined(_WIN32) 
+#if defined (_WIN32) && !defined(_WIN64)
 		Original_SCardTransmit =
 			(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
 #else
@@ -186,13 +191,11 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
         logFile.close();
 		CHECK(found == true);
-
         std::remove(strFile.c_str());
         std::remove(ruleFilePath.c_str());
         std::remove((GetLogsPath() + FindlogFile("winscard_log")).c_str());
 	}
 
-
 	char c;
-	std::cin >> c;
+	//std::cin >> c;
 }
