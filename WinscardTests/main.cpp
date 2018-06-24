@@ -99,6 +99,28 @@ static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN OUT LPDWORD pcbRecvLength
 	);
 
+static SCard LONG(STDCALL *Original_SCardConnect)(
+	IN		SCARDCONTEXT hContext,
+	IN		LPCSTR szReader,
+	IN		DWORD dwShareMode,
+	IN		DWORD dwPreferredProtocols,
+	OUT		LPSCARDHANDLE phCard,
+	OUT		LPDWORD pdwActiveProtocol);
+
+static SCard LONG(STDCALL *Original_SCardListReaders)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCSTR mszGroups,
+	OUT     LPSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
+
+static SCard LONG(STDCALL *Original_SCardEstablishContext)(
+	IN  DWORD dwScope,
+	IN  LPCVOID pvReserved1,
+	IN  LPCVOID pvReserved2,
+	OUT LPSCARDCONTEXT phContext
+	);
+
 /*
 TEST_CASE("Winscard tests", "[winscard_tests]")
 {
@@ -110,6 +132,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 {
 	SECTION("Aplly rules test")
 	{
+		// Prepare configuration files
         ofstream myfile;
         std::string ruleFilePath = GetLogsPath() + "winscard_rules.txt";
         myfile.open(ruleFilePath);
@@ -132,6 +155,9 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
 		myfile.close();
 
+		//
+		// Load required functions from dll
+		//
 
 #ifdef __linux__
         void* hOriginal = dlopen("./../../cmake-build-debug/libpcsclite.so", RTLD_LAZY);
@@ -141,17 +167,53 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 #endif 
 		CHECK(hOriginal != NULL);
 
-#if defined (_WIN32) && !defined(_WIN64)
-		Original_SCardTransmit =
-			(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
-#else
-		Original_SCardTransmit =
-			(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
-#endif
-	    load_func(hOriginal, "SCardTransmit");
+		Original_SCardEstablishContext = (long(STDCALL *)(DWORD, LPCVOID, LPCVOID, LPSCARDCONTEXT))
+			load_func(hOriginal, "SCardEstablishContext");
+		CHECK(Original_SCardEstablishContext != NULL);
 
+		Original_SCardTransmit = (long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
+			load_func(hOriginal, "SCardTransmit");
 		CHECK(Original_SCardTransmit != NULL);
 
+		Original_SCardConnect = (long(STDCALL *)(SCARDCONTEXT, LPCSTR, DWORD, DWORD, LPSCARDHANDLE, LPDWORD))
+			load_func(hOriginal, "SCardConnectA");
+		DWORD error = GetLastError();
+		CHECK(Original_SCardConnect != NULL);
+
+		Original_SCardListReaders = (long(STDCALL *)(SCARDCONTEXT, LPCSTR, LPSTR, LPDWORD))
+			load_func(hOriginal, "SCardListReadersA");
+		CHECK(Original_SCardListReaders != NULL);
+
+
+		//
+		// Connect to card
+		//
+		LONG		 status = SCARD_S_SUCCESS;
+		SCARDCONTEXT cardContext;
+		SCARDHANDLE  hCard;
+		DWORD		 scProtocol;
+		const size_t READERS_LEN = 1000;
+		char         readers[READERS_LEN];
+		DWORD		 len = READERS_LEN;
+
+		// 
+		status = Original_SCardEstablishContext(SCARD_SCOPE_USER, 0, 0, &cardContext);
+		CHECK(status == SCARD_S_SUCCESS);
+
+		// Print available readers
+		status = Original_SCardListReaders(cardContext, NULL, (char*) &readers, &len);
+		CHECK(status == SCARD_S_SUCCESS);
+		DWORD pos = 0;
+		while (pos < len) {
+			cout << readers + pos << endl;
+			pos += strlen(readers) + 1;
+		}
+
+		// Connect to first reader
+		status = Original_SCardConnect(cardContext, readers, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &scProtocol);
+		CHECK(status == SCARD_S_SUCCESS);
+
+		// Send APDU
 		DWORD dwSendLength, dwRecvLength;
 		BYTE pbRecvBuffer[16];
 		BYTE pbSendBuffer[] = { (BYTE)0x80, (BYTE)0xca,(BYTE)0x9f, (BYTE)0x17, (BYTE)0x02 , (BYTE)0x90 , (BYTE)0x00 };
@@ -160,15 +222,24 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		dwRecvLength = sizeof(pbRecvBuffer);
 
 		SCARD_IO_REQUEST pioSendPci;
-
-		pioSendPci.dwProtocol = SCARD_PROTOCOL_T0;
+		pioSendPci.dwProtocol = scProtocol;
 		pioSendPci.cbPciLength = sizeof(pioSendPci);
 
-		LONG ret = Original_SCardTransmit(NULL,
-			&pioSendPci,
-			pbSendBuffer, dwSendLength,
-			NULL, pbRecvBuffer, &dwRecvLength);
+		status = Original_SCardTransmit(hCard, &pioSendPci, pbSendBuffer, dwSendLength, NULL, pbRecvBuffer, &dwRecvLength);
+		CHECK(status == SCARD_S_SUCCESS);
+/*
+		switch (scProtocol) {
+			case SCARD_PROTOCOL_T0: status = Original_SCardTransmit(hCard, (SCARD_IO_REQUEST *)SCARD_PCI_T0, pbSendBuffer, pbSendBuffer[4] + 5, NULL, pbRecvBuffer, &dwRecvLength); break;
+			case SCARD_PROTOCOL_T1: status = Original_SCardTransmit(hCard, (SCARD_IO_REQUEST *)SCARD_PCI_T1, pbSendBuffer, pbSendBuffer[4] + 5, NULL, pbRecvBuffer, &dwRecvLength); break;
+			default: CHECK(false);
+		}
+*/
+		
 
+
+		//
+		// Verify expected content of resulting files
+		//
 		std::string strFile = GetLogsPath() + FindlogFile("winscard_rules_log");
 
 		ifstream logFile;
