@@ -104,7 +104,7 @@ BYTE    GET_APDU1[] = { 0x00, 0xC0, 0x00, 0x00 };
 BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 //#define VIRT_READER_NAME        "VirtOpenPGP"
-#define VIRT_READER_NAME        ""
+#define VIRT_READER_NAME        "Simona123"
 #define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
 
 /* ******************************************************************************* */
@@ -608,7 +608,7 @@ SCard LONG STDCALL SCardTransmit(
 		else {
 
 			// FORWARD TO SCSAT04 
-			result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
+			result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
 
 			// APPEND 90 00 TO RETURN BUFFER IN CASE OF DATA_OUT RETRIEVE COMMAND (IF SCSAT IS NOT RETURNING IT)             
 			if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
@@ -777,6 +777,10 @@ SCard LONG STDCALL SCardConnect(
 	string_type message;
 	message = string_format(_CONV("SCardConnect(hContext:0x%x,%s,hCard:0x%x) called\n"), hContext, szReader, *phCard);
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+
+	// Store mapping between card handle and reader (used in card remoting)
+	theApp.cardReaderMap[*phCard] = szReader;
+
 	return status;
 }
 
@@ -3041,7 +3045,7 @@ int CWinscardApp::GetApduFromHistory(BYTE* buffer, int history, int apduDirectio
 }
 
 #if defined (_WIN32)
-LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
+LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
     LONG        status = 0;
     string_type     message;
     string_type     value;    
@@ -3051,6 +3055,8 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
             // FORMAT APDU STRING
             CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) pbSendBuffer, cbSendLength, &value);
 			message.insert(0, value);
+			message.insert(0, _CONV("#"));
+			message.insert(0, targetReader);
 			message.insert(0, _CONV("#"));
 			message.insert(0, SCSAT_GET_APDU);
 			//message = string_format(_CONV("%s %s"), SCSAT_GET_APDU, value);
@@ -3559,6 +3565,13 @@ int CWinscardApp::LoadRules() {
     return status;
 }
 #endif
+
+/**
+Returns reader name corresponding to provided card handle
+*/
+string_type CWinscardApp::GetReaderName(IN SCARDHANDLE hCard) {
+	return theApp.cardReaderMap[hCard];
+}
 
 #if defined(_WIN32) && defined(_UNICODE)
 int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {

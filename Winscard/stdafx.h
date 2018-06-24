@@ -295,9 +295,9 @@ static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
 #define SCSAT_MAX_SAMPLING_FREQUENCY 100
 #define SCSAT_SOCKET_SHORT_TIMEOUT 3
 
-static string_type SCSAT_GET_APDU = _CONV("get apdu");
-static string_type SCSAT_GET_APDU_FAIL = _CONV("get apdu fail");
-static string_type SCSAT_GET_RESET = _CONV("get reset");
+static string_type SCSAT_GET_APDU = _CONV("apdu");
+static string_type SCSAT_GET_APDU_FAIL = _CONV("apdu fail");
+static string_type SCSAT_GET_RESET = _CONV("reset");
 
 //static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
 //static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");
