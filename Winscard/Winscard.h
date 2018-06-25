@@ -41,6 +41,9 @@ public:
     BOOL    m_bRulesActive;
 	dictionary* instructionDict = nullptr;
 	unordered_map<SCARDHANDLE, string_type> cardReaderMap;
+	unordered_map<SCARDHANDLE, string_type>	remoteReadersMap;
+	DWORD   m_nextRemoteCardID = 1;
+
 
 #if defined (_WIN32)
     SCSAT04_CONFIG  m_scsat04Config;
@@ -68,10 +71,13 @@ public:
 #if defined (_WIN32)
 //	int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
     LONG SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
+	LONG SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader);
+	LONG SCSAT_ParseResponse(string_type response, string_type* command, string_type* arg1, string_type* arg2);
 #endif
 	int LoadRule(string_type ruleName, dictionary* dict);
 
 	string_type GetReaderName(IN SCARDHANDLE hCard);
+	boolean		IsRemoteCard(IN SCARDHANDLE hCard);
 
 #if defined (_WIN32)
 public:

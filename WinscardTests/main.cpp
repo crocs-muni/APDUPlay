@@ -196,7 +196,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		char         readers[READERS_LEN];
 		DWORD		 len = READERS_LEN;
 
-		// 
+		// SCard context
 		status = Original_SCardEstablishContext(SCARD_SCOPE_USER, 0, 0, &cardContext);
 		CHECK(status == SCARD_S_SUCCESS);
 
@@ -206,11 +206,14 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		DWORD pos = 0;
 		while (pos < len) {
 			cout << readers + pos << endl;
-			pos += strlen(readers) + 1;
+			pos += strlen(readers + pos) + 1;
 		}
+		cout << endl;
 
-		// Connect to first reader
-		status = Original_SCardConnect(cardContext, readers, SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &scProtocol);
+		// Connect to "Simona666" reader
+		string_type remoteReader = "Simona666";
+		cout << "Connecting to reader '" << remoteReader << "'" << endl;
+		status = Original_SCardConnect(cardContext, remoteReader.c_str(), SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &scProtocol);
 		CHECK(status == SCARD_S_SUCCESS);
 
 		// Send APDU
@@ -225,16 +228,9 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		pioSendPci.dwProtocol = scProtocol;
 		pioSendPci.cbPciLength = sizeof(pioSendPci);
 
+		cout << "Sending APDU..." << endl;
 		status = Original_SCardTransmit(hCard, &pioSendPci, pbSendBuffer, dwSendLength, NULL, pbRecvBuffer, &dwRecvLength);
 		CHECK(status == SCARD_S_SUCCESS);
-/*
-		switch (scProtocol) {
-			case SCARD_PROTOCOL_T0: status = Original_SCardTransmit(hCard, (SCARD_IO_REQUEST *)SCARD_PCI_T0, pbSendBuffer, pbSendBuffer[4] + 5, NULL, pbRecvBuffer, &dwRecvLength); break;
-			case SCARD_PROTOCOL_T1: status = Original_SCardTransmit(hCard, (SCARD_IO_REQUEST *)SCARD_PCI_T1, pbSendBuffer, pbSendBuffer[4] + 5, NULL, pbRecvBuffer, &dwRecvLength); break;
-			default: CHECK(false);
-		}
-*/
-		
 
 
 		//

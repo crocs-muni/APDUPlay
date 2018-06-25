@@ -66,6 +66,7 @@
 #endif
 
 #include <list>
+#include <unordered_map>
 //using namespace std;
 
 typedef void* PTR;
@@ -298,6 +299,7 @@ static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
 static string_type SCSAT_GET_APDU = _CONV("apdu");
 static string_type SCSAT_GET_APDU_FAIL = _CONV("apdu fail");
 static string_type SCSAT_GET_RESET = _CONV("reset");
+static string_type SCSAT_CONNECT = _CONV("connect");
 
 //static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
 //static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");
