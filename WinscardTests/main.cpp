@@ -210,8 +210,8 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		}
 		cout << endl;
 
-		// Connect to "Simona666" reader
-		string_type remoteReader = "Simona666";
+		// Connect to specific reader
+		string_type remoteReader = "Simona /111.222.123.321@12";
 		cout << "Connecting to reader '" << remoteReader << "'" << endl;
 		status = Original_SCardConnect(cardContext, remoteReader.c_str(), SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &scProtocol);
 		CHECK(status == SCARD_S_SUCCESS);

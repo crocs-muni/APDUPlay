@@ -182,6 +182,7 @@ typedef struct _SCSAT04_CONFIG {
     int             readRatio;
     DWORD           numSamples;
     BOOL            sampleReaded;
+	DWORD			nextCommandID;		// next unique command ID (checked on response)
     
     _SCSAT04_CONFIG(void) {
         clear();
@@ -201,6 +202,7 @@ typedef struct _SCSAT04_CONFIG {
         readRatio = 1;
         numSamples = 1000;
         sampleReaded = FALSE;
+		nextCommandID = 1;
     }
 } SCSAT04_CONFIG;
 #endif
@@ -296,10 +298,6 @@ static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
 #define SCSAT_MAX_SAMPLING_FREQUENCY 100
 #define SCSAT_SOCKET_SHORT_TIMEOUT 3
 
-static string_type SCSAT_GET_APDU = _CONV("apdu");
-static string_type SCSAT_GET_APDU_FAIL = _CONV("apdu fail");
-static string_type SCSAT_GET_RESET = _CONV("reset");
-static string_type SCSAT_CONNECT = _CONV("connect");
 
 //static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
 //static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");

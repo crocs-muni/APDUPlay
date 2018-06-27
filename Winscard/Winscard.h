@@ -72,7 +72,7 @@ public:
 //	int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
     LONG SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
 	LONG SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader);
-	LONG SCSAT_ParseResponse(string_type response, string_type* command, string_type* arg1, string_type* arg2);
+	LONG SCSAT_ParseResponse(string_type rawResponse, DWORD expectedUniqueID, string_type* respCommand);
 #endif
 	int LoadRule(string_type ruleName, dictionary* dict);
 

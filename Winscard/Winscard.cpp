@@ -109,7 +109,22 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 #define REMOTE_READER_PREFIX	"Simona"
 
+#define CMD_APDU				"APDU"
+#define CMD_RESET				"RESET"
+#define CMD_ENUM				"ENUM"
+#define CMD_LINE_SEPARATOR		"|"	
+#define CMD_SEPARATOR			":"	
+#define CMD_RESPONSE_FAIL		"FAIL"	
+
+
+static string_type SCSAT_GET_APDU = _CONV("apdu");
+static string_type SCSAT_GET_APDU_FAIL = _CONV("apdu fail");
+static string_type SCSAT_GET_RESET = _CONV("reset");
+static string_type SCSAT_CONNECT = _CONV("connect");
+
 #define PROXY_SEPARATOR "#"
+
+
 
 /* ******************************************************************************* */
 
@@ -2867,16 +2882,23 @@ int CWinscardApp::ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig) {
     
     string_type sIP(pSCSATConfig->IP);
     //pSCSATConfig->pSocket = new SocketClient(sIP, atoi(pSCSATConfig->port.c_str()));
-	pSCSATConfig->pSocket = new SocketClient(sIP, type_to_int(pSCSATConfig->port.c_str(), NULL, 10));
-    message = string_format(_CONV("\n> Connnecting to remote proxy with IP:port = %s:%s"), pSCSATConfig->IP, pSCSATConfig->port);
-    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	try {
+		pSCSATConfig->pSocket = new SocketClient(sIP, type_to_int(pSCSATConfig->port.c_str(), NULL, 10));
+		message = string_format(_CONV("\n> Connnecting to remote proxy with IP:port = %s:%s"), pSCSATConfig->IP, pSCSATConfig->port);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+/*
+		// INIT SCSAT CONNECTION
+		pSCSATConfig->pSocket->SendLine(_CONV("init#"));
+		string_type l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		message = string_format(_CONV("\n:: %s"), l.c_str());
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+*/
+	}
+	catch (std::string error) {
+		message = string_format(_CONV("\n> Failed to connect to %s:%s (error: %s)"), pSCSATConfig->IP, pSCSATConfig->port, error);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
 
-    // INIT SCSAT CONNECTION
-	pSCSATConfig->pSocket->SendLine(_CONV("init#"));
-	string_type l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-    message = string_format(_CONV("\n:: %s"), l.c_str());
-    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-    
     return STAT_OK;
 }
 
@@ -3031,6 +3053,19 @@ int CWinscardApp::GetApduFromHistory(BYTE* buffer, int history, int apduDirectio
     return status;
 }
 
+/**
+Format request for remote proxy
+
+Remote card protocol
+ > <card reader name>
+ > <cmd ID>:<"APDU" / "RESET" / "ENUM">:<optional hexa string, e.g. "00A4040304">
+ # some comments
+ all other lines not starting with > or # are ignored
+*/
+string_type SCSAT_FormatRequest(string_type targetReader, DWORD uniqueCmdID, string_type command, string_type commandData, string_type notes, string_type lineSeparator) {
+	return string_format(">%s%s>%d%s%s%s%s%s%s", targetReader.c_str(), lineSeparator.c_str(), uniqueCmdID, CMD_SEPARATOR, command.c_str(), CMD_SEPARATOR, commandData.c_str(), lineSeparator.c_str(), notes.c_str());
+}
+
 #if defined (_WIN32)
 LONG CWinscardApp::SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader) {
 	LONG        status = 0;
@@ -3038,12 +3073,9 @@ LONG CWinscardApp::SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type 
 
 	if (pSCSATConfig->pSocket != NULL) {
 		try {
-			// FORMAT APDU STRING
-			message.insert(0, _CONV("#"));
-			message.insert(0, targetReader);
-			message.insert(0, _CONV("#"));
-			message.insert(0, SCSAT_CONNECT);
-			string_type l(message);
+			// unique command ID
+			theApp.m_scsat04Config.nextCommandID++;
+			string_type l = SCSAT_FormatRequest(targetReader, theApp.m_scsat04Config.nextCommandID, CMD_RESET, "", "", CMD_LINE_SEPARATOR);
 			pSCSATConfig->pSocket->SendLine(l);
 			//message.Insert(0, "\n::-> ");
 			message.insert(0, _CONV("\n::-> "));
@@ -3051,8 +3083,14 @@ LONG CWinscardApp::SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type 
 			_sleep(500);
 
 			// OBTAIN RESPONSE, PARSE BACK 
+			// TODO: parse response, propagate it, chck unique command ID
 			l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-			message = string_format(_CONV("\n::<- %s"), l.c_str());
+
+			// Parse response
+			string_type response;
+			status = SCSAT_ParseResponse(l, theApp.m_scsat04Config.nextCommandID, &response);
+
+			message = string_format(_CONV("\n::<- %s"), response.c_str());
 			replace(message.begin(), message.end(), '\n', ' ');
 			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 		}
@@ -3067,6 +3105,9 @@ LONG CWinscardApp::SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type 
 			status = SCARD_F_UNKNOWN_ERROR;
 		}
 	}
+	else {
+		status = SCARD_F_COMM_ERROR;
+	}
 
 	return status;
 }
@@ -3074,24 +3115,31 @@ LONG CWinscardApp::SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type 
 
 #if defined (_WIN32)
 
-LONG CWinscardApp::SCSAT_ParseResponse(string_type response, string_type* command, string_type* arg1, string_type* arg2) {
-	LONG status = 0;
+LONG CWinscardApp::SCSAT_ParseResponse(string_type rawResponse, DWORD expectedCommandID, string_type* response) {
+	LONG status = SCARD_S_SUCCESS;
 
-	size_t pos = response.find(PROXY_SEPARATOR);
-	*command = response.substr(0, pos);
+	int pos = 0;
+	if (rawResponse.at(pos) != '>') {
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "'>'was expected at begin");
+		status = SCARD_F_COMM_ERROR;
+	}
 	pos++;
-	size_t pos2 = response.find(PROXY_SEPARATOR, pos);
-	*arg1 = "N/A";
-	if (pos2 != -1) {
-		*arg1 = response.substr(pos, pos2 - pos);
+
+	if (status == SCARD_S_SUCCESS) {
+		int pos2 = rawResponse.find(CMD_SEPARATOR);
+		string_type uniqueCmdID = rawResponse.substr(pos, pos2 - 1);
+		if (expectedCommandID != atoi(uniqueCmdID.c_str())) {
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Unexpected commandID in response");
+			status = SCARD_F_COMM_ERROR;
+		}
 		pos = pos2 + 1;
 	}
-	pos2 = response.find(PROXY_SEPARATOR, pos);
-	*arg2 = "N/A";
-	if (pos2 != -1) {
-		*arg2 = response.substr(pos, pos2 - pos);
-		pos = pos2 + 1;
+
+	if (status == SCARD_S_SUCCESS) {
+		size_t pos2 = rawResponse.find(SCSAT_SOCKET_ENDSEQ, pos);
+		*response = rawResponse.substr(pos, pos2 - pos);
 	}
+
 	return status;
 }
 
@@ -3104,16 +3152,9 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type
     
     if (pSCSATConfig->pSocket != NULL) {
         try {
-            // FORMAT APDU STRING
-            CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) pbSendBuffer, cbSendLength, &value);
-			message.insert(0, _CONV("#"));
-			message.insert(0, value);
-			message.insert(0, _CONV("#"));
-			message.insert(0, targetReader);
-			message.insert(0, _CONV("#"));
-			message.insert(0, SCSAT_GET_APDU);
-			//message = string_format(_CONV("%s %s"), SCSAT_GET_APDU, value);
-			string_type l(message);
+			// unique command ID
+			theApp.m_scsat04Config.nextCommandID++;
+			string_type l = SCSAT_FormatRequest(targetReader, theApp.m_scsat04Config.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
             pSCSATConfig->pSocket->SendLine(l);
             //message.Insert(0, "\n::-> ");
 			message.insert(0, _CONV("\n::-> "));
@@ -3124,36 +3165,23 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type
                 _sleep(pbSendBuffer[4] * 20);       // LC * 20ms
             }
             else _sleep(500);
-             
             
             // OBTAIN RESPONSE, PARSE BACK 
             l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+
+			string_type response;
+			status = SCSAT_ParseResponse(l, theApp.m_scsat04Config.nextCommandID, &response);
+
             message = string_format(_CONV("\n::<- %s"), l.c_str());
             //message.Replace("\n", " ");
 			replace(message.begin(), message.end(), '\n', ' ');
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             
-            // CHECK IF RESPONSE IS CORRECT
-            string_type response = l.c_str();
-            //response.MakeLower();
-			char c; int i = 0;
-			while (response[i])
-			{
-				c = response[i];
-				putchar(tolower(c));
-				i++;
-			}
-
-			string_type command;
-			string_type readerName;
-			string_type apduData;
-			SCSAT_ParseResponse(response, &command, &readerName, &apduData);
-
-            if (command.find(SCSAT_GET_APDU_FAIL) == string_type::npos) {
+            if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
                 // NOTE: pbRecvBuffer IS ASSUMED TO HAVE 260B
                 *pcbRecvLength = 260;
-                status = CCommonFnc::BYTE_ConvertFromHexStringToArray(apduData, pbRecvBuffer, pcbRecvLength);
+                status = CCommonFnc::BYTE_ConvertFromHexStringToArray(response, pbRecvBuffer, pcbRecvLength);
                 
                 // CHECK FOR RETURN STATUS, AT LEAST 2 BYTES REQUIRED
                 if (*pcbRecvLength < 2) status = STAT_DATA_INCORRECT_LENGTH;
