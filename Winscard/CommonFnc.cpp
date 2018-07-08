@@ -267,42 +267,29 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
     BYTE*       pTempArray = NULL;
 	size_t       tempArrayPos = 0;
 
-    // EAT SPACES
-    //hexaString.TrimLeft(); hexaString.TrimRight();
+    // Trim leading and trailing spaces
 	hexaString.erase(hexaString.find_last_not_of(_CONV(" ")) + 1);
 	size_t startpos = hexaString.find_first_not_of(_CONV(" "));
 	if (string_type::npos != startpos) {
 		hexaString = hexaString.substr(startpos);
 	}
 
-    hexaString += _CONV(" ");
-    hexaString.length();
+	// Replace spaces inside hex string
+	std::string hexaStringNoSpace;
+	for (size_t i = 0; i < hexaString.size(); i++) {
+		if (hexaString.at(i) != ' ') {
+			hexaStringNoSpace.insert(hexaStringNoSpace.size(), 1, hexaString.at(i));
+		}
+	}
+
 
     if (status == STAT_OK) {
-        pTempArray = new BYTE[hexaString.length()];
-        memset(pTempArray, 0, hexaString.length());
+        pTempArray = new BYTE[hexaStringNoSpace.length()];
+        memset(pTempArray, 0, hexaStringNoSpace.length());
 
-        pos = pos2 = 0;
-        /*while ((pos = hexaString.Find(' ', pos2)) != -1) {
-            hexNum = hexaString.Mid(pos2, pos - pos2);
-            hexNum.TrimLeft(); hexNum.TrimRight();
-            if (hexNum.GetLength() > 0) {
-                num = strtol((LPCTSTR) hexNum, NULL, 16);
-        
-                if (num == 0xFF) pTempArray[tempArrayPos] = 0xFF;
-                else pTempArray[tempArrayPos] = (BYTE) num & 0xFF;
-                
-                tempArrayPos++;
-            }
-            pos2 = pos + 1;
-        }*/
-		while ((pos = hexaString.find(' ', pos2)) != -1) {
-			hexNum = hexaString.substr(pos2, pos - pos2);
-			hexNum.erase(hexNum.find_last_not_of(_CONV(" ")) + 1);
-			size_t startpos2 = hexNum.find_first_not_of(_CONV(" "));
-			if (string_type::npos != startpos2) {
-				hexNum = hexNum.substr(startpos2);
-			}
+        pos = 0;
+		while (pos < hexaStringNoSpace.length()) {
+			hexNum = hexaStringNoSpace.substr(pos, 2);
 			if (hexNum.length() > 0) {
 				num = type_to_int((LPCTSTR)hexNum.c_str(), NULL, 16);
 
@@ -311,7 +298,7 @@ int CCommonFnc::BYTE_ConvertFromHexStringToArray(string_type hexaString, BYTE* p
 
 				tempArrayPos++;
 			}
-			pos2 = pos + 1;
+			pos += 2;
 		}
 
         if (tempArrayPos > *pbArrayLen) {
@@ -364,7 +351,7 @@ int CCommonFnc::APDU_ConvertToString(CARDAPDU* pAPDU, string_type* pString, BOOL
     return status;
 }
 
-int CCommonFnc::BYTE_ConvertFromArrayToHexString(BYTE* pArray, DWORD pbArrayLen, string_type* pHexaString) {
+int CCommonFnc::BYTE_ConvertFromArrayToHexString(const BYTE* pArray, DWORD pbArrayLen, string_type* pHexaString) {
     int         status = STAT_OK;
 	string_type     hexNum;
     DWORD       i;
