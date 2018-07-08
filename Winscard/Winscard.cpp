@@ -104,7 +104,7 @@ BYTE    GET_APDU1[] = { 0x00, 0xC0, 0x00, 0x00 };
 BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 //#define VIRT_READER_NAME        "VirtOpenPGP"
-#define VIRT_READER_NAME        "Simona007\nSimona123\nSimona666"
+#define VIRT_READER_NAME        "Simona /111.222.123.033@07\nSimona /111.222.123.033@12\nSimona /111.222.123.033@123"
 #define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
 
 #define REMOTE_READER_PREFIX	"Simona"
@@ -622,18 +622,6 @@ SCard LONG STDCALL SCardTransmit(
 		if (theApp.IsRemoteCard(hCard)) {
 			// FORWARD TO SCSAT04 
 			result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-
-			// APPEND 90 00 TO RETURN BUFFER IN CASE OF DATA_OUT RETRIEVE COMMAND (IF SCSAT IS NOT RETURNING IT)             
-			if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
-				if (result == SCARD_S_SUCCESS) {
-					if ((pbRecvBuffer[*pcbRecvLength - 2] != 0x90) && (pbRecvBuffer[*pcbRecvLength - 1] != 0x00)) {
-						// 0x90 0x00 IS MISSING
-						pbRecvBuffer[*pcbRecvLength] = 0x90;
-						pbRecvBuffer[*pcbRecvLength + 1] = 0x00;
-						*pcbRecvLength += 2;
-					}
-				}
-			}
 		}
 	}
 	else {
@@ -676,8 +664,23 @@ SCard LONG STDCALL SCardTransmit(
 			cbSendLength = 5;
 
 			int tmp = sendBuffer[4] & 0xff; tmp += 2; *pcbRecvLength = tmp;
-			//*pcbRecvLength = sendBuffer[4] & 0xff + 2;
+
+#if defined(_WIN32)
+			// Check if redirection is required
+			if (theApp.m_scsat04Config.bRedirect) {
+				// Check if provided card handle is remote card
+				if (theApp.IsRemoteCard(hCard)) {
+					// FORWARD TO SCSAT04 
+					result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *) pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+				}
+			}
+			else {
+#endif
+
 			result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+#if defined(_WIN32) 	
+			}
+#endif
 			recvOffset = *pcbRecvLength - 2;
 		}
 	}
@@ -2863,15 +2866,6 @@ BOOL CWinscardApp::InitInstance()
     if (m_scsat04Config.bRedirect) {
         ConnectSCSAT04(&m_scsat04Config);
     }
-/*
-	DWORD written;
-    hOut = CreateFile("winscard.txt",GENERIC_WRITE,FILE_SHARE_READ,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
-    if ( ! hOut ) {
-        MessageBox(NULL,"could not create output file","error",MB_OK|MB_ICONEXCLAMATION);
-        return FALSE;
-    }
-/**/
-    //WriteFile( hOut, "[begin]\r\n", (DWORD) strlen("[begin]\r\n"), &written, NULL );
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
 
 	return initialize();
@@ -3118,7 +3112,7 @@ LONG CWinscardApp::SCSAT_SCardConnect(SCSAT04_CONFIG* pSCSATConfig, string_type 
 LONG CWinscardApp::SCSAT_ParseResponse(string_type rawResponse, DWORD expectedCommandID, string_type* response) {
 	LONG status = SCARD_S_SUCCESS;
 
-	int pos = 0;
+	size_t pos = 0;
 	if (rawResponse.at(pos) != '>') {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "'>'was expected at begin");
 		status = SCARD_F_COMM_ERROR;
@@ -3126,7 +3120,7 @@ LONG CWinscardApp::SCSAT_ParseResponse(string_type rawResponse, DWORD expectedCo
 	pos++;
 
 	if (status == SCARD_S_SUCCESS) {
-		int pos2 = rawResponse.find(CMD_SEPARATOR);
+		size_t pos2 = rawResponse.find(CMD_SEPARATOR);
 		string_type uniqueCmdID = rawResponse.substr(pos, pos2 - 1);
 		if (expectedCommandID != atoi(uniqueCmdID.c_str())) {
 			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Unexpected commandID in response");
@@ -3146,7 +3140,7 @@ LONG CWinscardApp::SCSAT_ParseResponse(string_type rawResponse, DWORD expectedCo
 
 
 LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
-    LONG        status = 0;
+    LONG			status = 0;
     string_type     message;
     string_type     value;    
     
@@ -3154,6 +3148,7 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, string_type
         try {
 			// unique command ID
 			theApp.m_scsat04Config.nextCommandID++;
+			CCommonFnc::BYTE_ConvertFromArrayToHexString(pbSendBuffer, cbSendLength, &value);
 			string_type l = SCSAT_FormatRequest(targetReader, theApp.m_scsat04Config.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
             pSCSATConfig->pSocket->SendLine(l);
             //message.Insert(0, "\n::-> ");
@@ -3450,7 +3445,6 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					data.erase(std::remove(data.begin(), data.end(), ','), data.end());
 					BYTE dataBuffer[300];
 					DWORD dataBufferLen = 300;
-					//CCommonFnc::File_AppendString(filePath, string_format(_CONV(" data su: %s\n"), data.c_str()));
 					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
 
 					for (DWORD i = 0; i < dataBufferLen; i++)
