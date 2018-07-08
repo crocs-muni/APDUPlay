@@ -144,7 +144,7 @@ std::vector<char> HexToBytes(const std::string& hex) {
 	return bytes;
 }
 
-void HexToBytes(const std::string& hex, BYTE dataArray[], DWORD* dataArrayLen) {
+void HexToBytes(const std::string& hex, BYTE dataArray[], size_t* dataArrayLen) {
 	std::vector<char> converted = HexToBytes(hex);
 	if (converted.size() > *dataArrayLen) {
 		return;
@@ -155,10 +155,10 @@ void HexToBytes(const std::string& hex, BYTE dataArray[], DWORD* dataArrayLen) {
 	*dataArrayLen = converted.size();
 }
 
-std::string BytesToHex(BYTE* data, DWORD dataLen) {
+std::string BytesToHex(BYTE* data, size_t dataLen) {
 	std::stringstream ss;
 	char oneByte[3];
-	for (DWORD i = 0; i < dataLen; ++i) {
+	for (size_t i = 0; i < dataLen; ++i) {
 		sprintf_s(oneByte, sizeof(oneByte), "%.2x", data[i]);
 		ss << oneByte;
 	}
@@ -167,7 +167,7 @@ std::string BytesToHex(BYTE* data, DWORD dataLen) {
 
 int SendAPDU(string_type apdu, SCARDHANDLE  hCard, DWORD scProtocol) {
 	int status = 0;
-	DWORD dwSendLength = MAX_APDU_LEN;
+	size_t dwSendLength = MAX_APDU_LEN;
 	DWORD dwRecvLength = MAX_APDU_LEN;
 	BYTE pbRecvBuffer[MAX_APDU_LEN];
 	BYTE pbSendBuffer[MAX_APDU_LEN];
@@ -179,7 +179,7 @@ int SendAPDU(string_type apdu, SCARDHANDLE  hCard, DWORD scProtocol) {
 
 	cout << "Sending APDU: ";
 	cout << BytesToHex(pbSendBuffer, dwSendLength) << endl;
-	status = Original_SCardTransmit(hCard, &pioSendPci, pbSendBuffer, dwSendLength, NULL, pbRecvBuffer, &dwRecvLength);
+	status = Original_SCardTransmit(hCard, &pioSendPci, pbSendBuffer, (DWORD) dwSendLength, NULL, pbRecvBuffer, &dwRecvLength);
 	CHECK(status == SCARD_S_SUCCESS);
 	cout << "Received response: ";
 	cout << BytesToHex(pbRecvBuffer, dwRecvLength) << endl;
@@ -267,7 +267,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		// Print available readers
 		status = Original_SCardListReaders(cardContext, NULL, (char*) &readers, &len);
 		CHECK(status == SCARD_S_SUCCESS);
-		DWORD pos = 0;
+		size_t pos = 0;
 		while (pos < len) {
 			cout << readers + pos << endl;
 			pos += strlen(readers + pos) + 1;

@@ -56,7 +56,9 @@ static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type
 #endif
 #endif
 
+#pragma warning(disable:4005)
 #define WINSCARDDATA __declspec(dllexport)
+#pragma warning(default:4005)
 
 #if defined(_WIN32)
 	#define STDCALL __stdcall
