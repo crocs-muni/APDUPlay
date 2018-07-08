@@ -212,7 +212,7 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         myfile << "USAGE = 1\n";
         myfile << "APDUIN = 1\n";
 
-		myfile << "[SCSAT04]\n";
+		myfile << "[REMOTE]\n";
 		myfile << "REDIRECT = 1\n";
 		myfile << "IP = 127.0.0.1\n";
 		myfile << "PORT = 4001\n";
@@ -316,6 +316,6 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         std::remove((GetLogsPath() + FindlogFile("winscard_log")).c_str());
 	}
 
-	char c;
+	//char c;
 	//std::cin >> c;
 }

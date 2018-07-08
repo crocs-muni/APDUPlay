@@ -168,7 +168,7 @@ typedef std::list<PTR>           lptr;
 
 
 #if defined (_WIN32)
-typedef struct _SCSAT04_CONFIG {
+typedef struct _REMOTE_CONFIG {
     BOOL            bRedirect;
 	string_type     IP;
 	string_type     port;
@@ -184,7 +184,7 @@ typedef struct _SCSAT04_CONFIG {
     BOOL            sampleReaded;
 	DWORD			nextCommandID;		// next unique command ID (checked on response)
     
-    _SCSAT04_CONFIG(void) {
+    _REMOTE_CONFIG(void) {
         clear();
     }
 
@@ -204,7 +204,7 @@ typedef struct _SCSAT04_CONFIG {
         sampleReaded = FALSE;
 		nextCommandID = 1;
     }
-} SCSAT04_CONFIG;
+} REMOTE_CONFIG;
 #endif
 
 typedef struct _WINSCARD_CONFIG {
@@ -275,199 +275,4 @@ __inline volatile unsigned long long read_tsc(void)
 #error A high resolution timer is not available
 #endif
 #endif
-#endif
-
-static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
-static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");
-static string_type SCSAT_MEASURE_SECTION_SAMPLES = _CONV("SCSAT_MEASURE_SAMPLES");
-static string_type SCSAT_MEASURE_DATETIME = _CONV("DATETIME");
-static string_type SCSAT_MEASURE_CARDATR = _CONV("CARDATR");
-static string_type SCSAT_MEASURE_CARDNAME = _CONV("CARDNAME");
-static string_type SCSAT_MEASURE_NOTE = _CONV("NOTE");
-static string_type SCSAT_MEASURE_COMMLOG = _CONV("COMMLOG");
-static string_type SCSAT_MEASURE_CFGSCRIPT = _CONV("CFGSCRIPT");
-static string_type SCSAT_MEASURE_STARTAPDU = _CONV("STARTAPDU");
-static string_type SCSAT_MEASURE_SAMPLINGFREQUENCY = _CONV("SAMPLINGFREQUENCY");
-static string_type SCSAT_MEASURE_BASEOFFSET = _CONV("BASEOFFSET");
-static string_type SCSAT_MEASURE_BASESHIFT = _CONV("BASESHIFT");
-static string_type SCSAT_MEASURE_SYNDROMS = _CONV("SYNDROMS");
-static string_type SCSAT_MEASURE_MICROSHIFTS = _CONV("MICROSHIFTS");
-static string_type SCSAT_MEASURE_POWERTRACE = _CONV("POWERTRACE");
-static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
-
-#define SCSAT_MAX_SAMPLING_FREQUENCY 100
-#define SCSAT_SOCKET_SHORT_TIMEOUT 3
-
-
-//static string_type SCSAT_MEASURE_SECTION = _CONV("SCSAT_MEASURE_BASIC");
-//static string_type SCSAT_MEASURE_SECTION_EXT = _CONV("SCSAT_MEASURE_EXT");
-static string_type SCSAT_MEASURE_SECTION_EXT1 = _CONV("SCSAT_MEASURE_EXT_1");
-static string_type SCSAT_MEASURE_SECTION_EXT2 = _CONV("SCSAT_MEASURE_EXT_2");
-static string_type SCSAT_MEASURE_SECTION_EXT3 = _CONV("SCSAT_MEASURE_EXT_3");
-static string_type SCSAT_MEASURE_SECTION_EXT4 = _CONV("SCSAT_MEASURE_EXT_4");
-static string_type SCSAT_MEASURE_SECTION_EXT5 = _CONV("SCSAT_MEASURE_EXT_5");
-static string_type SCSAT_MEASURE_SECTION_EXT6 = _CONV("SCSAT_MEASURE_EXT_6");
-static string_type SCSAT_MEASURE_SECTION_EXT7 = _CONV("SCSAT_MEASURE_EXT_7");
-static string_type SCSAT_MEASURE_SECTION_EXT8 = _CONV("SCSAT_MEASURE_EXT_8");
-
-//static string_type SCSAT_MEASURE_SECTION_SAMPLES = _CONV("SCSAT_MEASURE_SAMPLES");
-//static string_type SCSAT_MEASURE_DATETIME = _CONV("DATETIME");
-//static string_type SCSAT_MEASURE_CARDATR = _CONV("CARDATR");
-//static string_type SCSAT_MEASURE_CARDNAME = _CONV("CARDNAME");
-//static string_type SCSAT_MEASURE_NOTE = _CONV("NOTE");
-//static string_type SCSAT_MEASURE_COMMLOG = _CONV("COMMLOG");
-//static string_type SCSAT_MEASURE_CFGSCRIPT = _CONV("CFGSCRIPT");
-//static string_type SCSAT_MEASURE_STARTAPDU = _CONV("STARTAPDU");
-//static string_type SCSAT_MEASURE_SAMPLINGFREQUENCY = _CONV("SAMPLINGFREQUENCY");
-//static string_type SCSAT_MEASURE_BASEOFFSET = _CONV("BASEOFFSET");
-//static string_type SCSAT_MEASURE_BASESHIFT = _CONV("BASESHIFT");
-//static string_type SCSAT_MEASURE_SYNDROMS = _CONV("SYNDROMS");
-//static string_type SCSAT_MEASURE_MICROSHIFTS = _CONV("MICROSHIFTS");
-//static string_type SCSAT_MEASURE_POWERTRACE = _CONV("POWERTRACE");
-//static string_type SCSAT_MEASURE_NUMSAMPLES = _CONV("NUMSAMPLES");
-static string_type SCSAT_MEASURE_SAMPLEUNIQUEID = _CONV("SAMPLEUNIQUEID");
-static string_type SCSAT_MEASURE_APDUDATA = _CONV("APDUDATA");
-static string_type SCSAT_MEASURE_SAVEBINARY = _CONV("SAVEBINARY");
-
-#if defined (_WIN32)
-typedef struct _SCSAT_MEASURE_INFO {
-	string_type     dateTime;
-	string_type     cardATR;
-	string_type     cardName;
-	string_type     cfgScript;
-	string_type     commLog;
-	string_type     syndroms;       // classified syndroms format into single line string 
-	string_type     microShifts;    // synchronization microShifts for subparts of trace format into single line string
-	string_type     note;           // user supplied note
-	string_type     startAPDU;
-	string_type     apduData;       // substring of startAPDU
-    int         frequency;
-    int         baseOffset;
-    int         baseShift;
-    int         baseLevel;
-    int         numSamples;
-	__int64     sampleUniqueID;
-	BOOL		bSaveBinary;
-    
-    _SCSAT_MEASURE_INFO() {
-        clear();
-    }
-    void clear() {
-        cardATR = _CONV("");
-        cardName = _CONV("");
-        clearMeasure();
-		sampleUniqueID=0;
-    }
-    void clearMeasure() {
-        dateTime = _CONV("");
-        cfgScript = _CONV("");
-        startAPDU = _CONV("");
-		apduData = _CONV("");
-        commLog = _CONV("");
-        syndroms = _CONV("");
-        microShifts = _CONV("");
-        note = _CONV("");
-        frequency = 0;
-        baseOffset = 0;
-        baseShift = 0;
-        numSamples = 0;
-        baseLevel = -1;
-    }
-
-int formatToString(string_type* pResult) {
-		string_type value;
-		// remove all endlines and replace by ';' in multiline strings
-		
-		cfgScript.erase(remove(cfgScript.begin(), cfgScript.end(), '\r'), cfgScript.end());
-		replace(cfgScript.begin(), cfgScript.end(), '\n', ';');
-		commLog.erase(remove(commLog.begin(), commLog.end(), '\r'), commLog.end());
-		replace(commLog.begin(), commLog.end(), '\n', ';');
-
-		//cfgScript.Replace("\r", ""); cfgScript.Replace("\n", ";");
-		//commLog.Replace("\r", ""); commLog.Replace("\n", ";");
-
-		//create INI style section
-		*pResult = string_format(_CONV("[%s]\r\n"), SCSAT_MEASURE_SECTION);
-		*pResult += string_format(_CONV("%s=%lld\r\n"), SCSAT_MEASURE_SAMPLEUNIQUEID, sampleUniqueID);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_DATETIME, dateTime);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_CARDATR, cardATR);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_CARDNAME, cardName);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_NOTE, note);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_CFGSCRIPT, cfgScript);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_STARTAPDU, startAPDU);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_COMMLOG, commLog);
-		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_SAMPLINGFREQUENCY, frequency);
-		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_BASEOFFSET, baseOffset);
-		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_BASESHIFT, baseShift);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_SYNDROMS, syndroms);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_MICROSHIFTS, microShifts);
-		*pResult += string_format(_CONV("%s=%d\r\n"), SCSAT_MEASURE_NUMSAMPLES, numSamples);
-		*pResult += string_format(_CONV("[%s_1]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_APDUDATA, apduData);
-		*pResult += string_format(_CONV("%s=%s\r\n"), SCSAT_MEASURE_SAVEBINARY, bSaveBinary ? "1" : "0");
-		*pResult += string_format(_CONV("[%s_2]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_3]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_4]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_5]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_6]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_7]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_8]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_9]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s_9]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_EXT, SCSAT_MEASURE_NOTE);
-		*pResult += string_format(_CONV("[%s]\r\n%s=\r\n"), SCSAT_MEASURE_SECTION_SAMPLES, SCSAT_MEASURE_POWERTRACE);
-		return 0;
-	}
-void copy(_SCSAT_MEASURE_INFO* pTemplate) {
-		cardATR = pTemplate->cardATR;
-		cardName = pTemplate->cardName;
-		dateTime = pTemplate->dateTime;
-		cfgScript = pTemplate->cfgScript;
-		startAPDU = pTemplate->startAPDU;
-		apduData = pTemplate->apduData;
-		commLog = pTemplate->commLog;
-		syndroms = pTemplate->syndroms;
-		microShifts = pTemplate->microShifts;
-		note = pTemplate->note;
-		frequency = pTemplate->frequency;
-		baseOffset = pTemplate->baseOffset;
-		baseShift = pTemplate->baseShift;
-		numSamples = pTemplate->numSamples;
-		sampleUniqueID = pTemplate->sampleUniqueID;
-		bSaveBinary = pTemplate->bSaveBinary;
-	}
-} SCSAT_MEASURE_INFO;
-
-typedef struct _SCSAT04_INFO {
-    int     baseOffset;
-    int     readRatio;
-    
-    _SCSAT04_INFO(void) {
-        baseOffset = 0; 
-        readRatio = 1;   
-    }
-} SCSAT04_INFO;
-
-class SAMPLE_PLOT {
-public:
-    INT_DATA_BLOB   dataBlob;
-    INT_DATA_BLOB   microshiftsDataBlob;
-	string_type     dataFilePath;
-    INT_DATA_BLOB   busBlob;
-	string_type     busFilePath;
-    int             sampleFileIndex;  // used only when data/busFilePath is constructed as 'dataoutXX.dat'
-    DWORD           flags;
-    BOOL            bShow;
-    SCSAT04_INFO    scsat04Info;
-    SCSAT_MEASURE_INFO  measureInfo;
-
-public:
-    SAMPLE_PLOT(void) {
-        dataFilePath = _CONV("");
-        busFilePath = _CONV("");
-        bShow = TRUE;
-        flags = 0;
-        sampleFileIndex = -1;
-        measureInfo.clear();
-    }
-};
 #endif
