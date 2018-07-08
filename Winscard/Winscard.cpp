@@ -2896,49 +2896,6 @@ int CWinscardApp::ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig) {
     return STAT_OK;
 }
 
-int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath) {
-    int             status = STAT_OK;
-    string_type         message;
-    string_type         sampleFilePath;
-    SCSAT_MEASURE_INFO  measureInfo;
-
-    
-    // store info about measure
-    measureInfo.baseOffset = m_scsat04Config.baseReadOffset;
-    measureInfo.frequency = (m_scsat04Config.readRatio == 0) ? SCSAT_MAX_SAMPLING_FREQUENCY : (SCSAT_MAX_SAMPLING_FREQUENCY / m_scsat04Config.readRatio);
-    
-    sampleFilePath = string_format(_CONV("dataout.datx"));
-    CCommonFnc::File_GetAvailableFileName(sampleFilePath, &sampleFilePath);
-    
-    // WRITE MEASUREMENT
-    int numSamples = 0; 
-    BYTE bytesPerSample = 2;
-	SAMPLE_PLOT* pReceivedSample = new SAMPLE_PLOT;
-	pReceivedSample->dataFilePath = sampleFilePath;
-    pReceivedSample->dataBlob.dwActLen = pReceivedSample->dataBlob.dwMaxLen = SCSAT_MAX_NUMBER_OF_SAMPLES;
-    pReceivedSample->dataBlob.pData = new int[pReceivedSample->dataBlob.dwMaxLen];
-    pReceivedSample->measureInfo.copy(&measureInfo);
-    
-    pSCSATConfig->pSocket->ReceiveLineToMemory(&(pReceivedSample->dataBlob), SCSAT_SOCKET_SHORT_TIMEOUT, bytesPerSample);
-
-    measureInfo.numSamples = pReceivedSample->dataBlob.dwActLen;
-
-    // store number of written samples
-    string_type tmp;
-    tmp = string_format(_CONV("%d"), measureInfo.numSamples);
-    CCommonFnc::SCSAT_EnsureFileHeader(sampleFilePath, &measureInfo);
-    WritePrivateProfileString(SCSAT_MEASURE_SECTION.c_str(), SCSAT_MEASURE_NUMSAMPLES.c_str(), tmp.c_str(), sampleFilePath.c_str());
-    
-    // WRITE MEASUREMENT INFO INTO FILE 
-	CCommonFnc::SCSAT_SaveSamples(sampleFilePath, pReceivedSample);
-	CCommonFnc::Sample_Free(pReceivedSample);    
-	delete pReceivedSample;
-    
-   
-    *pNewFilePath = sampleFilePath;
-                                
-    return status;
-}
 #endif
 
 

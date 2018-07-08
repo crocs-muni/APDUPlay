@@ -56,7 +56,6 @@ public:
 
 #if defined (_WIN32)
     int ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig);
-    int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath);
 #endif
 
     int LoadRule(const char_type* section_name, dictionary* dict);
