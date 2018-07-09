@@ -86,7 +86,6 @@ static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
 static std::string INSTRUCTION_FILE = "Instructions.txt";
 
 // The one and only CWinscardApp object
-
 CWinscardApp theApp;
 
 #define REMOTE_SOCKET_TIMEOUT            5
@@ -115,10 +114,6 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 #define CMD_LINE_SEPARATOR		"|"	
 #define CMD_SEPARATOR			":"	
 #define CMD_RESPONSE_FAIL		"FAIL"	
-
-
-#define PROXY_SEPARATOR "#"
-
 
 
 /* ******************************************************************************* */
@@ -160,29 +155,10 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 
 
 void DumpMemory(LPCBYTE location, DWORD length) {
-	/*
-	DWORD i, written;
-	char *hexDigit = "0123456789ABCDEF";
-	char *space = " ", *crlf = "\r\n";
-	char *delim = "#";
-
-	//    WriteFile( hOut, space, lstrlen(space), &written, NULL );
-	for ( i=0; i<length; i++ ) {
-	if (i > 0) {
-	WriteFile( hOut, space, lstrlen(space), &written, NULL );
-	}
-	WriteFile( hOut, (hexDigit+((location[i]>>4)&0x0F)), 1, &written, NULL );
-	WriteFile( hOut, (hexDigit+((location[i]>>0)&0x0F)), 1, &written, NULL );
-	}
-
-	WriteFile( hOut, delim, lstrlen(delim), &written, NULL );
-	WriteFile( hOut, crlf, lstrlen(crlf), &written, NULL );
-	/**/
 	string_type message;
 	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)location, length, &message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\r\n"));
-
 }
 
 static SCard LONG(STDCALL *Original_SCardEstablishContext)(
@@ -202,7 +178,6 @@ SCard LONG STDCALL SCardEstablishContext(
 	message = string_format(_CONV("SCardEstablishContext() called\n"));
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	LONG status = (*Original_SCardEstablishContext)(dwScope, pvReserved1, pvReserved2, phContext);
-	//message.Format("-> hContext:0x%x\n", *phContext);
 	message = string_format(_CONV("-> hContext:0x%x\n"), *phContext);
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	return status;
