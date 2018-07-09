@@ -80,7 +80,10 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-static string_type ENV_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
+static string_type ENV_APDUPLAY_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
+static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
+static string_type APDUPLAY_DEBUG_FILE = _CONV("c:\\Temp\\apduplay_debug.txt");
+
 static string_type RULE_FILE = _CONV("winscard_rules.txt");
 static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log.txt");
 static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
@@ -108,6 +111,8 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 #define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
 
 #define REMOTE_READER_PREFIX	"Simona"
+//#define REMOTE_READER_PREFIX	"Generic EMV Smartcard"
+
 
 #define CMD_APDU				"APDU"
 #define CMD_RESET				"RESET"
@@ -738,7 +743,7 @@ SCard LONG STDCALL SCardConnect(
 		dwShareMode = SCARD_SHARE_SHARED;
 	}
 
-	// Detect remote cards (now only via reader prefix and assign virtual card handle)
+	// Detect remote cards (now only via reader prefix) and assign virtual card handle
 	string_type readerName = szReader;
 	if (readerName.find(REMOTE_READER_PREFIX) != -1) {
 		theApp.m_nextRemoteCardID++;
@@ -2808,7 +2813,7 @@ void GetDesktopPath(char_type* path)
 	string_type stringPath = "/home/";
     stringPath += login;
     stringPath += "/Desktop/APDUPlay/";
-    type_copy(path, stringPath.c_str());
+    type_copy(rulesFilePath, stringPath.c_str());
 #else
 	char_type appData[MAX_PATH];
 	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);
@@ -2822,10 +2827,17 @@ BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
 
+	char* debugPath = std::getenv(ENV_APDUPLAY_DEBUG_PATH.c_str());
+	if (debugPath != NULL) {
+		APDUPLAY_DEBUG_FILE = debugPath;
+	}
+
     srand((int) time(NULL));
+	CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("InitInstance\n"));
 
     // LOAD MODIFICATION RULES
     LoadRules();
+	CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("After LoadRules\n"));
 
     // CONNECT TO REMOTE SOCKET IF REQUIRED
     if (m_remoteConfig.bRedirect) {
@@ -3486,8 +3498,9 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 int CWinscardApp::LoadRules() {
 	int status = STAT_OK;
 	FILE *file = NULL;
-	char_type path[256];
-	type_copy(path, RULE_FILE.c_str());
+	char_type rulesFilePath[256];
+	char_type baseDir[256];	// base rulesFilePath for input/output files
+	type_copy(rulesFilePath, RULE_FILE.c_str());
 
 	string_type date_and_time = getCurrentTimeString();
 
@@ -3498,33 +3511,53 @@ int CWinscardApp::LoadRules() {
 	// Searching for 'winscard_rules.txt' (priority) 
 	// 1. Lookup in local directory
 	// 2. Lookup for APDUPLAY environmental variable
-	// 3. Lookup on user Desktop 
+	// (UNUSED) 3. Lookup on user Desktop 
 
 	if (!file) {  // 1. Lookup in local directory
-		file = fopen(path, "r");
-	}
-
-	if (!file) { // 2. Lookup for APDUPLAY environmental variable
-		char* configPath = std::getenv(ENV_WINSCARD_RULES_PATH.c_str());
-		if (configPath != NULL) {
-			// variable detected, try to open 
-			string newRuleFile = string_format(_CONV("%s\\%s"), configPath, RULE_FILE.c_str());
-			file = fopen(newRuleFile.c_str(), "r");
-			if (file) {
-				type_copy(path, newRuleFile.c_str());
-			}
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Going to open %s ... "), rulesFilePath));
+		file = fopen(rulesFilePath, "r");
+		if (file) {
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("success\n"));
+			type_copy(baseDir, "");
+		}
+		else {
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("fail\n"));
 		}
 	}
 
-	if (!file) { // 3. Lookup on user Desktop
-		GetDesktopPath(path);
-		type_cat(path, RULE_FILE.c_str());
-		file = fopen(path, "r"); // try to open file on desktop
+	if (!file) { // 2. Lookup for APDUPLAY environmental variable
+		char* configPath = std::getenv(ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str());
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_WINSCARD_RULES_PATH));
+		if (configPath != NULL) {
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV(" defined (%s)\n"), configPath));
+			// variable detected, try to open 
+			string newRuleFile = string_format(_CONV("%s\\%s"), configPath, RULE_FILE.c_str());
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Going to open %s ... "), newRuleFile.c_str()));
+			file = fopen(newRuleFile.c_str(), "r");
+			if (file) {
+				CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("success\n"));
+				type_copy(rulesFilePath, newRuleFile.c_str());
+				type_copy(baseDir, configPath);
+			}
+			else {
+				CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("fail\n"));
+			}
+		}
+		else {
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("not found\n"));
+		}
 	}
 
+/*
+	if (!file) { // 3. Lookup on user Desktop
+		GetDesktopPath(rulesFilePath);
+		type_cat(rulesFilePath, RULE_FILE.c_str());
+		file = fopen(rulesFilePath, "r"); // try to open file on desktop
+	}
+*/
     if (file) {
 		fclose(file);
-		dictionary* dict = iniparser_load(path);
+		dictionary* dict = iniparser_load(rulesFilePath);
 
 		int number_of_sections = iniparser_getnsec(dict);
 
@@ -3539,21 +3572,27 @@ int CWinscardApp::LoadRules() {
 		iniparser_freedict(dict);
 	}
 	else {
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("Rules file NOT found\n"));
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
 	}
 
 	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
 	{
-		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
-		WINSCARD_LOG = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
-		INSTRUCTION_FILE = string_format(_CONV("%s%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), INSTRUCTION_FILE.c_str());
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Logging base path is forced as '%s' (LOG_BASE_PATH)\n"), m_winscardConfig.sLOG_BASE_PATH.c_str()));
+
+		// Use provided directory to store output files
+		WINSCARD_RULES_LOG = string_format(_CONV("%s\\%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s\\%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_LOG.c_str());
+		INSTRUCTION_FILE = string_format(_CONV("%s\\%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), INSTRUCTION_FILE.c_str());
 	}
 	else
 	{
-        GetDesktopPath(path);
-		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), path, WINSCARD_RULES_LOG.c_str());
-		WINSCARD_LOG = string_format(_CONV("%s%s"), path, WINSCARD_LOG.c_str());
-		INSTRUCTION_FILE = string_format(_CONV("%s%s"), path, INSTRUCTION_FILE.c_str());
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Logging base path not forced, using '%s'\n"), baseDir));
+
+		// Use base directory to store output files
+		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), baseDir, WINSCARD_RULES_LOG.c_str());
+		WINSCARD_LOG = string_format(_CONV("%s%s"), baseDir, WINSCARD_LOG.c_str());
+		INSTRUCTION_FILE = string_format(_CONV("%s%s"), baseDir, INSTRUCTION_FILE.c_str());
 	}
 
 	std::fstream instruction_file;
@@ -3564,10 +3603,10 @@ int CWinscardApp::LoadRules() {
 		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
 		instruction_file.close();
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
-		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
+		instructionDict = iniparser_load((const char*) INSTRUCTION_FILE.c_str());
 	}
 
-    return status;
+	return status;
 }
 #endif
 
@@ -3854,19 +3893,19 @@ int CWinscardApp::LoadRules() {
 	
 	memset(buffer, 0, cBuffer);
 
-	char_type path[256];
-	type_copy(path, RULE_FILE.c_str());
+	char_type rulesFilePath[256];
+	type_copy(rulesFilePath, RULE_FILE.c_str());
 
 	string_type date_and_time = getCurrentTimeString();
 
 	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 
-	if (!(file = type_fopen(path, _CONV("r")))) // try to open file in current directory
+	if (!(file = type_fopen(rulesFilePath, _CONV("r")))) // try to open file in current directory
 	{
-		type_copy(path, GetDesktopPath());
-		type_cat(path, RULE_FILE.c_str());
-		file = type_fopen(path, _CONV("r")); // try to open file on desktop
+		type_copy(rulesFilePath, GetDesktopPath());
+		type_cat(rulesFilePath, RULE_FILE.c_str());
+		file = type_fopen(rulesFilePath, _CONV("r")); // try to open file on desktop
 	}
 
 	if (file) {
@@ -3882,13 +3921,13 @@ int CWinscardApp::LoadRules() {
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 		// OBTAIN SECTION NAMES
-		if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, path)) != 0) {
+		if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, rulesFilePath)) != 0) {
 			// PARSE SECTION NAMES, TRY TO LOAD EACH RULE
 
 			CCommonFnc::String_ParseNullSeparatedArray(buffer, cBuffer, &valuesList);
 
 			for (auto iter = valuesList.begin(); iter != valuesList.end(); iter++) {
-				LoadRule(*iter, path);
+				LoadRule(*iter, rulesFilePath);
 			}
 		}
 		m_bRulesActive = TRUE;
