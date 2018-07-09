@@ -16,6 +16,8 @@
 #include <sstream>
 #include "./../Shared/globals.h"
 
+const size_t MAX_APDU_LEN = 300;
+
 std::string GetLogsPath()
 {
 	return "./";
@@ -89,6 +91,46 @@ using namespace std;
 /*#define SCard
 #define STDCALL __stdcall*/
 
+std::vector<char> HexToBytes(const std::string& hex) {
+	// Remove spaces (if any)
+	std::string hex2;
+	for (size_t i = 0; i < hex.size(); i++) {
+		if (hex.at(i) != ' ') {
+			hex2.insert(hex2.size(), 1, hex.at(i));
+		}
+	}
+
+	std::vector<char> bytes;
+	for (unsigned int i = 0; i < hex2.length(); i += 2) {
+		std::string byteString = hex2.substr(i, 2);
+		char byte = (char)strtol(byteString.c_str(), NULL, 16);
+		bytes.push_back(byte);
+	}
+
+	return bytes;
+}
+
+void HexToBytes(const std::string& hex, BYTE dataArray[], size_t* dataArrayLen) {
+	std::vector<char> converted = HexToBytes(hex);
+	if (converted.size() > *dataArrayLen) {
+		return;
+	}
+	for (size_t i = 0; i < converted.size(); i++) {
+		dataArray[i] = converted[i];
+	}
+	*dataArrayLen = converted.size();
+}
+
+std::string BytesToHex(BYTE* data, size_t dataLen) {
+	std::stringstream ss;
+	char oneByte[3];
+	for (size_t i = 0; i < dataLen; ++i) {
+		sprintf_s(oneByte, sizeof(oneByte), "%.2x", data[i]);
+		ss << oneByte;
+	}
+	return ss.str();
+}
+
 static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN SCARDHANDLE hCard,
 	IN LPCSCARD_IO_REQUEST pioSendPci,
@@ -99,17 +141,91 @@ static SCard LONG(STDCALL *Original_SCardTransmit)(
 	IN OUT LPDWORD pcbRecvLength
 	);
 
-/*
-TEST_CASE("Winscard tests", "[winscard_tests]")
-{
-	SECTION("List readers, connect, transmit")
-	{
+static SCard LONG(STDCALL *Original_SCardConnect)(
+	IN		SCARDCONTEXT hContext,
+	IN		LPCSTR szReader,
+	IN		DWORD dwShareMode,
+	IN		DWORD dwPreferredProtocols,
+	OUT		LPSCARDHANDLE phCard,
+	OUT		LPDWORD pdwActiveProtocol);
+
+static SCard LONG(STDCALL *Original_SCardListReaders)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCSTR mszGroups,
+	OUT     LPSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
+
+static SCard LONG(STDCALL *Original_SCardEstablishContext)(
+	IN  DWORD dwScope,
+	IN  LPCVOID pvReserved1,
+	IN  LPCVOID pvReserved2,
+	OUT LPSCARDCONTEXT phContext
+	);
+
+int SendAPDU(string_type apdu, SCARDHANDLE  hCard, DWORD scProtocol) {
+	int status = 0;
+	size_t dwSendLength = MAX_APDU_LEN;
+	DWORD dwRecvLength = MAX_APDU_LEN;
+	BYTE pbRecvBuffer[MAX_APDU_LEN];
+	BYTE pbSendBuffer[MAX_APDU_LEN];
+	HexToBytes(apdu, pbSendBuffer, &dwSendLength);
+
+	SCARD_IO_REQUEST pioSendPci;
+	pioSendPci.dwProtocol = scProtocol;
+	pioSendPci.cbPciLength = sizeof(pioSendPci);
+
+	cout << "Sending APDU: ";
+	cout << BytesToHex(pbSendBuffer, dwSendLength) << endl;
+	status = Original_SCardTransmit(hCard, &pioSendPci, pbSendBuffer, (DWORD)dwSendLength, NULL, pbRecvBuffer, &dwRecvLength);
+	CHECK(status == SCARD_S_SUCCESS);
+	cout << "Received response: ";
+	cout << BytesToHex(pbRecvBuffer, dwRecvLength) << endl;
+
+	cout << endl;
+
+	return status;
 }
-*/
+
+// Loads all function ptrs from dll into global variables for use in tests
+void LoadFunctionPtrs() {
+
+	//
+	// Load required functions from dll
+	//
+
+#ifdef __linux__
+	void* hOriginal = dlopen("./../../cmake-build-debug/libpcsclite.so", RTLD_LAZY);
+
+#else 
+	HMODULE hOriginal = LoadLibrary(_CONV("./Winscard.dll"));
+#endif 
+	CHECK(hOriginal != NULL);
+
+	Original_SCardEstablishContext = (long(STDCALL *)(DWORD, LPCVOID, LPCVOID, LPSCARDCONTEXT))
+		load_func(hOriginal, "SCardEstablishContext");
+	CHECK(Original_SCardEstablishContext != NULL);
+
+	Original_SCardTransmit = (long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
+		load_func(hOriginal, "SCardTransmit");
+	CHECK(Original_SCardTransmit != NULL);
+
+	Original_SCardConnect = (long(STDCALL *)(SCARDCONTEXT, LPCSTR, DWORD, DWORD, LPSCARDHANDLE, LPDWORD))
+		load_func(hOriginal, "SCardConnectA");
+	DWORD error = GetLastError();
+	CHECK(Original_SCardConnect != NULL);
+
+	Original_SCardListReaders = (long(STDCALL *)(SCARDCONTEXT, LPCSTR, LPSTR, LPDWORD))
+		load_func(hOriginal, "SCardListReadersA");
+	CHECK(Original_SCardListReaders != NULL);
+
+}
+
 TEST_CASE("Winscard tests", "[winscard_tests]")
 {
 	SECTION("Aplly rules test")
 	{
+		// Prepare configuration files
         ofstream myfile;
         std::string ruleFilePath = GetLogsPath() + "winscard_rules.txt";
         myfile.open(ruleFilePath);
@@ -117,7 +233,8 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         myfile << "[WINSCARD]\n";
         myfile << "LOG_EXCHANGED_APDU = 1\n";
         myfile << "MODIFY_APDU_BY_RULES = 1\n";
-        myfile << "LOG_FUNCTIONS_CALLS = 1\n";
+		myfile << "LOG_FUNCTIONS_CALLS = 1\n";
+		myfile << "AUTO_REQUEST_DATA = 1\n";
 		myfile << "LOG_BASE_PATH = ./\n";
         myfile << "[RULE1]\n";
         myfile << "MATCH1=in=1,cla=80,ins=ca,p1=9f,p2=17,data0=90 00,\n";
@@ -125,45 +242,54 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
         myfile << "USAGE = 1\n";
         myfile << "APDUIN = 1\n";
 
-        myfile.close();
+		myfile << "[REMOTE]\n";
+		myfile << "REDIRECT = 1\n";
+		myfile << "IP = 127.0.0.1\n";
+		myfile << "PORT = 4001\n";
+
+		myfile.close();
 
 
-#ifdef __linux__
-        void* hOriginal = dlopen("./../../cmake-build-debug/libpcsclite.so", RTLD_LAZY);
+		//
+		// Connect to card
+		//
+		LONG		 status = SCARD_S_SUCCESS;
+		SCARDCONTEXT cardContext;
+		SCARDHANDLE  hCard;
+		DWORD		 scProtocol;
+		const size_t READERS_LEN = 1000;
+		char         readers[READERS_LEN];
+		DWORD		 len = READERS_LEN;
 
-#else 
-		HMODULE hOriginal = LoadLibrary(_CONV("./Winscard.dll"));
-#endif 
-		CHECK(hOriginal != NULL);
+		// SCard context
+		status = Original_SCardEstablishContext(SCARD_SCOPE_USER, 0, 0, &cardContext);
+		CHECK(status == SCARD_S_SUCCESS);
 
-#if defined(_WIN32) 
-		Original_SCardTransmit =
-			(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, LPCBYTE, DWORD, LPSCARD_IO_REQUEST, LPBYTE, LPDWORD))
-#else
-		Original_SCardTransmit =
-			(long(STDCALL *)(SCARDHANDLE, LPCSCARD_IO_REQUEST, const unsigned char *, unsigned long, LPSCARD_IO_REQUEST, unsigned char *, unsigned long *))
-#endif
-	    load_func(hOriginal, "SCardTransmit");
+		// Print available readers
+		status = Original_SCardListReaders(cardContext, NULL, (char*) &readers, &len);
+		CHECK(status == SCARD_S_SUCCESS);
+		size_t pos = 0;
+		while (pos < len) {
+			cout << readers + pos << endl;
+			pos += strlen(readers + pos) + 1;
+		}
+		cout << endl;
 
-		CHECK(Original_SCardTransmit != NULL);
+		// Connect to specific reader
+		string_type remoteReader = "Simona /111.222.123.033@12";
+		cout << "Connecting to reader '" << remoteReader << "'" << endl;
+		status = Original_SCardConnect(cardContext, remoteReader.c_str(), SCARD_SHARE_SHARED, SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1, &hCard, &scProtocol);
+		CHECK(status == SCARD_S_SUCCESS);
 
-		DWORD dwSendLength, dwRecvLength;
-		BYTE pbRecvBuffer[16];
-		BYTE pbSendBuffer[] = { (BYTE)0x80, (BYTE)0xca,(BYTE)0x9f, (BYTE)0x17, (BYTE)0x02 , (BYTE)0x90 , (BYTE)0x00 };
+		// Send APDU
+		SendAPDU("80 cb 9f 17 02 97 00", hCard, scProtocol);
 
-		dwSendLength = sizeof(pbSendBuffer);
-		dwRecvLength = sizeof(pbRecvBuffer);
+		SendAPDU("00 a4 00 00 00", hCard, scProtocol);
 
-		SCARD_IO_REQUEST pioSendPci;
 
-		pioSendPci.dwProtocol = SCARD_PROTOCOL_T0;
-		pioSendPci.cbPciLength = sizeof(pioSendPci);
-
-		LONG ret = Original_SCardTransmit(NULL,
-			&pioSendPci,
-			pbSendBuffer, dwSendLength,
-			NULL, pbRecvBuffer, &dwRecvLength);
-
+		//
+		// Verify expected content of resulting files
+		//
 		std::string strFile = GetLogsPath() + FindlogFile("winscard_rules_log");
 
 		ifstream logFile;
@@ -186,13 +312,11 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 
         logFile.close();
 		CHECK(found == true);
-
         std::remove(strFile.c_str());
         std::remove(ruleFilePath.c_str());
         std::remove((GetLogsPath() + FindlogFile("winscard_log")).c_str());
 	}
 
-
-	char c;
-	std::cin >> c;
+	//char c;
+	//std::cin >> c;
 }

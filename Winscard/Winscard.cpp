@@ -86,12 +86,11 @@ static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
 static std::string INSTRUCTION_FILE = "Instructions.txt";
 
 // The one and only CWinscardApp object
-
 CWinscardApp theApp;
 
-#define SCSAT_SOCKET_TIMEOUT            5
-#define SCSAT_SOCKET_LONG_TIMEOUT       20
-static string_type SCSAT_SOCKET_ENDSEQ = _CONV("@@");
+#define REMOTE_SOCKET_TIMEOUT            5
+#define REMOTE_SOCKET_LONG_TIMEOUT       20
+static string_type REMOTE_SOCKET_ENDSEQ = _CONV("@@");
 
 //#define HANDLE_VIRTUAL_CARD             0xABADBABE
 #define HANDLE_VIRTUAL_CARD             0x1
@@ -104,8 +103,18 @@ BYTE    GET_APDU1[] = { 0x00, 0xC0, 0x00, 0x00 };
 BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 //#define VIRT_READER_NAME        "VirtOpenPGP"
-#define VIRT_READER_NAME        ""
+#define VIRT_READER_NAME        "Simona /111.222.123.033@07\nSimona /111.222.123.033@12\nSimona /111.222.123.033@123"
 #define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
+
+#define REMOTE_READER_PREFIX	"Simona"
+
+#define CMD_APDU				"APDU"
+#define CMD_RESET				"RESET"
+#define CMD_ENUM				"ENUM"
+#define CMD_LINE_SEPARATOR		"|"	
+#define CMD_SEPARATOR			":"	
+#define CMD_RESPONSE_FAIL		"FAIL"	
+
 
 /* ******************************************************************************* */
 
@@ -146,29 +155,10 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 
 
 void DumpMemory(LPCBYTE location, DWORD length) {
-	/*
-	DWORD i, written;
-	char *hexDigit = "0123456789ABCDEF";
-	char *space = " ", *crlf = "\r\n";
-	char *delim = "#";
-
-	//    WriteFile( hOut, space, lstrlen(space), &written, NULL );
-	for ( i=0; i<length; i++ ) {
-	if (i > 0) {
-	WriteFile( hOut, space, lstrlen(space), &written, NULL );
-	}
-	WriteFile( hOut, (hexDigit+((location[i]>>4)&0x0F)), 1, &written, NULL );
-	WriteFile( hOut, (hexDigit+((location[i]>>0)&0x0F)), 1, &written, NULL );
-	}
-
-	WriteFile( hOut, delim, lstrlen(delim), &written, NULL );
-	WriteFile( hOut, crlf, lstrlen(crlf), &written, NULL );
-	/**/
 	string_type message;
 	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)location, length, &message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\r\n"));
-
 }
 
 static SCard LONG(STDCALL *Original_SCardEstablishContext)(
@@ -188,7 +178,6 @@ SCard LONG STDCALL SCardEstablishContext(
 	message = string_format(_CONV("SCardEstablishContext() called\n"));
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	LONG status = (*Original_SCardEstablishContext)(dwScope, pvReserved1, pvReserved2, phContext);
-	//message.Format("-> hContext:0x%x\n", *phContext);
 	message = string_format(_CONV("-> hContext:0x%x\n"), *phContext);
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	return status;
@@ -354,7 +343,7 @@ CWinscardApp::~CWinscardApp()
 	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\r\n");
 
 #if defined(_WIN32)
-	if (m_scsat04Config.pSocket != NULL) delete m_scsat04Config.pSocket;
+	if (m_remoteConfig.pSocket != NULL) delete m_remoteConfig.pSocket;
 #endif
 	lptr::iterator  iter;
 	for (iter = m_charAllocatedMemoryList.begin(); iter != m_charAllocatedMemoryList.end(); iter++) {
@@ -594,33 +583,13 @@ SCard LONG STDCALL SCardTransmit(
 	// INCREASE COUNTER OF THE BYTES SEND TO CARD - IS USED AS MEASUREMENT TRIGGER LATER
 	theApp.m_processedApduByteCounter += cbSendLength;
 
-	// SCSAT04
-
 #if defined(_WIN32)
-	if (theApp.m_scsat04Config.bRedirect) {
-		// GET PIN COUNTER HACK
-		if (memcmp(pbSendBuffer, PIN_COUNTER_APDU, sizeof(PIN_COUNTER_APDU)) == 0) {
-			pbRecvBuffer[0] = 0x03; pbRecvBuffer[1] = 0x90; pbRecvBuffer[2] = 0x00;
-			*pcbRecvLength = 3;
-
-			//_sleep(1000);
-		}
-		else {
-
-			// FORWARD TO SCSAT04 
-			result = theApp.SCSAT_SCardTransmit(&(theApp.m_scsat04Config), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-
-			// APPEND 90 00 TO RETURN BUFFER IN CASE OF DATA_OUT RETRIEVE COMMAND (IF SCSAT IS NOT RETURNING IT)             
-			if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
-				if (result == SCARD_S_SUCCESS) {
-					if ((pbRecvBuffer[*pcbRecvLength - 2] != 0x90) && (pbRecvBuffer[*pcbRecvLength - 1] != 0x00)) {
-						// 0x90 0x00 IS MISSING
-						pbRecvBuffer[*pcbRecvLength] = 0x90;
-						pbRecvBuffer[*pcbRecvLength + 1] = 0x00;
-						*pcbRecvLength += 2;
-					}
-				}
-			}
+	// Check if redirection is required
+	if (theApp.m_remoteConfig.bRedirect) {
+	// Check if provided card handle is remote card
+		if (theApp.IsRemoteCard(hCard)) {
+			// FORWARD TO REMOTE SOCKET 
+			result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
 		}
 	}
 	else {
@@ -663,8 +632,23 @@ SCard LONG STDCALL SCardTransmit(
 			cbSendLength = 5;
 
 			int tmp = sendBuffer[4] & 0xff; tmp += 2; *pcbRecvLength = tmp;
-			//*pcbRecvLength = sendBuffer[4] & 0xff + 2;
+
+#if defined(_WIN32)
+			// Check if redirection is required
+			if (theApp.m_remoteConfig.bRedirect) {
+				// Check if provided card handle is remote card
+				if (theApp.IsRemoteCard(hCard)) {
+					// FORWARD TO REMOTE SOCKET 
+					result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *) pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+				}
+			}
+			else {
+#endif
+
 			result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+#if defined(_WIN32) 	
+			}
+#endif
 			recvOffset = *pcbRecvLength - 2;
 		}
 	}
@@ -716,27 +700,6 @@ SCard LONG STDCALL SCardTransmit(
 	}
 
 
-
-	// SCSAT04 - READ MEASUREMENT SAMPLE FROM BOARD IF NOT READED YET AND TRIGGER APPDU WAS REACHED (NUMBER OF BYTES IN)
-#if defined(_WIN32)
-	if (theApp.m_scsat04Config.bRedirect && !(theApp.m_scsat04Config.sampleReaded) && (theApp.m_processedApduByteCounter >= theApp.m_scsat04Config.measureApduByteCounter)) {
-		// DOWNLOAD DATA FROM MEASUREMENT (IF ANY) 
-		if (theApp.m_scsat04Config.pSocket != NULL) {
-			//string_type message;
-			message = string_format(_CONV("get powertrace 0 %d"), theApp.m_scsat04Config.readRatio);
-			theApp.m_scsat04Config.pSocket->SendLine(message);
-			theApp.m_scsat04Config.baseReadOffset = 0;
-
-			string_type sampleFilePath;
-			theApp.SCSAT_CreateAndReceiveSamples(&(theApp.m_scsat04Config), &sampleFilePath);
-
-			// PREVENT FUTHER READING
-			theApp.m_scsat04Config.sampleReaded = TRUE;
-		}
-	}
-	// SCSAT04 END
-#endif
-
 	// increase apdu counter	
 	apduCounter++;
 
@@ -768,15 +731,31 @@ SCard LONG STDCALL SCardConnect(
 	OUT		LPSCARDHANDLE phCard,
 	OUT		LPDWORD pdwActiveProtocol)
 {
+	LONG status = SCARD_S_SUCCESS;
 	if (theApp.m_winscardConfig.bFORCE_CONNECT_SHARED_MODE) {
 		// we will always set mode to shared, if required
 		dwShareMode = SCARD_SHARE_SHARED;
 	}
 
-	LONG status = (*Original_SCardConnect)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
-	string_type message;
-	message = string_format(_CONV("SCardConnect(hContext:0x%x,%s,hCard:0x%x) called\n"), hContext, szReader, *phCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	// Detect remote cards (now only via reader prefix and assign virtual card handle)
+	string_type readerName = szReader;
+	if (readerName.find(REMOTE_READER_PREFIX) != -1) {
+		theApp.m_nextRemoteCardID++;
+		*phCard = theApp.m_nextRemoteCardID;
+		theApp.remoteReadersMap[*phCard] = szReader;
+		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), szReader);
+	}
+	else {
+		// Standard physical reader
+		status = (*Original_SCardConnect)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
+		string_type message;
+		message = string_format(_CONV("SCardConnect(hContext:0x%x,%s,hCard:0x%x) called\n"), hContext, szReader, *phCard);
+		if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
+
+	// Store mapping between card handle and reader (used in card remoting)
+	theApp.cardReaderMap[*phCard] = szReader;
+
 	return status;
 }
 
@@ -965,30 +944,30 @@ SCard LONG STDCALL SCardConnectW(
 	theApp.m_processedApduByteCounter = 0;
 
 	// RESET CARD
-	if (theApp.m_scsat04Config.bRedirect && (theApp.m_scsat04Config.pSocket != NULL)) {
+	if (theApp.m_remoteConfig.bRedirect && (theApp.m_remoteConfig.pSocket != NULL)) {
 		string_type message;
-		theApp.m_scsat04Config.pSocket->SendLine(_CONV("get reset 1000"));
-		string_type l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		theApp.m_remoteConfig.pSocket->SendLine(_CONV("get reset 1000"));
+		string_type l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
 		message = string_format(_CONV("\n:: %s"), l.c_str());
 		//message.Replace("\n", " ");
 		replace(message.begin(), message.end(), '\n', ' ');
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 		// PREPARE FOR MEASUREMENT
-		message = string_format(_CONV("get params 1 %d %d"), theApp.m_scsat04Config.measureApduByteCounter, theApp.m_scsat04Config.measureApduByteDelay);
-		theApp.m_scsat04Config.pSocket->SendLine(message);
-		l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		message = string_format(_CONV("get params 1 %d %d"), theApp.m_remoteConfig.measureApduByteCounter, theApp.m_remoteConfig.measureApduByteDelay);
+		theApp.m_remoteConfig.pSocket->SendLine(message);
+		l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
 		message = string_format(_CONV(":: %s"), l.c_str());
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
-		message = string_format(_CONV("post sampling %d"), theApp.m_scsat04Config.numSamples);
-		theApp.m_scsat04Config.pSocket->SendLine(message);
-		l = theApp.m_scsat04Config.pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+		message = string_format(_CONV("post sampling %d"), theApp.m_remoteConfig.numSamples);
+		theApp.m_remoteConfig.pSocket->SendLine(message);
+		l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
 		message = string_format(_CONV(":: %s"), l.c_str());
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 
 		// PREPARE FOR MEASUREMENT READING IN FUTURE
-		theApp.m_scsat04Config.sampleReaded = FALSE;
+		theApp.m_remoteConfig.sampleReaded = FALSE;
 
 		// CREATE VIRTUAL CARD HANDLE
 		*phCard = HANDLE_VIRTUAL_CARD;
@@ -2851,86 +2830,33 @@ BOOL CWinscardApp::InitInstance()
     // LOAD MODIFICATION RULES
     LoadRules();
 
-    // CONNECT TO SCSAT04 IF REQUIRED
-    if (m_scsat04Config.bRedirect) {
-        ConnectSCSAT04(&m_scsat04Config);
+    // CONNECT TO REMOTE SOCKET IF REQUIRED
+    if (m_remoteConfig.bRedirect) {
+        Remote_Connect(&m_remoteConfig);
     }
-/*
-	DWORD written;
-    hOut = CreateFile("winscard.txt",GENERIC_WRITE,FILE_SHARE_READ,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
-    if ( ! hOut ) {
-        MessageBox(NULL,"could not create output file","error",MB_OK|MB_ICONEXCLAMATION);
-        return FALSE;
-    }
-/**/
-    //WriteFile( hOut, "[begin]\r\n", (DWORD) strlen("[begin]\r\n"), &written, NULL );
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
 
 	return initialize();
 }
 
-int CWinscardApp::ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig) {
+int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
     string_type     message;
     
-    string_type sIP(pSCSATConfig->IP);
-    //pSCSATConfig->pSocket = new SocketClient(sIP, atoi(pSCSATConfig->port.c_str()));
-	pSCSATConfig->pSocket = new SocketClient(sIP, type_to_int(pSCSATConfig->port.c_str(), NULL, 10));
-    string_type l = pSCSATConfig->pSocket->ReceiveLine(SCSAT_SOCKET_TIMEOUT);
-    message = string_format(_CONV("\n> SCSAT connect ... %s"), l.c_str());
-    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+    string_type sIP(pRemoteConfig->IP);
+    //pRemoteConfig->pSocket = new SocketClient(sIP, atoi(pRemoteConfig->port.c_str()));
+	try {
+		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+		message = string_format(_CONV("\n> Connnecting to remote proxy with IP:port = %s:%s"), pRemoteConfig->IP, pRemoteConfig->port);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
+	catch (std::string error) {
+		message = string_format(_CONV("\n> Failed to connect to %s:%s (error: %s)"), pRemoteConfig->IP, pRemoteConfig->port, error);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
 
-    // INIT SCSAT CONNECTION
-    pSCSATConfig->pSocket->SendLine(_CONV("get init 1000"));
-    l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
-    message = string_format(_CONV("\n:: %s"), l.c_str());
-    CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-    
     return STAT_OK;
 }
 
-int CWinscardApp::SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath) {
-    int             status = STAT_OK;
-    string_type         message;
-    string_type         sampleFilePath;
-    SCSAT_MEASURE_INFO  measureInfo;
-
-    
-    // store info about measure
-    measureInfo.baseOffset = m_scsat04Config.baseReadOffset;
-    measureInfo.frequency = (m_scsat04Config.readRatio == 0) ? SCSAT_MAX_SAMPLING_FREQUENCY : (SCSAT_MAX_SAMPLING_FREQUENCY / m_scsat04Config.readRatio);
-    
-    sampleFilePath = string_format(_CONV("dataout.datx"));
-    CCommonFnc::File_GetAvailableFileName(sampleFilePath, &sampleFilePath);
-    
-    // WRITE MEASUREMENT
-    int numSamples = 0; 
-    BYTE bytesPerSample = 2;
-	SAMPLE_PLOT* pReceivedSample = new SAMPLE_PLOT;
-	pReceivedSample->dataFilePath = sampleFilePath;
-    pReceivedSample->dataBlob.dwActLen = pReceivedSample->dataBlob.dwMaxLen = SCSAT_MAX_NUMBER_OF_SAMPLES;
-    pReceivedSample->dataBlob.pData = new int[pReceivedSample->dataBlob.dwMaxLen];
-    pReceivedSample->measureInfo.copy(&measureInfo);
-    
-    pSCSATConfig->pSocket->ReceiveLineToMemory(&(pReceivedSample->dataBlob), SCSAT_SOCKET_SHORT_TIMEOUT, bytesPerSample);
-
-    measureInfo.numSamples = pReceivedSample->dataBlob.dwActLen;
-
-    // store number of written samples
-    string_type tmp;
-    tmp = string_format(_CONV("%d"), measureInfo.numSamples);
-    CCommonFnc::SCSAT_EnsureFileHeader(sampleFilePath, &measureInfo);
-    WritePrivateProfileString(SCSAT_MEASURE_SECTION.c_str(), SCSAT_MEASURE_NUMSAMPLES.c_str(), tmp.c_str(), sampleFilePath.c_str());
-    
-    // WRITE MEASUREMENT INFO INTO FILE 
-	CCommonFnc::SCSAT_SaveSamples(sampleFilePath, pReceivedSample);
-	CCommonFnc::Sample_Free(pReceivedSample);    
-	delete pReceivedSample;
-    
-   
-    *pNewFilePath = sampleFilePath;
-                                
-    return status;
-}
 #endif
 
 
@@ -3039,19 +2965,110 @@ int CWinscardApp::GetApduFromHistory(BYTE* buffer, int history, int apduDirectio
     return status;
 }
 
+/**
+Format request for remote proxy
+
+Remote card protocol
+ > <card reader name>
+ > <cmd ID>:<"APDU" / "RESET" / "ENUM">:<optional hexa string, e.g. "00A4040304">
+ # some comments
+ all other lines not starting with > or # are ignored
+*/
+string_type Remote_FormatRequest(string_type targetReader, DWORD uniqueCmdID, string_type command, string_type commandData, string_type notes, string_type lineSeparator) {
+	return string_format(">%s%s>%d%s%s%s%s%s%s", targetReader.c_str(), lineSeparator.c_str(), uniqueCmdID, CMD_SEPARATOR, command.c_str(), CMD_SEPARATOR, commandData.c_str(), lineSeparator.c_str(), notes.c_str());
+}
+
 #if defined (_WIN32)
-LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
-    LONG        status = 0;
+LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader) {
+	LONG        status = 0;
+	string_type     message;
+
+	if (pRemoteConfig->pSocket != NULL) {
+		try {
+			// unique command ID
+			theApp.m_remoteConfig.nextCommandID++;
+			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_RESET, "", "", CMD_LINE_SEPARATOR);
+			pRemoteConfig->pSocket->SendLine(l);
+			//message.Insert(0, "\n::-> ");
+			message.insert(0, _CONV("\n::-> "));
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			_sleep(500);
+
+			// OBTAIN RESPONSE, PARSE BACK 
+			// TODO: parse response, propagate it, chck unique command ID
+			l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+
+			// Parse response
+			string_type response;
+			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
+
+			message = string_format(_CONV("\n::<- %s"), response.c_str());
+			replace(message.begin(), message.end(), '\n', ' ');
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		}
+		catch (const char* s) {
+			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)"), message, s);
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			status = SCARD_F_UNKNOWN_ERROR;
+		}
+		catch (...) {
+			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (unhandled exception)"), message);
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			status = SCARD_F_UNKNOWN_ERROR;
+		}
+	}
+	else {
+		status = SCARD_F_COMM_ERROR;
+	}
+
+	return status;
+}
+#endif
+
+#if defined (_WIN32)
+
+LONG CWinscardApp::Remote_ParseResponse(string_type rawResponse, DWORD expectedCommandID, string_type* response) {
+	LONG status = SCARD_S_SUCCESS;
+
+	size_t pos = 0;
+	if (rawResponse.at(pos) != '>') {
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "'>'was expected at begin");
+		status = SCARD_F_COMM_ERROR;
+	}
+	pos++;
+
+	if (status == SCARD_S_SUCCESS) {
+		size_t pos2 = rawResponse.find(CMD_SEPARATOR);
+		string_type uniqueCmdID = rawResponse.substr(pos, pos2 - 1);
+		if (expectedCommandID != atoi(uniqueCmdID.c_str())) {
+			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Unexpected commandID in response");
+			status = SCARD_F_COMM_ERROR;
+		}
+		pos = pos2 + 1;
+	}
+
+	if (status == SCARD_S_SUCCESS) {
+		size_t pos2 = rawResponse.find(REMOTE_SOCKET_ENDSEQ, pos);
+		*response = rawResponse.substr(pos, pos2 - pos);
+	}
+
+	return status;
+}
+
+
+
+LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength) {
+    LONG			status = 0;
     string_type     message;
     string_type     value;    
     
-    if (pSCSATConfig->pSocket != NULL) {
+    if (pRemoteConfig->pSocket != NULL) {
         try {
-            // FORMAT APDU STRING
-            CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) pbSendBuffer, cbSendLength, &value);
-            message = string_format(_CONV("%s %s"), SCSAT_GET_APDU, value);
-			string_type l(message);
-            pSCSATConfig->pSocket->SendLine(l);
+			// unique command ID
+			theApp.m_remoteConfig.nextCommandID++;
+			CCommonFnc::BYTE_ConvertFromArrayToHexString(pbSendBuffer, cbSendLength, &value);
+			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
+            pRemoteConfig->pSocket->SendLine(l);
             //message.Insert(0, "\n::-> ");
 			message.insert(0, _CONV("\n::-> "));
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
@@ -3061,42 +3078,23 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
                 _sleep(pbSendBuffer[4] * 20);       // LC * 20ms
             }
             else _sleep(500);
-             
             
             // OBTAIN RESPONSE, PARSE BACK 
-            l = pSCSATConfig->pSocket->ReceiveResponse(SCSAT_SOCKET_ENDSEQ, SCSAT_SOCKET_TIMEOUT);
+            l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+
+			string_type response;
+			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
+
             message = string_format(_CONV("\n::<- %s"), l.c_str());
             //message.Replace("\n", " ");
 			replace(message.begin(), message.end(), '\n', ' ');
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             
-            // CHECK IF RESPONSE IS CORRECT
-            string_type response = l.c_str();
-            //response.MakeLower();
-			char c; int i = 0;
-			while (response[i])
-			{
-				c = response[i];
-				putchar(tolower(c));
-				i++;
-			}
-            if (response.find(SCSAT_GET_APDU_FAIL) == string_type::npos) {
+            if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
-				size_t position = response.find(_CONV("\n"));
-	            if (position == string_type::npos) {
-					position = -1;
-	            }
-		        value = response.substr(position + 1, string_type::npos);
-				
-				string_type tempVal = _CONV("");
-				if (position - 1 > 0) {
-					//string tempVal = value.Left(value.Find("\n")-1);
-					tempVal = value.substr(0, position - 1); // <--------------- OTAZKA
-				}   
-                value = tempVal;
                 // NOTE: pbRecvBuffer IS ASSUMED TO HAVE 260B
                 *pcbRecvLength = 260;
-                status = CCommonFnc::BYTE_ConvertFromHexStringToArray(value, pbRecvBuffer, pcbRecvLength);
+                status = CCommonFnc::BYTE_ConvertFromHexStringToArray(response, pbRecvBuffer, pcbRecvLength);
                 
                 // CHECK FOR RETURN STATUS, AT LEAST 2 BYTES REQUIRED
                 if (*pcbRecvLength < 2) status = STAT_DATA_INCORRECT_LENGTH;
@@ -3107,12 +3105,12 @@ LONG CWinscardApp::SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_RE
             }
         }
         catch (const char* s) {
-            message = string_format(_CONV("\nSCSAT_SCardTransmit(), SendLine(%s), fail with (%s)"), message, s);
+            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (%s)"), message, s);
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             status = SCARD_F_UNKNOWN_ERROR;
         } 
         catch (...) {
-            message = string_format(_CONV("\nSCSAT_SCardTransmit(), SendLine(%s), fail with (unhandled exception)"), message);
+            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (unhandled exception)"), message);
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
             status = SCARD_F_UNKNOWN_ERROR;
         }
@@ -3192,64 +3190,64 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 	}
 
 #if defined (_WIN32)
-	if (compareWithNoCase(section_name, _CONV("SCSAT04")) == 0)
+	if (compareWithNoCase(section_name, _CONV("REMOTE")) == 0)
 	{
-		// SCSAT04 CONFIGURATION RULE
+		// REMOTE SOCKET CONFIGURATION RULE
 
 		type_copy(sec_and_key, section_name);
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2)
 		{
-			m_winscardConfig.bAUTO_REQUEST_DATA = value;
+			m_remoteConfig.bRedirect = value;
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":IP")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.IP = char_value;
+			m_remoteConfig.IP = char_value;
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":PORT")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.IP = char_value;
+			m_remoteConfig.port = char_value;
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_APDU")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
-			CCommonFnc::BYTE_ConvertFromHexStringToArray(char_value, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
+			m_remoteConfig.measureApduLen = sizeof(m_remoteConfig.measureApdu);
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(char_value, m_remoteConfig.measureApdu, &(m_remoteConfig.measureApduLen));
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_BYTE_COUNTER")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.measureApduByteCounter = type_to_int(char_value, NULL, 10);
+			m_remoteConfig.measureApduByteCounter = type_to_int(char_value, NULL, 10);
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":MEASURE_BYTE_DELAY")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.measureApduByteDelay = type_to_int(char_value, NULL, 10);
+			m_remoteConfig.measureApduByteDelay = type_to_int(char_value, NULL, 10);
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":READ_RATIO")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.readRatio = type_to_int(char_value, NULL, 10);
+			m_remoteConfig.readRatio = type_to_int(char_value, NULL, 10);
 		}
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":NUM_SAMPLES")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_scsat04Config.numSamples = type_to_int(char_value, NULL, 10);
+			m_remoteConfig.numSamples = type_to_int(char_value, NULL, 10);
 		}
 	}
 #endif
@@ -3365,7 +3363,6 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 					data.erase(std::remove(data.begin(), data.end(), ','), data.end());
 					BYTE dataBuffer[300];
 					DWORD dataBufferLen = 300;
-					//CCommonFnc::File_AppendString(filePath, string_format(_CONV(" data su: %s\n"), data.c_str()));
 					CCommonFnc::BYTE_ConvertFromHexStringToArray(data, dataBuffer, &dataBufferLen);
 
 					for (DWORD i = 0; i < dataBufferLen; i++)
@@ -3556,6 +3553,22 @@ int CWinscardApp::LoadRules() {
 }
 #endif
 
+/**
+Returns reader name corresponding to provided card handle
+*/
+string_type CWinscardApp::GetReaderName(IN SCARDHANDLE hCard) {
+	return theApp.cardReaderMap[hCard];
+}
+
+/**
+Returns reader name corresponding to provided card handle
+*/
+boolean CWinscardApp::IsRemoteCard(IN SCARDHANDLE hCard) {
+	auto it = theApp.remoteReadersMap.find(hCard);
+	return it != theApp.remoteReadersMap.end();
+}
+
+
 #if defined(_WIN32) && defined(_UNICODE)
 int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 	int     status = STAT_OK;
@@ -3598,32 +3611,32 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 
 	}
 
-	if (compareWithNoCase(ruleName.c_str(), _CONV("SCSAT04")) == 0) {
-		// SCSAT04 CONFIGURATION RULE
+	if (compareWithNoCase(ruleName.c_str(), _CONV("REMOTE")) == 0) {
+		// REMOTE CONFIGURATION RULE
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("REDIRECT"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.bRedirect = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
+			m_remoteConfig.bRedirect = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("IP"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.IP = buffer;
+			m_remoteConfig.IP = buffer;
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("PORT"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.port = buffer;
+			m_remoteConfig.port = buffer;
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_APDU"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.measureApduLen = sizeof(m_scsat04Config.measureApdu);
-			CCommonFnc::BYTE_ConvertFromHexStringToArray(buffer, m_scsat04Config.measureApdu, &(m_scsat04Config.measureApduLen));
+			m_remoteConfig.measureApduLen = sizeof(m_remoteConfig.measureApdu);
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(buffer, m_remoteConfig.measureApdu, &(m_remoteConfig.measureApduLen));
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_BYTE_COUNTER"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.measureApduByteCounter = type_to_int(buffer, NULL, 10);
+			m_remoteConfig.measureApduByteCounter = type_to_int(buffer, NULL, 10);
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MEASURE_BYTE_DELAY"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.measureApduByteDelay = type_to_int(buffer, NULL, 10);
+			m_remoteConfig.measureApduByteDelay = type_to_int(buffer, NULL, 10);
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("READ_RATIO"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.readRatio = type_to_int(buffer, NULL, 10);
+			m_remoteConfig.readRatio = type_to_int(buffer, NULL, 10);
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("NUM_SAMPLES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_scsat04Config.numSamples = type_to_int(buffer, NULL, 10);
+			m_remoteConfig.numSamples = type_to_int(buffer, NULL, 10);
 		}
 
 

@@ -10,11 +10,9 @@
 #include "resource.h"		// main symbols
 #endif
 #include "../Iniparser/iniparser_all.h"
+#include <unordered_map>
 
-#define     SCSAT_MAX_SAMPLING_FREQUENCY        100
-#define		SCSAT_MAX_NUMBER_OF_SAMPLES			48000000 
-
-
+using namespace std;
 
 
 // CWinscardApp
@@ -37,9 +35,13 @@ public:
     lab     apduOutList;    
     BOOL    m_bRulesActive;
 	dictionary* instructionDict = nullptr;
+	unordered_map<SCARDHANDLE, string_type> cardReaderMap;
+	unordered_map<SCARDHANDLE, string_type>	remoteReadersMap;
+	DWORD   m_nextRemoteCardID = 1;
+
 
 #if defined (_WIN32)
-    SCSAT04_CONFIG  m_scsat04Config;
+    REMOTE_CONFIG  m_remoteConfig;
 #endif
     WINSCARD_CONFIG m_winscardConfig;
     int             m_processedApduByteCounter;
@@ -48,8 +50,7 @@ public:
     lptr    m_wcharAllocatedMemoryList;
 
 #if defined (_WIN32)
-    int ConnectSCSAT04(SCSAT04_CONFIG* pSCSATConfig);
-    int SCSAT_CreateAndReceiveSamples(SCSAT04_CONFIG* pSCSATConfig, string_type* pNewFilePath);
+    int Remote_Connect(REMOTE_CONFIG* pRemoteConfig);
 #endif
 
     int LoadRule(const char_type* section_name, dictionary* dict);
@@ -62,10 +63,14 @@ public:
     int GetApduFromHistory(BYTE* buffer, int history, int apduDirection);
 
 #if defined (_WIN32)
-//	int SCSAT_EnsureFileHeader(CString filePath, SCSAT_MEASURE_INFO* pInfo);
-    LONG SCSAT_SCardTransmit(SCSAT04_CONFIG* pSCSATConfig, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
+    LONG Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
+	LONG Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader);
+	LONG Remote_ParseResponse(string_type rawResponse, DWORD expectedUniqueID, string_type* respCommand);
 #endif
 	int LoadRule(string_type ruleName, dictionary* dict);
+
+	string_type GetReaderName(IN SCARDHANDLE hCard);
+	boolean		IsRemoteCard(IN SCARDHANDLE hCard);
 
 #if defined (_WIN32)
 public:

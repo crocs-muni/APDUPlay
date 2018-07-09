@@ -253,7 +253,7 @@ string_type Socket::ReceiveResponse(string_type endSeq, int timeout) {
   string_type line;
   
   // FIRST LINE READ EVERY TIME (SHOULD BE THERE)  
-  line = ReceiveLine();
+  line = ReceiveLine(timeout);
   // end when zero line found or endSeq character
   while (line != _CONV("") && line.find(endSeq) == string_type::npos) {
     ret += line;

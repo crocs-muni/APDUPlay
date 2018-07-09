@@ -173,6 +173,9 @@
 #  define CATCH_NOEXCEPT_IS(x)
 #endif
 
+
+#pragma warning(disable:4312)
+
 namespace Catch {
 
 	class NonCopyable {
