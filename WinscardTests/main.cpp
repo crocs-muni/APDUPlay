@@ -225,6 +225,8 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 {
 	SECTION("Aplly rules test")
 	{
+		LoadFunctionPtrs();
+
 		// Prepare configuration files
         ofstream myfile;
         std::string ruleFilePath = GetLogsPath() + "winscard_rules.txt";

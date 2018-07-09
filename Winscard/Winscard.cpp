@@ -80,6 +80,7 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
+static string_type ENV_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
 static string_type RULE_FILE = _CONV("winscard_rules.txt");
 static string_type WINSCARD_RULES_LOG = _CONV("winscard_rules_log.txt");
 static string_type WINSCARD_LOG = _CONV("winscard_log.txt");
@@ -2785,9 +2786,6 @@ END_MESSAGE_MAP()
 
 CWinscardApp::CWinscardApp()
 {
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
-
 	m_bRulesActive = FALSE;
 
 	#ifdef __linux__
@@ -2820,7 +2818,6 @@ void GetDesktopPath(char_type* path)
 }
 
 #if defined (_WIN32)
-
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
@@ -3497,8 +3494,29 @@ int CWinscardApp::LoadRules() {
 	WINSCARD_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 	
-	if (!(file = fopen(path, "r"))) // try to open file in actual directory
-	{
+	//
+	// Searching for 'winscard_rules.txt' (priority) 
+	// 1. Lookup in local directory
+	// 2. Lookup for APDUPLAY environmental variable
+	// 3. Lookup on user Desktop 
+
+	if (!file) {  // 1. Lookup in local directory
+		file = fopen(path, "r");
+	}
+
+	if (!file) { // 2. Lookup for APDUPLAY environmental variable
+		char* configPath = std::getenv(ENV_WINSCARD_RULES_PATH.c_str());
+		if (configPath != NULL) {
+			// variable detected, try to open 
+			string newRuleFile = string_format(_CONV("%s\\%s"), configPath, RULE_FILE.c_str());
+			file = fopen(newRuleFile.c_str(), "r");
+			if (file) {
+				type_copy(path, newRuleFile.c_str());
+			}
+		}
+	}
+
+	if (!file) { // 3. Lookup on user Desktop
 		GetDesktopPath(path);
 		type_cat(path, RULE_FILE.c_str());
 		file = fopen(path, "r"); // try to open file on desktop
