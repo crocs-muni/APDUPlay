@@ -63,3 +63,12 @@ build:
   # MSBuild verbosity level
   verbosity: normal
 
+
+#---------------------------------#
+#       artifacts                 #
+#---------------------------------#
+artifacts:
+- path: c:\projects\APDUPlay\x64\Release\winscard.dll
+  name: winscard.dll 64bit
+- path: c:\projects\APDUPlay\Release\winscard.dll
+  name: winscard.dll 32bit
