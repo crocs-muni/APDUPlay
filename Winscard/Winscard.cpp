@@ -246,7 +246,13 @@ SCard LONG STDCALL SCardReconnect(
 	string_type message;
 	message = string_format(_CONV("SCardReconnect(hCard:0x%x) called\n"), hCard);
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	return (*Original_SCardReconnect)(hCard, dwShareMode, dwPreferredProtocols, dwInitialization, pdwActiveProtocol);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+		*pdwActiveProtocol = SCARD_PROTOCOL_T1;
+	}
+	else {
+		return (*Original_SCardReconnect)(hCard, dwShareMode, dwPreferredProtocols, dwInitialization, pdwActiveProtocol);
+	}
 }
 
 static SCard LONG(STDCALL *Original_SCardBeginTransaction)(
@@ -257,7 +263,12 @@ SCard LONG STDCALL SCardBeginTransaction(
 	IN      SCARDHANDLE hCard
 ) {
 	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardBeginTransaction called\n"));
-	return (*Original_SCardBeginTransaction)(hCard);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardBeginTransaction)(hCard);
+	}
 }
 
 
@@ -271,7 +282,12 @@ SCard LONG STDCALL SCardEndTransaction(
 	IN      DWORD dwDisposition
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardEndTransaction called\n"));
-	return (*Original_SCardEndTransaction)(hCard, dwDisposition);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardEndTransaction)(hCard, dwDisposition);
+	}
 }
 
 static SCard LONG(STDCALL *Original_SCardControl)(
@@ -294,7 +310,12 @@ SCard LONG STDCALL SCardControl(
 	OUT     LPDWORD lpBytesReturned
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardControl called\n"));
-	return (*Original_SCardControl)(hCard, dwControlCode, lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardControl)(hCard, dwControlCode, lpInBuffer, nInBufferSize, lpOutBuffer, nOutBufferSize, lpBytesReturned);
+	}
 }
 
 
@@ -312,7 +333,12 @@ SCard LONG STDCALL SCardGetAttrib(
 	IN OUT LPDWORD pcbAttrLen
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetAttrib called\n"));
-	return (*Original_SCardGetAttrib)(hCard, dwAttrId, pbAttr, pcbAttrLen);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardGetAttrib)(hCard, dwAttrId, pbAttr, pcbAttrLen);
+	}
 }
 
 
@@ -330,7 +356,12 @@ SCard LONG STDCALL SCardSetAttrib(
 	IN DWORD cbAttrLen
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardSetAttrib called\n"));
-	return (*Original_SCardSetAttrib)(hCard, dwAttrId, pbAttr, cbAttrLen);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardSetAttrib)(hCard, dwAttrId, pbAttr, cbAttrLen);
+	}
 }
 
 /* ******************************************************************************* */
@@ -483,8 +514,7 @@ SCard LONG STDCALL SCardDisconnect(
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardDisconnect called\n"));
 
 	// DISCONNECT FROM CARD
-	if (hCard == HANDLE_VIRTUAL_CARD) {
-		// DO NOTHING
+	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -784,8 +814,21 @@ SCard LONG STDCALL SCardStatus(
 	LPBYTE pbAtr,
 	LPDWORD pcbAtrLen)
 {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardStatus called\n"));
-	return (*Original_SCardStatus)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) {
+		string_type message = string_format(_CONV("SCardStatus(hCard:0x%x,szReaderName:%s,pcchReaderLen:%d,pcbAtrLen:%d) called\n"), hCard, szReaderName, *pcchReaderLen, *pcbAtrLen);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
+
+	if (theApp.IsRemoteCard(hCard)) {
+		// According to https://docs.microsoft.com/en-us/windows/desktop/api/winscard/nf-winscard-scardstatusa
+		*pdwState = SCARD_SPECIFIC;
+		*pdwProtocol = SCARD_PROTOCOL_T1;
+
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardStatus)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+	}
 }
 
 static SCard LONG(STDCALL *Original_SCardListReaders)(
@@ -1761,7 +1804,12 @@ SCard LONG STDCALL SCardCancelTransaction(
 	IN      SCARDHANDLE hCard
 ) {
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancelTransaction called\n"));
-	return (*Original_SCardCancelTransaction)(hCard);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+	}
+	else {
+		return (*Original_SCardCancelTransaction)(hCard);
+	}
 }
 
 static SCard LONG(STDCALL *Original_SCardState)(
@@ -1782,7 +1830,15 @@ SCard LONG STDCALL SCardState(
 	string_type message;
 	message = string_format(_CONV("SCardState(hCard:0x%x) called\n"), hCard);
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	return (*Original_SCardState)(hCard, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+		*pdwState = SCARD_SPECIFIC;
+		*pdwProtocol = SCARD_PROTOCOL_T1;
+		// TODO: fill pbAtr
+	}
+	else {
+		return (*Original_SCardState)(hCard, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+	}
 }
 
 
@@ -1808,7 +1864,15 @@ SCard LONG STDCALL SCardStatusW(
 	string_type message;
 	message = string_format(_CONV("SCardStatusW(hCard:0x%x) called\n"), hCard);
 	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	return (*Original_SCardStatusW)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+	if (theApp.IsRemoteCard(hCard)) {
+		return SCARD_S_SUCCESS;
+		*pdwState = SCARD_SPECIFIC;
+		*pdwProtocol = SCARD_PROTOCOL_T1;
+		// TODO: fill pbAtr
+	}
+	else {
+		return (*Original_SCardStatusW)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
+	}
 }
 
 static SCard HANDLE(STDCALL *Original_SCardAccessStartedEvent)(void);
@@ -1854,13 +1918,6 @@ typedef FARPROC(STDCALL *q) (HMODULE, LPCSTR);
 static q load_func = GetProcAddress;
 #endif
 
-/*linux specific funcions:
-*SCardConnect -- DONE
-*SCardStatus -- DONE
-*SCardGetStatusChange -- DONE
-*SCardListReaders -- DONE
-*SCardListReaderGroups -- DONE
-*/
 int initialize()
 {
 	char *error = "";
@@ -2855,11 +2912,11 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
     //pRemoteConfig->pSocket = new SocketClient(sIP, atoi(pRemoteConfig->port.c_str()));
 	try {
 		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
-		message = string_format(_CONV("\n> Connnecting to remote proxy with IP:port = %s:%s"), pRemoteConfig->IP, pRemoteConfig->port);
+		message = string_format(_CONV("\n> Connnecting to remote proxy with IP:port = %s:%s\n"), pRemoteConfig->IP, pRemoteConfig->port);
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	}
 	catch (std::string error) {
-		message = string_format(_CONV("\n> Failed to connect to %s:%s (error: %s)"), pRemoteConfig->IP, pRemoteConfig->port, error);
+		message = string_format(_CONV("\n> Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP, pRemoteConfig->port, error);
 		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	}
 
@@ -3011,7 +3068,7 @@ LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type
 			string_type response;
 			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
 
-			message = string_format(_CONV("\n::<- %s"), response.c_str());
+			message = string_format(_CONV("\n::<- %s\n"), response.c_str());
 			replace(message.begin(), message.end(), '\n', ' ');
 			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 		}
@@ -3094,7 +3151,7 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
 			string_type response;
 			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
 
-            message = string_format(_CONV("\n::<- %s"), l.c_str());
+            message = string_format(_CONV("\n::<- %s\n"), l.c_str());
             //message.Replace("\n", " ");
 			replace(message.begin(), message.end(), '\n', ' ');
             CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
