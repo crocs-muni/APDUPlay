@@ -30,9 +30,9 @@ See more details at https://github.com/petrs/APDUPlay/wiki.
 ## Examples
 
 The localization of correct winscard.dll path can be tedious task for some applications. Here are some examples with increasing difficulty:
-  1. Simple application directly using winscard.dll (example.exe)
+  1. Simple application directly using winscard.dll (CAProfiler)
   2. Application with persistent agent (gpg2.exe --card-edit)
-  3. Java-based application: (GlobalPlatformPro gp -l)
+  3. Java-based application accessing smartcards via JRE: (GlobalPlatformPro gp -l)
 
 
 ## Troubleshooting
