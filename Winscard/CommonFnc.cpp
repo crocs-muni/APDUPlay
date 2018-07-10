@@ -224,8 +224,7 @@ int CCommonFnc::File_SaveMatrixInt(string_type filePath, INT_DATA_BLOB* pBlob, s
         }
         else {
 			for (i = startOffset; i < endOffset; i++) { 
-				//value.Format("%d\r\n", pBlob->pData[i]);
-				value = string_format(_CONV("%d\r\n"), pBlob->pData[i]);
+				value = string_format(_CONV("%d\n"), pBlob->pData[i]);
 				values += value;
 	            
 				if ((i % NUM_VALUES_PER_WRITE) == 0) {

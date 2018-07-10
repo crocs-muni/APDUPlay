@@ -168,11 +168,14 @@ typedef std::list<PTR>           lptr;
 
 
 #if defined (_WIN32)
+#define REMOTE_READER_PREFIX_DEFAULT	"Simona"
+
 typedef struct _REMOTE_CONFIG {
     BOOL            bRedirect;
 	string_type     IP;
 	string_type     port;
 	string_type     cfgScript;
+	string_type		remoteReaderPrefix; // prefix of reader name signalizing remote reader. If matches, all calls are redirected to remote proxy
     BYTE            measureApdu[255];    
     BYTE            measureApduLen;     // number of used bytes from measureApdu array
     int             measureApduByteCounter;     // number of incoming apdu bytes before the measurement is run - part of get params 1 xx 0 command
@@ -193,6 +196,7 @@ typedef struct _REMOTE_CONFIG {
         IP = _CONV("");
         port = _CONV("");
         cfgScript = _CONV("");
+		remoteReaderPrefix = _CONV(REMOTE_READER_PREFIX_DEFAULT);
         memset(measureApdu, 0, sizeof(measureApdu));
         measureApduLen = 0;
         measureApduByteCounter = 0;
@@ -213,7 +217,6 @@ typedef struct _WINSCARD_CONFIG {
     BOOL    bFORCE_APDU_NONZERO_INPUT_DATA = FALSE;
     BOOL    bLOG_EXCHANGED_APDU = FALSE;
     BOOL    bMODIFY_APDU_BY_RULES = FALSE;
-    BOOL    bLOG_FUNCTIONS_CALLS = FALSE;
     BOOL    bLOG_WRITE_DESCRIPTION = FALSE;
     string_type sREADER_ORDERED_FIRST;
 	string_type sLOG_BASE_PATH;
@@ -232,7 +235,6 @@ typedef struct _WINSCARD_CONFIG {
         bFORCE_APDU_NONZERO_INPUT_DATA = FALSE;   // DEFAULT: FALSE, SET TO TRUE IF APPLET HAVE PROBLEM TO RETURN DATA (apdu.setOutgoingAndSend()) WHEN NO PREVIOUS setIncomingAndReceive() WAS CALLED. 
         bLOG_EXCHANGED_APDU = TRUE;   // DEFAULT: FALSE, SET TO TRUE IF LOGGING OF APDU DATA IS REQUIRED
         bMODIFY_APDU_BY_RULES = TRUE;   // DEFAULT: FALSE, SET TO TRUE . 
-        bLOG_FUNCTIONS_CALLS = TRUE;   // DEFAULT: FALSE, SET TO TRUE . 
         sREADER_ORDERED_FIRST = _CONV("");
 		sLOG_BASE_PATH = _CONV("");
 #else
@@ -242,7 +244,6 @@ typedef struct _WINSCARD_CONFIG {
         bFORCE_APDU_NONZERO_INPUT_DATA = FALSE;   // DEFAULT: FALSE, SET TO TRUE IF APPLET HAVE PROBLEM TO RETURN DATA (apdu.setOutgoingAndSend()) WHEN NO PREVIOUS setIncomingAndReceive() WAS CALLED. 
         bLOG_EXCHANGED_APDU = FALSE;   // DEFAULT: FALSE, SET TO TRUE IF LOGGING OF APDU DATA IS REQUIRED
         bMODIFY_APDU_BY_RULES = FALSE;   // DEFAULT: FALSE, SET TO TRUE . 
-        bLOG_FUNCTIONS_CALLS = FALSE;   // DEFAULT: FALSE, SET TO TRUE . 
         sREADER_ORDERED_FIRST = "";
 		sLOG_BASE_PATH = "";
 #endif

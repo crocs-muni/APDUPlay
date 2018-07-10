@@ -38,6 +38,7 @@ public:
 	unordered_map<SCARDHANDLE, string_type> cardReaderMap;
 	unordered_map<SCARDHANDLE, string_type>	remoteReadersMap;
 	DWORD   m_nextRemoteCardID = 1;
+	
 
 
 #if defined (_WIN32)

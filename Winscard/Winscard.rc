@@ -25,25 +25,25 @@ END
 
 2 TEXTINCLUDE  
 BEGIN
-    "#include ""afxres.h""\r\n"
+    "#include ""afxres.h""\n"
     "\0"
 END
 
 3 TEXTINCLUDE  
 BEGIN
-    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
-    "#define _AFX_NO_OLE_RESOURCES\r\n"
-    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
-    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
-    "\r\n"
-	"#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CSY)\r\n"
-	"LANGUAGE 5, 1\r\n"
-	"#pragma code_page(1250)\r\n"
-    "#include ""res\\Winscard.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#define _AFX_NO_SPLITTER_RESOURCES\n"
+    "#define _AFX_NO_OLE_RESOURCES\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\n"
+    "\n"
+	"#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CSY)\n"
+	"LANGUAGE 5, 1\n"
+	"#pragma code_page(1250)\n"
+    "#include ""res\\Winscard.rc2""  // non-Microsoft Visual C++ edited resources\n"
 #ifndef _AFXDLL
-    "#include ""afxres.rc""  	// Standard components\r\n"
+    "#include ""afxres.rc""  	// Standard components\n"
 #endif
-    "#endif\r\n"
+    "#endif\n"
     "\0"
 END
 
