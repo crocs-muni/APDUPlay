@@ -66,7 +66,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="original.lib"
 				LinkIncremental="2"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\Winscard.def"
@@ -148,7 +147,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="original.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\Winscard.def"
@@ -232,7 +230,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="original.lib"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				ModuleDefinitionFile=".\Winscard.def"

@@ -32,9 +32,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Winscard.def">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="res\Winscard.rc2">
       <Filter>Resource Files</Filter>
     </None>
