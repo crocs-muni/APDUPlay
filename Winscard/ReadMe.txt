@@ -34,7 +34,7 @@ res\Winscard.rc2
     Visual C++.  You should place all resources not editable by
     the resource editor in this file.
 
-Winscard.def
+Winscard32.def or Winscard64.def
     This file contains information about the DLL that must be
     provided to run with Microsoft Windows.  It defines parameters
     such as the name and description of the DLL.  It also exports
