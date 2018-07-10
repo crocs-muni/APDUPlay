@@ -63,22 +63,14 @@ Please, report any bugs to author <petr@svenda.com>
 #endif
 
 /*
-BOOL    bAUTO_REQUEST_DATA = TRUE;           // DEFAULT: FALSE, SET TO TRUE IF APPLICATION IS NOT ABLE TO HANDLE GET DATA (00 0c 00 00 lc) COMMAND ON ITS OWN
-BOOL    bFORCE_CONNECT_SHARED_MODE = TRUE;   // DEFAULT: FALSE, SET TO TRUE IF SOME APPLICATION IS BLOCKING CARD
-BOOL    bFORCE_APDU_NONZERO_INPUT_DATA = TRUE;   // DEFAULT: FALSE, SET TO TRUE IF APPLET HAVE PROBLEM TO RETURN DATA (apdu.setOutgoingAndSend()) WHEN NO PREVIOUS setIncomingAndReceive() WAS CALLED.
-BOOL    bLOG_EXCHANGED_APDU = TRUE;   // DEFAULT: FALSE, SET TO TRUE IF LOGGING OF APDU DATA IS REQUIRED
-BOOL    bMODIFY_APDU_BY_RULES = TRUE;   // DEFAULT: FALSE, SET TO TRUE .
-BOOL    bLOG_FUNCTIONS_CALLS = TRUE;   // DEFAULT: FALSE, SET TO TRUE .
-/**/
-
-
-/*
 extern SCard (.*?) STDCALL.*?(SCard.*?)\((.*?)\);
 static SCard \1 (STDCALL *Original_\2)
 \3
 );
 /**/
 #pragma warning(disable:4996)   
+
+static string_type LIBRARY_VERSION = _CONV("2.0.1");
 
 static string_type ENV_APDUPLAY_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
 static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
@@ -138,8 +130,8 @@ int apduCounter = 0;
 
 /* The following values variables MUST be defined here, but MUST NOT be referenced
 in this or any other program module. The DEF file is set to forward their linkage
-to the "original.dll". If we need the data that these variables should be pointing
-to, we must GetProcAddress on "original.dll" and use the data there.
+to the "originalxx.dll". If we need the data that these variables should be pointing
+to, we must GetProcAddress on "originalxx.dll" and use the data there.
 */
 
 #if defined(_WIN32)
@@ -159,12 +151,28 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 
 /* ******************************************************************************* */
 
+void LogDebugString(string_type message, bool bInsertTime = true) {
+	string_type logLine;
+
+	if (bInsertTime) {
+		string_type date_and_time = getCurrentTimeString();
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("%s: %s"), date_and_time.c_str(), message.c_str()));
+	}
+	else {
+		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, message);
+	}
+}
+
+void LogWinscardRules(string_type message) {
+	LogDebugString(message);
+	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+}
 
 void DumpMemory(LPCBYTE location, DWORD length) {
 	string_type message;
 	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)location, length, &message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, message);
-	CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\r\n"));
+	CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 }
 
 static SCard LONG(STDCALL *Original_SCardEstablishContext)(
@@ -182,10 +190,10 @@ SCard LONG STDCALL SCardEstablishContext(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardEstablishContext() called\n"));
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	LONG status = (*Original_SCardEstablishContext)(dwScope, pvReserved1, pvReserved2, phContext);
 	message = string_format(_CONV("-> hContext:0x%x\n"), *phContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return status;
 }
 
@@ -199,7 +207,7 @@ SCard LONG STDCALL SCardReleaseContext(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardReleaseContext(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardReleaseContext)(hContext);
 }
 
@@ -213,7 +221,7 @@ SCard LONG STDCALL SCardIsValidContext(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardIsValidContext(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardIsValidContext)(hContext);
 }
 
@@ -224,7 +232,7 @@ static SCard LONG(STDCALL *Original_SCardCancel)(
 SCard LONG STDCALL SCardCancel(
 	IN      SCARDCONTEXT hContext
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancel called\n"));
+	LogWinscardRules(_CONV("SCardCancel called\n"));
 	return (*Original_SCardCancel)(hContext);
 }
 
@@ -245,7 +253,7 @@ SCard LONG STDCALL SCardReconnect(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardReconnect(hCard:0x%x) called\n"), hCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 		*pdwActiveProtocol = SCARD_PROTOCOL_T1;
@@ -262,7 +270,7 @@ static SCard LONG(STDCALL *Original_SCardBeginTransaction)(
 SCard LONG STDCALL SCardBeginTransaction(
 	IN      SCARDHANDLE hCard
 ) {
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardBeginTransaction called\n"));
+	LogWinscardRules(_CONV("SCardBeginTransaction called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
@@ -281,7 +289,7 @@ SCard LONG STDCALL SCardEndTransaction(
 	IN      SCARDHANDLE hCard,
 	IN      DWORD dwDisposition
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardEndTransaction called\n"));
+	LogWinscardRules(_CONV("SCardEndTransaction called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
@@ -309,7 +317,7 @@ SCard LONG STDCALL SCardControl(
 	IN      DWORD nOutBufferSize,
 	OUT     LPDWORD lpBytesReturned
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardControl called\n"));
+	LogWinscardRules(_CONV("SCardControl called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
@@ -332,7 +340,7 @@ SCard LONG STDCALL SCardGetAttrib(
 	OUT LPBYTE pbAttr,
 	IN OUT LPDWORD pcbAttrLen
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetAttrib called\n"));
+	LogWinscardRules(_CONV("SCardGetAttrib called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
@@ -355,7 +363,7 @@ SCard LONG STDCALL SCardSetAttrib(
 	IN LPCBYTE pbAttr,
 	IN DWORD cbAttrLen
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardSetAttrib called\n"));
+	LogWinscardRules(_CONV("SCardSetAttrib called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
@@ -377,7 +385,7 @@ CWinscardApp::~CWinscardApp()
 	FreeLibrary(hOriginal);
 #endif
 	// Reference to WINSCARD_LOG will fail with access to 0xfeefee (global CString WINSCARD_LOG does not exists at the time of dll release (strange))
-	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\r\n");
+	//	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, "[end]\n");
 
 #if defined(_WIN32)
 	if (m_remoteConfig.pSocket != NULL) delete m_remoteConfig.pSocket;
@@ -469,7 +477,7 @@ SCard LONG STDCALL SCardFreeMemory(
 {
 	string_type message;
 	message = string_format(_CONV("SCardFreeMemory(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 
 	LONG    status = SCARD_S_SUCCESS;
 
@@ -511,7 +519,7 @@ SCard LONG STDCALL SCardDisconnect(
 	SCARDHANDLE hCard,
 	DWORD dwDisposition)
 {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardDisconnect called\n"));
+	LogWinscardRules(_CONV("SCardDisconnect called\n"));
 
 	// DISCONNECT FROM CARD
 	if (theApp.IsRemoteCard(hCard)) {
@@ -542,13 +550,13 @@ SCard LONG STDCALL SCardTransmit(
 	IN OUT LPDWORD pcbRecvLength
 ) {
 
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardTransmit called\n"));
+	LogWinscardRules(_CONV("SCardTransmit called\n"));
 
 	LONG result = SCARD_S_SUCCESS;
 	//    DWORD written;
 	char_type *txMsg = _CONV("transmitted:");
 	char_type *rxMsg = _CONV("received:");
-	char_type *crlf = _CONV("\r\n");
+	char_type *crlf = _CONV("\n");
 	const int bufferLength = 1024;
 	//char_type buffer[bufferLength];
 	string_type buffer;
@@ -563,16 +571,16 @@ SCard LONG STDCALL SCardTransmit(
 	//elapsedLibrary = -clock();
 	auto lib_timestamp1 = Clock::now();
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\r\n", hCard);
-		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\r\n"), hCard);
+		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\n", hCard);
+		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\n"), hCard);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
 
-		//sprintf(buffer, "apduCounter:%d#\r\n", apduCounter);
-		buffer = string_format(_CONV("apduCounter:%d#\r\n"), apduCounter);
+		//sprintf(buffer, "apduCounter:%d#\n", apduCounter);
+		buffer = string_format(_CONV("apduCounter:%d#\n"), apduCounter);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
 
-		//sprintf(buffer, "totalBytesINCounter:%d#\r\n", theApp.m_processedApduByteCounter + 1);
-		buffer = string_format(_CONV("totalBytesINCounter:%d#\r\n"), theApp.m_processedApduByteCounter + 1);
+		//sprintf(buffer, "totalBytesINCounter:%d#\n", theApp.m_processedApduByteCounter + 1);
+		buffer = string_format(_CONV("totalBytesINCounter:%d#\n"), theApp.m_processedApduByteCounter + 1);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
 
         if(theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION)
@@ -594,11 +602,11 @@ SCard LONG STDCALL SCardTransmit(
 
 	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
 		message = string_format(_CONV("\nIncoming rules applied for apduCounter %d: \n"), apduCounter);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)pbSendBuffer, cbSendLength, &message);
 		//message.Insert(0, "   "); message += "\n";
 		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) LogWinscardRules(message);
 	}
 
 	// COPY INPUT DATA
@@ -610,7 +618,7 @@ SCard LONG STDCALL SCardTransmit(
 		CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)sendBuffer, cbSendLength, &message);
 		//message.Insert(0, "   "); message += "\n";
 		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) LogWinscardRules(message);
 	}
 
 	//elapsedCard = -clock();
@@ -695,12 +703,12 @@ SCard LONG STDCALL SCardTransmit(
 	auto card_timestamp2 = Clock::now();
 	auto elapsedCard = std::chrono::duration_cast<std::chrono::milliseconds>(card_timestamp2 - card_timestamp1).count();
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		//sprintf(buffer, "responseTime:%d#\r\n", elapsedCard);
-		buffer = string_format(_CONV("responseTime:%d#\r\n"), elapsedCard);
+		//sprintf(buffer, "responseTime:%d#\n", elapsedCard);
+		buffer = string_format(_CONV("responseTime:%d#\n"), elapsedCard);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
 
-		//sprintf(buffer, "SCardTransmit result:0x%x#\r\n", result);
-		buffer = string_format(_CONV("SCardTransmit result:0x%x#\r\n"), result);
+		//sprintf(buffer, "SCardTransmit result:0x%x#\n", result);
+		buffer = string_format(_CONV("SCardTransmit result:0x%x#\n"), result);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
 	}
 
@@ -722,17 +730,17 @@ SCard LONG STDCALL SCardTransmit(
 
 	if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) {
 		message = string_format(_CONV("\nOutgoing rules applied for apduCounter %d: \n"), apduCounter);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 		CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
 		//message.Insert(0, "   "); message += "\n";
 		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) LogWinscardRules(message);
 		// APPLY OUTGOING RULES
 		if (theApp.m_winscardConfig.bMODIFY_APDU_BY_RULES) theApp.ApplyRules(pbRecvBuffer, pcbRecvLength, OUTPUT_APDU);
 		CCommonFnc::BYTE_ConvertFromArrayToHexString(pbRecvBuffer, *pcbRecvLength, &message);
 		//message.Insert(0, "   "); message += "\n";
 		message.insert(0, _CONV("   ")); message += _CONV("\n");
-		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) LogWinscardRules(message);
 	}
 
 
@@ -743,9 +751,8 @@ SCard LONG STDCALL SCardTransmit(
 	auto lib_timestamp2 = Clock::now();
 	auto elapsedLibrary = std::chrono::duration_cast<std::chrono::milliseconds>(lib_timestamp2 - lib_timestamp1).count();
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) {
-		message = string_format(_CONV("responseTimeLibrary:%d#\r\n"), elapsedLibrary);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("...............................................\r\n"));
+		message = string_format(_CONV("responseTimeLibrary:%d#\n"), elapsedLibrary);
+		LogWinscardRules(message);
 	}
 
 	return result;
@@ -786,7 +793,7 @@ SCard LONG STDCALL SCardConnect(
 		status = (*Original_SCardConnect)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
 		string_type message;
 		message = string_format(_CONV("SCardConnect(hContext:0x%x,%s,hCard:0x%x) called\n"), hContext, szReader, *phCard);
-		if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 	}
 
 	// Store mapping between card handle and reader (used in card remoting)
@@ -814,10 +821,7 @@ SCard LONG STDCALL SCardStatus(
 	LPBYTE pbAtr,
 	LPDWORD pcbAtrLen)
 {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) {
-		string_type message = string_format(_CONV("SCardStatus(hCard:0x%x,szReaderName:%s,pcchReaderLen:%d,pcbAtrLen:%d) called\n"), hCard, szReaderName, *pcchReaderLen, *pcbAtrLen);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
-	}
+	LogWinscardRules(string_format(_CONV("SCardStatus(hCard:0x%x,szReaderName:%s,pcchReaderLen:%d,pcbAtrLen:%d) called\n"), hCard, szReaderName, *pcchReaderLen, *pcbAtrLen));
 
 	if (theApp.IsRemoteCard(hCard)) {
 		// According to https://docs.microsoft.com/en-us/windows/desktop/api/winscard/nf-winscard-scardstatusa
@@ -844,7 +848,7 @@ SCard LONG STDCALL SCardListReaders(
 	OUT     LPSTR mszReaders,
 	IN OUT  LPDWORD pcchReaders)
 {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListReaders called\n"));
+	LogWinscardRules(_CONV("SCardListReaders called\n"));
 
 	int  status = SCARD_S_SUCCESS;
 	ls     readersList;
@@ -944,7 +948,7 @@ SCard LONG STDCALL SCardListReaders(
 		availableReaders += ", ";
 	}
 	availableReaders += "\n";
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
+	LogWinscardRules(availableReaders);
 
 	return status;
 }
@@ -960,7 +964,7 @@ SCard LONG STDCALL SCardListReaderGroups(
 	OUT     LPSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListReaderGroups called\n"));
+	LogWinscardRules(_CONV("SCardListReaderGroups called\n"));
 	return (*Original_SCardListReaderGroups)(hContext, mszGroups, pcchGroups);
 }
 
@@ -987,7 +991,7 @@ SCard LONG STDCALL SCardConnectW(
 	LONG    status = SCARD_S_SUCCESS;
 	string_type message;
 	message = string_format(_CONV("SCardConnectW(hContext:0x%x, %S) called\n"), hContext, szReader);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 
 	// RESET APDU IN BYTE COUNTER
 	theApp.m_processedApduByteCounter = 0;
@@ -1000,20 +1004,20 @@ SCard LONG STDCALL SCardConnectW(
 		message = string_format(_CONV("\n:: %s"), l.c_str());
 		//message.Replace("\n", " ");
 		replace(message.begin(), message.end(), '\n', ' ');
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 
 		// PREPARE FOR MEASUREMENT
 		message = string_format(_CONV("get params 1 %d %d"), theApp.m_remoteConfig.measureApduByteCounter, theApp.m_remoteConfig.measureApduByteDelay);
 		theApp.m_remoteConfig.pSocket->SendLine(message);
 		l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
 		message = string_format(_CONV(":: %s"), l.c_str());
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 
 		message = string_format(_CONV("post sampling %d"), theApp.m_remoteConfig.numSamples);
 		theApp.m_remoteConfig.pSocket->SendLine(message);
 		l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
 		message = string_format(_CONV(":: %s"), l.c_str());
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 
 		// PREPARE FOR MEASUREMENT READING IN FUTURE
 		theApp.m_remoteConfig.sampleReaded = FALSE;
@@ -1029,7 +1033,7 @@ SCard LONG STDCALL SCardConnectW(
 	}
 
 	message = string_format(_CONV("-> hCard:0x%x\n"), *phCard);
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 
 	return status;
 }
@@ -1049,7 +1053,7 @@ SCard LONG STDCALL SCardListReadersW(
 {
 	string_type message;
 	message = string_format(_CONV("SCardListReadersW(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 
 	LONG    status = SCARD_S_SUCCESS;
 	lws     readersList;
@@ -1153,7 +1157,7 @@ SCard LONG STDCALL SCardListReadersW(
 		availableReaders += L", ";
 	}
 	availableReaders += L"\n";
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, availableReaders);
+	//LogWinscardRules(availableReaders);
 
 	return status;
 }
@@ -1169,7 +1173,7 @@ SCard LONG STDCALL SCardListReaderGroupsW(
 	OUT     LPWSTR mszGroups,
 	IN OUT  LPDWORD pcchGroups
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListReaderGroupsW called\n"));
+	LogWinscardRules(_CONV("SCardListReaderGroupsW called\n"));
 	return (*Original_SCardListReaderGroupsW)(hContext, mszGroups, pcchGroups);
 }
 
@@ -1193,7 +1197,7 @@ SCard LONG STDCALL SCardListCardsA(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardListCardsA(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardListCardsA)(hContext, pbAtr, rgquidInterfaces, cguidInterfaceCount, mszCards, pcchCards);
 }
 
@@ -1217,7 +1221,7 @@ SCard LONG STDCALL SCardListCardsW(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardListCardsW(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardListCardsW)(hContext, pbAtr, rgquidInterfaces, cguidInterfaceCount, mszCards, pcchCards);
 }
 
@@ -1235,7 +1239,7 @@ SCard LONG STDCALL SCardListInterfacesA(
 	OUT     LPGUID pguidInterfaces,
 	IN OUT  LPDWORD pcguidInterfaces
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListInterfacesA called\n"));
+	LogWinscardRules(_CONV("SCardListInterfacesA called\n"));
 	return (*Original_SCardListInterfacesA)(hContext, szCard, pguidInterfaces, pcguidInterfaces);
 }
 
@@ -1253,7 +1257,7 @@ SCard LONG STDCALL SCardListInterfacesW(
 	OUT     LPGUID pguidInterfaces,
 	IN OUT  LPDWORD pcguidInterfaces
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardListInterfacesW called\n"));
+	LogWinscardRules(_CONV("SCardListInterfacesW called\n"));
 	return (*Original_SCardListInterfacesW)(hContext, szCard, pguidInterfaces, pcguidInterfaces);
 }
 
@@ -1269,7 +1273,7 @@ SCard LONG STDCALL SCardGetProviderIdA(
 	IN      LPCSTR szCard,
 	OUT     LPGUID pguidProviderId
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetProviderIdA called\n"));
+	LogWinscardRules(_CONV("SCardGetProviderIdA called\n"));
 	return (*Original_SCardGetProviderIdA)(hContext, szCard, pguidProviderId);
 }
 
@@ -1285,7 +1289,7 @@ SCard LONG STDCALL SCardGetProviderIdW(
 	IN      LPCWSTR szCard,
 	OUT     LPGUID pguidProviderId
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetProviderIdW called\n"));
+	LogWinscardRules(_CONV("SCardGetProviderIdW called\n"));
 	return (*Original_SCardGetProviderIdW)(hContext, szCard, pguidProviderId);
 }
 
@@ -1305,7 +1309,7 @@ SCard LONG STDCALL SCardGetCardTypeProviderNameA(
 	OUT LPSTR szProvider,
 	IN OUT LPDWORD pcchProvider
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetCardTypeProviderNameA called\n"));
+	LogWinscardRules(_CONV("SCardGetCardTypeProviderNameA called\n"));
 	return (*Original_SCardGetCardTypeProviderNameA)(hContext, szCardName, dwProviderId, szProvider, pcchProvider);
 }
 
@@ -1325,7 +1329,7 @@ SCard LONG STDCALL SCardGetCardTypeProviderNameW(
 	OUT LPWSTR szProvider,
 	IN OUT LPDWORD pcchProvider
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetCardTypeProviderNameW called\n"));
+	LogWinscardRules(_CONV("SCardGetCardTypeProviderNameW called\n"));
 	return (*Original_SCardGetCardTypeProviderNameW)(hContext, szCardName, dwProviderId, szProvider, pcchProvider);
 }
 
@@ -1339,7 +1343,7 @@ SCard LONG STDCALL SCardIntroduceReaderGroupA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardIntroduceReaderGroupA called\n"));
+	LogWinscardRules(_CONV("SCardIntroduceReaderGroupA called\n"));
 	return (*Original_SCardIntroduceReaderGroupA)(hContext, szGroupName);
 }
 
@@ -1353,7 +1357,7 @@ SCard LONG STDCALL SCardIntroduceReaderGroupW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardIntroduceReaderGroupW called\n"));
+	LogWinscardRules(_CONV("SCardIntroduceReaderGroupW called\n"));
 	return (*Original_SCardIntroduceReaderGroupW)(hContext, szGroupName);
 }
 
@@ -1367,7 +1371,7 @@ SCard LONG STDCALL SCardForgetReaderGroupA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardForgetReaderGroupA called\n"));
+	LogWinscardRules(_CONV("SCardForgetReaderGroupA called\n"));
 	return (*Original_SCardForgetReaderGroupA)(hContext, szGroupName);
 }
 
@@ -1381,7 +1385,7 @@ SCard LONG STDCALL SCardForgetReaderGroupW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardForgetReaderGroupW called\n"));
+	LogWinscardRules(_CONV("SCardForgetReaderGroupW called\n"));
 	return (*Original_SCardForgetReaderGroupW)(hContext, szGroupName);
 }
 
@@ -1397,7 +1401,7 @@ SCard LONG STDCALL SCardIntroduceReaderA(
 	IN LPCSTR szReaderName,
 	IN LPCSTR szDeviceName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardIntroduceReaderA called\n"));
+	LogWinscardRules(_CONV("SCardIntroduceReaderA called\n"));
 	return (*Original_SCardIntroduceReaderA)(hContext, szReaderName, szDeviceName);
 }
 
@@ -1413,7 +1417,7 @@ SCard LONG STDCALL SCardIntroduceReaderW(
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szDeviceName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardIntroduceReaderW called\n"));
+	LogWinscardRules(_CONV("SCardIntroduceReaderW called\n"));
 	return (*Original_SCardIntroduceReaderW)(hContext, szReaderName, szDeviceName);
 }
 
@@ -1427,7 +1431,7 @@ SCard LONG STDCALL SCardForgetReaderA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szReaderName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardForgetReaderA called\n"));
+	LogWinscardRules(_CONV("SCardForgetReaderA called\n"));
 	return (*Original_SCardForgetReaderA)(hContext, szReaderName);
 }
 
@@ -1441,7 +1445,7 @@ SCard LONG STDCALL SCardForgetReaderW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szReaderName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardForgetReaderW called\n"));
+	LogWinscardRules(_CONV("SCardForgetReaderW called\n"));
 	return (*Original_SCardForgetReaderW)(hContext, szReaderName);
 }
 
@@ -1457,7 +1461,7 @@ SCard LONG STDCALL SCardAddReaderToGroupA(
 	IN LPCSTR szReaderName,
 	IN LPCSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardAddReaderToGroupA called\n"));
+	LogWinscardRules(_CONV("SCardAddReaderToGroupA called\n"));
 	return (*Original_SCardAddReaderToGroupA)(hContext, szReaderName, szGroupName);
 }
 
@@ -1473,7 +1477,7 @@ SCard LONG STDCALL SCardAddReaderToGroupW(
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardAddReaderToGroupW called\n"));
+	LogWinscardRules(_CONV("SCardAddReaderToGroupW called\n"));
 	return (*Original_SCardAddReaderToGroupW)(hContext, szReaderName, szGroupName);
 }
 
@@ -1489,7 +1493,7 @@ SCard LONG STDCALL SCardRemoveReaderFromGroupA(
 	IN LPCSTR szReaderName,
 	IN LPCSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardRemoveReaderFromGroupA called\n"));
+	LogWinscardRules(_CONV("SCardRemoveReaderFromGroupA called\n"));
 	return (*Original_SCardRemoveReaderFromGroupA)(hContext, szReaderName, szGroupName);
 }
 
@@ -1505,7 +1509,7 @@ SCard LONG STDCALL SCardRemoveReaderFromGroupW(
 	IN LPCWSTR szReaderName,
 	IN LPCWSTR szGroupName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardRemoveReaderFromGroupW called\n"));
+	LogWinscardRules(_CONV("SCardRemoveReaderFromGroupW called\n"));
 	return (*Original_SCardRemoveReaderFromGroupW)(hContext, szReaderName, szGroupName);
 }
 
@@ -1531,7 +1535,7 @@ SCard LONG STDCALL SCardIntroduceCardTypeA(
 	IN LPCBYTE pbAtrMask,
 	IN DWORD cbAtrLen
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardIntroduceCardTypeA called\n"));
+	LogWinscardRules(_CONV("SCardIntroduceCardTypeA called\n"));
 	return (*Original_SCardIntroduceCardTypeA)(hContext, szCardName, pguidPrimaryProvider, rgguidInterfaces, dwInterfaceCount, pbAtr, pbAtrMask, cbAtrLen);
 }
 
@@ -1557,7 +1561,7 @@ SCard LONG STDCALL SCardIntroduceCardTypeW(
 	IN LPCBYTE pbAtrMask,
 	IN DWORD cbAtrLen
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardIntroduceCardTypeW called\n"));
+	LogWinscardRules(_CONV("SCardIntroduceCardTypeW called\n"));
 	return (*Original_SCardIntroduceCardTypeW)(hContext, szCardName, pguidPrimaryProvider, rgguidInterfaces, dwInterfaceCount, pbAtr, pbAtrMask, cbAtrLen);
 }
 
@@ -1575,7 +1579,7 @@ SCard LONG STDCALL SCardSetCardTypeProviderNameA(
 	IN DWORD dwProviderId,
 	IN LPCSTR szProvider
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardSetCardTypeProviderNameA called\n"));
+	LogWinscardRules(_CONV("SCardSetCardTypeProviderNameA called\n"));
 	return (*Original_SCardSetCardTypeProviderNameA)(hContext, szCardName, dwProviderId, szProvider);
 }
 
@@ -1593,7 +1597,7 @@ SCard LONG STDCALL SCardSetCardTypeProviderNameW(
 	IN DWORD dwProviderId,
 	IN LPCWSTR szProvider
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardSetCardTypeProviderNameW called\n"));
+	LogWinscardRules(_CONV("SCardSetCardTypeProviderNameW called\n"));
 	return (*Original_SCardSetCardTypeProviderNameW)(hContext, szCardName, dwProviderId, szProvider);
 }
 
@@ -1607,7 +1611,7 @@ SCard LONG STDCALL SCardForgetCardTypeA(
 	IN SCARDCONTEXT hContext,
 	IN LPCSTR szCardName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardForgetCardTypeA called\n"));
+	LogWinscardRules(_CONV("SCardForgetCardTypeA called\n"));
 	return (*Original_SCardForgetCardTypeA)(hContext, szCardName);
 }
 
@@ -1621,7 +1625,7 @@ SCard LONG STDCALL SCardForgetCardTypeW(
 	IN SCARDCONTEXT hContext,
 	IN LPCWSTR szCardName
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardForgetCardTypeW called\n"));
+	LogWinscardRules(_CONV("SCardForgetCardTypeW called\n"));
 	return (*Original_SCardForgetCardTypeW)(hContext, szCardName);
 }
 
@@ -1640,7 +1644,7 @@ SCard LONG STDCALL SCardLocateCardsA(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsA(%s,0x%x) called\n"), mszCards, hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardLocateCardsA)(hContext, mszCards, rgReaderStates, cReaders);
 }
 
@@ -1660,7 +1664,7 @@ SCard LONG STDCALL SCardLocateCardsW(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsW(%S,0x%x) called\n"), mszCards, hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardLocateCardsW)(hContext, mszCards, rgReaderStates, cReaders);
 }
 
@@ -1682,7 +1686,7 @@ SCard LONG STDCALL SCardLocateCardsByATRA(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsByATRA(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardLocateCardsByATRA)(hContext, rgAtrMasks, cAtrs, rgReaderStates, cReaders);
 }
 
@@ -1704,7 +1708,7 @@ SCard LONG STDCALL SCardLocateCardsByATRW(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsByATRW(hContext:0x%x) called\n"), hContext);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	return (*Original_SCardLocateCardsByATRW)(hContext, rgAtrMasks, cAtrs, rgReaderStates, cReaders);
 }
 
@@ -1721,7 +1725,7 @@ SCard LONG STDCALL SCardGetStatusChangeA(
 	IN OUT  LPSCARD_READERSTATEA rgReaderStates,
 	IN      DWORD cReaders
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetStatusChangeA called\n"));
+	LogWinscardRules(_CONV("SCardGetStatusChangeA called\n"));
 	return (*Original_SCardGetStatusChangeA)(hContext, dwTimeout, rgReaderStates, cReaders);
 }
 
@@ -1739,7 +1743,7 @@ SCard LONG STDCALL SCardGetStatusChangeW(
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
 	IN      DWORD cReaders
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetStatusChangeW called\n"));
+	LogWinscardRules(_CONV("SCardGetStatusChangeW called\n"));
 	return (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
 }
 
@@ -1750,7 +1754,7 @@ static SCard LONG(STDCALL *Original_SCardUIDlgSelectCardA)(
 SCard LONG STDCALL SCardUIDlgSelectCardA(
 	LPOPENCARDNAMEA_EX a
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardUIDlgSelectCardA called\n"));
+	LogWinscardRules(_CONV("SCardUIDlgSelectCardA called\n"));
 	return (*Original_SCardUIDlgSelectCardA)(a);
 }
 
@@ -1762,7 +1766,7 @@ static SCard LONG(STDCALL *Original_SCardUIDlgSelectCardW)(
 SCard LONG STDCALL SCardUIDlgSelectCardW(
 	LPOPENCARDNAMEW_EX a
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardUIDlgSelectCardW called\n"));
+	LogWinscardRules(_CONV("SCardUIDlgSelectCardW called\n"));
 	return (*Original_SCardUIDlgSelectCardW)(a);
 }
 
@@ -1773,7 +1777,7 @@ static SCard LONG(STDCALL *Original_GetOpenCardNameA)(
 SCard LONG STDCALL GetOpenCardNameA(
 	LPOPENCARDNAMEA a
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("GetOpenCardNameA called\n"));
+	LogWinscardRules(_CONV("GetOpenCardNameA called\n"));
 	return (*Original_GetOpenCardNameA)(a);
 }
 
@@ -1784,7 +1788,7 @@ static SCard LONG(STDCALL *Original_GetOpenCardNameW)(
 SCard LONG STDCALL GetOpenCardNameW(
 	LPOPENCARDNAMEW a
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("GetOpenCardNameW called\n"));
+	LogWinscardRules(_CONV("GetOpenCardNameW called\n"));
 	return (*Original_GetOpenCardNameW)(a);
 }
 
@@ -1792,7 +1796,7 @@ SCard LONG STDCALL GetOpenCardNameW(
 static SCard LONG(STDCALL *Original_SCardDlgExtendedError)(void);
 
 SCard LONG STDCALL SCardDlgExtendedError(void) {
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardDlgExtendedError called\n"));
+	LogWinscardRules(_CONV("SCardDlgExtendedError called\n"));
 	return (*Original_SCardDlgExtendedError)();
 }
 
@@ -1803,7 +1807,7 @@ static SCard LONG(STDCALL *Original_SCardCancelTransaction)(
 SCard LONG STDCALL SCardCancelTransaction(
 	IN      SCARDHANDLE hCard
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardCancelTransaction called\n"));
+	LogWinscardRules(_CONV("SCardCancelTransaction called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 	}
@@ -1829,7 +1833,7 @@ SCard LONG STDCALL SCardState(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardState(hCard:0x%x) called\n"), hCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 		*pdwState = SCARD_SPECIFIC;
@@ -1863,7 +1867,7 @@ SCard LONG STDCALL SCardStatusW(
 ) {
 	string_type message;
 	message = string_format(_CONV("SCardStatusW(hCard:0x%x) called\n"), hCard);
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	LogWinscardRules(message);
 	if (theApp.IsRemoteCard(hCard)) {
 		return SCARD_S_SUCCESS;
 		*pdwState = SCARD_SPECIFIC;
@@ -1878,7 +1882,7 @@ SCard LONG STDCALL SCardStatusW(
 static SCard HANDLE(STDCALL *Original_SCardAccessStartedEvent)(void);
 
 SCard HANDLE STDCALL SCardAccessStartedEvent(void) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardAccessStartedEvent called\n"));
+	LogWinscardRules(_CONV("SCardAccessStartedEvent called\n"));
 	return (*Original_SCardAccessStartedEvent)();
 }
 
@@ -1886,7 +1890,7 @@ SCard HANDLE STDCALL SCardAccessStartedEvent(void) {
 static SCard void(STDCALL *Original_SCardReleaseStartedEvent)(void);
 
 SCard void STDCALL SCardReleaseStartedEvent(void) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardReleaseStartedEvent called\n"));
+	LogWinscardRules(_CONV("SCardReleaseStartedEvent called\n"));
 	return (*Original_SCardReleaseStartedEvent)();
 }
 #endif
@@ -1908,7 +1912,7 @@ LONG SCardGetStatusChange(
 	IN OUT  SCARD_READERSTATE *rgReaderStates,
 	IN      DWORD cReaders
 ) {
-	if (theApp.m_winscardConfig.bLOG_FUNCTIONS_CALLS) CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("SCardGetStatusChange called\n"));
+	LogWinscardRules(_CONV("SCardGetStatusChange called\n"));
 	return (*Original_SCardGetStatusChange)(hContext, dwTimeout, rgReaderStates, cReaders);
 }
 
@@ -2681,7 +2685,7 @@ int initialize()
 			IN      SCARDHANDLE hCard))
 		load_func(hOriginal, "SCardCancelTransaction");
 	if (!Original_SCardCancelTransaction) {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardCancelTransaction procedure address\n"));
+		LogWinscardRules(_CONV("Could not find SCardCancelTransaction procedure address\n"));
 	}
 
 	Original_SCardState =
@@ -2732,7 +2736,7 @@ int initialize()
 			LPOPENCARDNAMEA_EX))
 		load_func(hOriginal, "SCardUIDlgSelectCardA");
 	if (!Original_SCardUIDlgSelectCardA) {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardUIDlgSelectCardA procedure address\n"));
+		LogWinscardRules(_CONV("Could not find SCardUIDlgSelectCardA procedure address\n"));
 	}
 
 	Original_SCardUIDlgSelectCardW =
@@ -2740,28 +2744,28 @@ int initialize()
 			LPOPENCARDNAMEW_EX))
 		load_func(hOriginal, "SCardUIDlgSelectCardW");
 	if (!Original_SCardUIDlgSelectCardW) {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardUIDlgSelectCardW procedure address\n"));
+		LogWinscardRules(_CONV("Could not find SCardUIDlgSelectCardW procedure address\n"));
 	}
 
 	Original_GetOpenCardNameA =
 		(LONG(STDCALL *)(LPOPENCARDNAMEA))
 		load_func(hOriginal, "GetOpenCardNameA");
 	if (!Original_GetOpenCardNameA) {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find GetOpenCardNameA procedure address\n"));
+		LogWinscardRules(_CONV("Could not find GetOpenCardNameA procedure address\n"));
 	}
 
 	Original_GetOpenCardNameW =
 		(LONG(STDCALL *)(LPOPENCARDNAMEW))
 		load_func(hOriginal, "GetOpenCardNameW");
 	if (!Original_GetOpenCardNameW) {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find GetOpenCardNameW procedure address\n"));
+		LogWinscardRules(_CONV("Could not find GetOpenCardNameW procedure address\n"));
 	}
 
 	Original_SCardDlgExtendedError =
 		(LONG(STDCALL *)(void))
 		load_func(hOriginal, "SCardDlgExtendedError ");
 	if (!Original_SCardDlgExtendedError) {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Could not find SCardDlgExtendedError procedure address\n"));
+		LogWinscardRules(_CONV("Could not find SCardDlgExtendedError procedure address\n"));
 	}
 
 #endif
@@ -2879,6 +2883,8 @@ void GetDesktopPath(char_type* path)
 #endif
 }
 
+
+
 #if defined (_WIN32)
 BOOL CWinscardApp::InitInstance()
 {
@@ -2890,34 +2896,50 @@ BOOL CWinscardApp::InitInstance()
 	}
 
     srand((int) time(NULL));
-	CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("InitInstance\n"));
+	LogDebugString(_CONV("#####################################################################################\n"), false);
+	LogDebugString(_CONV("InitInstance entered\n"));
+
+#if defined (_WIN32) && !defined(_WIN64)
+	LogDebugString(string_format(_CONV("APDUPlay winscard.dll v%s (32-bit version)\n"), LIBRARY_VERSION.c_str()));
+#endif
+#ifdef _WIN64
+	LogDebugString(string_format(_CONV("APDUPlay winscard.dll v%s, (64-bit version)\n"), LIBRARY_VERSION.c_str()));
+#endif
+
 
     // LOAD MODIFICATION RULES
     LoadRules();
-	CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("After LoadRules\n"));
+	LogDebugString(_CONV("After LoadRules\n"));
 
     // CONNECT TO REMOTE SOCKET IF REQUIRED
     if (m_remoteConfig.bRedirect) {
-        Remote_Connect(&m_remoteConfig);
+		LogDebugString(_CONV("[REMOTE] Redirect = 1 => going to connect to specified socket (make sure socket is opened. If application terminates, try to set Redirect = 0 to disable remote redirecting)\n"));
+		Remote_Connect(&m_remoteConfig);
     }
-	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\r\n"));
+	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\n"));
 
-	return initialize();
+	BOOL bStatus = initialize();
+	LogDebugString(string_format(_CONV("Finalizing InitInstance with %s\n"), bStatus ? _CONV("true") : _CONV("false")));
+
+	return bStatus;
 }
 
 int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
     string_type     message;
     
     string_type sIP(pRemoteConfig->IP);
-    //pRemoteConfig->pSocket = new SocketClient(sIP, atoi(pRemoteConfig->port.c_str()));
 	try {
+		message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+		LogWinscardRules(message);
 		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
-		message = string_format(_CONV("\n> Connnecting to remote proxy with IP:port = %s:%s\n"), pRemoteConfig->IP, pRemoteConfig->port);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
 	}
 	catch (std::string error) {
-		message = string_format(_CONV("\n> Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP, pRemoteConfig->port, error);
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error);
+		LogWinscardRules(message);
+	}
+	catch (...) {
+		message = string_format(_CONV("Failed to connect to %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+		LogWinscardRules(message);
 	}
 
     return STAT_OK;
@@ -2973,7 +2995,7 @@ int CWinscardApp::ApplyRules(BYTE* pbBuffer, DWORD* pcbLength, int direction) {
                         }
                     }
                     
-                    // NEDETERMINISTIC SLEEP IF REQUIRED
+                    // NONDETERMINISTIC SLEEP IF REQUIRED
                     if (iter->msDelay > 0) {
 						std::this_thread::sleep_for(std::chrono::milliseconds(iter->msDelay));
                         //_sleep(iter->msDelay);
@@ -3057,7 +3079,7 @@ LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type
 			pRemoteConfig->pSocket->SendLine(l);
 			//message.Insert(0, "\n::-> ");
 			message.insert(0, _CONV("\n::-> "));
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			LogWinscardRules(message);
 			_sleep(500);
 
 			// OBTAIN RESPONSE, PARSE BACK 
@@ -3070,16 +3092,16 @@ LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type
 
 			message = string_format(_CONV("\n::<- %s\n"), response.c_str());
 			replace(message.begin(), message.end(), '\n', ' ');
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			LogWinscardRules(message);
 		}
 		catch (const char* s) {
-			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)"), message, s);
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)"), message.c_str(), s);
+			LogWinscardRules(message);
 			status = SCARD_F_UNKNOWN_ERROR;
 		}
 		catch (...) {
-			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (unhandled exception)"), message);
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (unhandled exception)"), message.c_str());
+			LogWinscardRules(message);
 			status = SCARD_F_UNKNOWN_ERROR;
 		}
 	}
@@ -3098,7 +3120,7 @@ LONG CWinscardApp::Remote_ParseResponse(string_type rawResponse, DWORD expectedC
 
 	size_t pos = 0;
 	if (rawResponse.at(pos) != '>') {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "'>'was expected at begin");
+		LogWinscardRules("'>'was expected at begin");
 		status = SCARD_F_COMM_ERROR;
 	}
 	pos++;
@@ -3107,7 +3129,7 @@ LONG CWinscardApp::Remote_ParseResponse(string_type rawResponse, DWORD expectedC
 		size_t pos2 = rawResponse.find(CMD_SEPARATOR);
 		string_type uniqueCmdID = rawResponse.substr(pos, pos2 - 1);
 		if (expectedCommandID != atoi(uniqueCmdID.c_str())) {
-			CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, "Unexpected commandID in response");
+			LogWinscardRules("Unexpected commandID in response");
 			status = SCARD_F_COMM_ERROR;
 		}
 		pos = pos2 + 1;
@@ -3137,7 +3159,7 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
             pRemoteConfig->pSocket->SendLine(l);
             //message.Insert(0, "\n::-> ");
 			message.insert(0, _CONV("\n::-> "));
-            CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+            LogWinscardRules(message);
             
             // SLEEP LONGER, IF MORE DATA WILL BE RETURNED BY SYSTEM 00 0c 00 00 xx CALL            
             if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
@@ -3154,7 +3176,7 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
             message = string_format(_CONV("\n::<- %s\n"), l.c_str());
             //message.Replace("\n", " ");
 			replace(message.begin(), message.end(), '\n', ' ');
-            CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+            LogWinscardRules(message);
             
             if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
@@ -3171,13 +3193,13 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
             }
         }
         catch (const char* s) {
-            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (%s)"), message, s);
-            CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (%s)"), message.c_str(), s);
+            LogWinscardRules(message);
             status = SCARD_F_UNKNOWN_ERROR;
         } 
         catch (...) {
-            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (unhandled exception)"), message);
-            CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (unhandled exception)"), message.c_str());
+            LogWinscardRules(message);
             status = SCARD_F_UNKNOWN_ERROR;
         }
     }
@@ -3239,12 +3261,6 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":MODIFY_APDU_BY_RULES")), 2)) != 2)
 		{
 			m_winscardConfig.bMODIFY_APDU_BY_RULES = value;
-		}
-
-		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":LOG_FUNCTIONS_CALLS")), 2)) != 2)
-		{
-			m_winscardConfig.bLOG_FUNCTIONS_CALLS = value;
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -3571,37 +3587,37 @@ int CWinscardApp::LoadRules() {
 	// (UNUSED) 3. Lookup on user Desktop 
 
 	if (!file) {  // 1. Lookup in local directory
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Going to open %s ... "), rulesFilePath));
+		LogDebugString(string_format(_CONV("Going to open %s ... "), rulesFilePath));
 		file = fopen(rulesFilePath, "r");
 		if (file) {
-			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("success\n"));
+			LogDebugString(_CONV("success\n"), false);
 			type_copy(baseDir, "");
 		}
 		else {
-			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("fail\n"));
+			LogDebugString(_CONV("fail\n"), false);
 		}
 	}
 
 	if (!file) { // 2. Lookup for APDUPLAY environmental variable
 		char* configPath = std::getenv(ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str());
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_WINSCARD_RULES_PATH));
+		LogDebugString(string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str()));
 		if (configPath != NULL) {
-			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV(" defined (%s)\n"), configPath));
+			LogDebugString(string_format(_CONV(" defined (%s)\n"), configPath), false);
 			// variable detected, try to open 
 			string newRuleFile = string_format(_CONV("%s\\%s"), configPath, RULE_FILE.c_str());
-			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Going to open %s ... "), newRuleFile.c_str()));
+			LogDebugString(string_format(_CONV("Going to open %s ... "), newRuleFile.c_str()));
 			file = fopen(newRuleFile.c_str(), "r");
 			if (file) {
-				CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("success\n"));
+				LogDebugString(_CONV("success\n"), false);
 				type_copy(rulesFilePath, newRuleFile.c_str());
 				type_copy(baseDir, configPath);
 			}
 			else {
-				CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("fail\n"));
+				LogDebugString(_CONV("fail\n"), false);
 			}
 		}
 		else {
-			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("not found\n"));
+			LogDebugString(_CONV("not found\n"), false);
 		}
 	}
 
@@ -3629,13 +3645,13 @@ int CWinscardApp::LoadRules() {
 		iniparser_freedict(dict);
 	}
 	else {
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, _CONV("Rules file NOT found\n"));
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
+		LogDebugString(_CONV("Rules file NOT found\n"));
+		LogWinscardRules(_CONV("Rules file NOT found\n"));
 	}
 
 	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
 	{
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Logging base path is forced as '%s' (LOG_BASE_PATH)\n"), m_winscardConfig.sLOG_BASE_PATH.c_str()));
+		LogDebugString(string_format(_CONV("Logging base path is forced as '%s' (LOG_BASE_PATH)\n"), m_winscardConfig.sLOG_BASE_PATH.c_str()));
 
 		// Use provided directory to store output files
 		WINSCARD_RULES_LOG = string_format(_CONV("%s\\%s"), m_winscardConfig.sLOG_BASE_PATH.c_str(), WINSCARD_RULES_LOG.c_str());
@@ -3644,7 +3660,7 @@ int CWinscardApp::LoadRules() {
 	}
 	else
 	{
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("Logging base path not forced, using '%s'\n"), baseDir));
+		LogDebugString(string_format(_CONV("Logging base path not forced, using '%s'\n"), baseDir));
 
 		// Use base directory to store output files
 		WINSCARD_RULES_LOG = string_format(_CONV("%s%s"), baseDir, WINSCARD_RULES_LOG.c_str());
@@ -3659,7 +3675,7 @@ int CWinscardApp::LoadRules() {
 	{
 		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
 		instruction_file.close();
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
+		LogWinscardRules(_CONV("Instruction file found"));
 		instructionDict = iniparser_load((const char*) INSTRUCTION_FILE.c_str());
 	}
 
@@ -3715,9 +3731,6 @@ int CWinscardApp::LoadRule(string_type ruleName, string_type filePath) {
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("MODIFY_APDU_BY_RULES"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
 			m_winscardConfig.bMODIFY_APDU_BY_RULES = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
-		}
-		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("LOG_FUNCTIONS_CALLS"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
-			m_winscardConfig.bLOG_FUNCTIONS_CALLS = (type_to_int(buffer, NULL, 10) == 0) ? FALSE : TRUE;
 		}
 		if ((GetPrivateProfileString(ruleName.c_str(), _CONV("READER_ORDERED_FIRST"), _CONV(""), buffer, cBuffer, filePath.c_str())) > 0) {
 			m_winscardConfig.sREADER_ORDERED_FIRST = buffer;
@@ -3975,7 +3988,7 @@ int CWinscardApp::LoadRules() {
 
 		string_type message;
 		message = string_format(_CONV("Rules file found: %s\n"), filePath.c_str());
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+		LogWinscardRules(message);
 
 		// OBTAIN SECTION NAMES
 		if ((cReaded = GetPrivateProfileString(NULL, NULL, _CONV(""), buffer, cBuffer, rulesFilePath)) != 0) {
@@ -3990,7 +4003,7 @@ int CWinscardApp::LoadRules() {
 		m_bRulesActive = TRUE;
 	}
 	else {
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Rules file NOT found\n"));
+		LogWinscardRules(_CONV("Rules file NOT found\n"));
 	}
 
 	if (!m_winscardConfig.sLOG_BASE_PATH.empty())
@@ -4011,7 +4024,7 @@ int CWinscardApp::LoadRules() {
 	{
 		theApp.m_winscardConfig.bLOG_WRITE_DESCRIPTION = TRUE;
 		instruction_file.close();
-		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, _CONV("Instruction file found"));
+		LogWinscardRules(_CONV("Instruction file found"));
 		instructionDict = iniparser_load((const char*)INSTRUCTION_FILE.c_str());
 	}
 
