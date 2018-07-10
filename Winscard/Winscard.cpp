@@ -107,7 +107,7 @@ BYTE    GET_APDU1[] = { 0x00, 0xC0, 0x00, 0x00 };
 BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 //#define VIRT_READER_NAME        "VirtOpenPGP"
-#define VIRT_READER_NAME        "Simona /111.222.123.033@07\nSimona /111.222.123.033@12\nSimona /111.222.123.033@123"
+#define VIRT_READER_NAME        "Simona /111.222.123.033@07"
 #define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
 
 #define REMOTE_READER_PREFIX	"Simona"
@@ -2883,7 +2883,7 @@ void GetDesktopPath(char_type* path)
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
-
+	// Check for user-defined path for debug file
 	char* debugPath = std::getenv(ENV_APDUPLAY_DEBUG_PATH.c_str());
 	if (debugPath != NULL) {
 		APDUPLAY_DEBUG_FILE = debugPath;
