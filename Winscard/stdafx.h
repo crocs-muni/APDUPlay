@@ -168,11 +168,14 @@ typedef std::list<PTR>           lptr;
 
 
 #if defined (_WIN32)
+#define REMOTE_READER_PREFIX_DEFAULT	"Simona"
+
 typedef struct _REMOTE_CONFIG {
     BOOL            bRedirect;
 	string_type     IP;
 	string_type     port;
 	string_type     cfgScript;
+	string_type		remoteReaderPrefix; // prefix of reader name signalizing remote reader. If matches, all calls are redirected to remote proxy
     BYTE            measureApdu[255];    
     BYTE            measureApduLen;     // number of used bytes from measureApdu array
     int             measureApduByteCounter;     // number of incoming apdu bytes before the measurement is run - part of get params 1 xx 0 command
@@ -193,6 +196,7 @@ typedef struct _REMOTE_CONFIG {
         IP = _CONV("");
         port = _CONV("");
         cfgScript = _CONV("");
+		remoteReaderPrefix = _CONV(REMOTE_READER_PREFIX_DEFAULT);
         memset(measureApdu, 0, sizeof(measureApdu));
         measureApduLen = 0;
         measureApduByteCounter = 0;

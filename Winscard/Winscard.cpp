@@ -102,10 +102,6 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 #define VIRT_READER_NAME        "Simona /111.222.123.033@07"
 #define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
 
-#define REMOTE_READER_PREFIX	"Simona"
-//#define REMOTE_READER_PREFIX	"Generic EMV Smartcard"
-
-
 #define CMD_APDU				"APDU"
 #define CMD_RESET				"RESET"
 #define CMD_ENUM				"ENUM"
@@ -782,7 +778,7 @@ SCard LONG STDCALL SCardConnect(
 
 	// Detect remote cards (now only via reader prefix) and assign virtual card handle
 	string_type readerName = szReader;
-	if (readerName.find(REMOTE_READER_PREFIX) != -1) {
+	if (readerName.find(theApp.m_remoteConfig.remoteReaderPrefix) != -1) {
 		theApp.m_nextRemoteCardID++;
 		*phCard = theApp.m_nextRemoteCardID;
 		theApp.remoteReadersMap[*phCard] = szReader;
@@ -821,7 +817,7 @@ SCard LONG STDCALL SCardStatus(
 	LPBYTE pbAtr,
 	LPDWORD pcbAtrLen)
 {
-	LogWinscardRules(string_format(_CONV("SCardStatus(hCard:0x%x,szReaderName:%s,pcchReaderLen:%d,pcbAtrLen:%d) called\n"), hCard, szReaderName, *pcchReaderLen, *pcbAtrLen));
+	LogWinscardRules(string_format(_CONV("SCardStatus(hCard:0x%x,pcchReaderLen:%d,pcbAtrLen:%d) called\n"), hCard, *pcchReaderLen, *pcbAtrLen));
 
 	if (theApp.IsRemoteCard(hCard)) {
 		// According to https://docs.microsoft.com/en-us/windows/desktop/api/winscard/nf-winscard-scardstatusa
@@ -2933,17 +2929,23 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
     
     string_type sIP(pRemoteConfig->IP);
 	try {
-		message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
-		LogWinscardRules(message);
+		message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s ... "), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+		LogDebugString(message);
 		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+		if (pRemoteConfig->pSocket != NULL) {
+			LogDebugString(_CONV("success"), false);
+		}
+		else {
+			LogDebugString(_CONV("failed"), false);
+		}
 	}
 	catch (std::string error) {
 		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error);
-		LogWinscardRules(message);
+		LogDebugString(message, false);
 	}
 	catch (...) {
 		message = string_format(_CONV("Failed to connect to %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
-		LogWinscardRules(message);
+		LogDebugString(message, false);
 	}
 
     return STAT_OK;
@@ -3082,7 +3084,7 @@ LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type
 			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_RESET, "", "", CMD_LINE_SEPARATOR);
 			pRemoteConfig->pSocket->SendLine(l);
 			//message.Insert(0, "\n::-> ");
-			message.insert(0, _CONV("\n::-> "));
+			message.insert(0, _CONV("::-> "));
 			LogWinscardRules(message);
 			_sleep(500);
 
@@ -3094,17 +3096,17 @@ LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type
 			string_type response;
 			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
 
-			message = string_format(_CONV("\n::<- %s\n"), response.c_str());
-			replace(message.begin(), message.end(), '\n', ' ');
+			replace(response.begin(), response.end(), '\n', ' ');
+			message = string_format(_CONV("::<- %s\n"), response.c_str());
 			LogWinscardRules(message);
 		}
 		catch (const char* s) {
-			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)"), message.c_str(), s);
+			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)\n"), message.c_str(), s);
 			LogWinscardRules(message);
 			status = SCARD_F_UNKNOWN_ERROR;
 		}
 		catch (...) {
-			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (unhandled exception)"), message.c_str());
+			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (unhandled exception)\n"), message.c_str());
 			LogWinscardRules(message);
 			status = SCARD_F_UNKNOWN_ERROR;
 		}
@@ -3162,7 +3164,7 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
 			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
             pRemoteConfig->pSocket->SendLine(l);
             //message.Insert(0, "\n::-> ");
-			message.insert(0, _CONV("\n::-> "));
+			message.insert(0, _CONV("::-> "));
             LogWinscardRules(message);
             
             // SLEEP LONGER, IF MORE DATA WILL BE RETURNED BY SYSTEM 00 0c 00 00 xx CALL            
@@ -3177,9 +3179,8 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
 			string_type response;
 			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
 
-            message = string_format(_CONV("\n::<- %s\n"), l.c_str());
-            //message.Replace("\n", " ");
-			replace(message.begin(), message.end(), '\n', ' ');
+			replace(l.begin(), l.end(), '\n', ' ');
+			message = string_format(_CONV("::<- %s\n"), l.c_str());
             LogWinscardRules(message);
             
             if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
@@ -3197,12 +3198,12 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
             }
         }
         catch (const char* s) {
-            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (%s)"), message.c_str(), s);
+            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (%s)\n"), message.c_str(), s);
             LogWinscardRules(message);
             status = SCARD_F_UNKNOWN_ERROR;
         } 
         catch (...) {
-            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (unhandled exception)"), message.c_str());
+            message = string_format(_CONV("\nRemote_SCardTransmit(), SendLine(%s), fail with (unhandled exception)\n"), message.c_str());
             LogWinscardRules(message);
             status = SCARD_F_UNKNOWN_ERROR;
         }
@@ -3285,6 +3286,14 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		{
 			m_remoteConfig.bRedirect = value;
 		}
+
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":REMOTE_READER_PREFIX")), "");
+		if (type_length(char_value) != 0)
+		{
+			m_remoteConfig.remoteReaderPrefix = char_value;
+		}
+		
 
 		type_copy(sec_and_key, section_name);
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":IP")), "");
