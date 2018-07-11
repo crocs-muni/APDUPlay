@@ -6,11 +6,11 @@ PC/SC APDU inspection and manipulation tool (APDUPlay)
 Windows DLL: [![Build status](https://ci.appveyor.com/api/projects/status/ktwde29drhtw7jml?svg=true)](https://ci.appveyor.com/project/petrs/apduplay)
 Linux SO: [![Build Status](https://travis-ci.org/crocs-muni/apduplay.svg?branch=master)](https://travis-ci.org/crocs-muni/apduplay)
 
-The APDUPlay project allows you to log, modify, redirect and visualize smartcard communication realized via PC/SC interface (winscard.dll library). The functionality is achieved by custom "stub" library (provided by APDUPlay) which intercepts and redirects the communication to  original winscard.dll (provided by Microsoft) or . The project is applicable to applications running on Windows Vista, 7, 8, 10 and Linux both 32- and 64-bit.
+The APDUPlay project allows you to log, modify, redirect and visualize smartcard communication realized via PC/SC interface (winscard.dll library). The functionality is achieved by custom "stub" library (provided by APDUPlay) which intercepts and redirects the communication to original winscard.dll (provided by Microsoft) or remote socket proxy. The project supports applications running on Windows Vista, 7, 8, 10 and Linux both 32- and 64-bit.
 
-The primary uses for APDUPlay project are debugging and reverse engineering of unknown APDU-based protocols, redirection of communication to remote smartcard and penetration testing for black-box applications. The APDUPlay project is based on (now inactive) ApduView tool (http://www.fernandes.org/apduview/index.html) by Andrew Fernandes which allowed to log PC/SC communication.  
+The primary uses for APDUPlay project are debugging and reverse engineering of unknown APDU-based protocols, redirection of communication to the remote smartcard and penetration testing for black-box applications. The APDUPlay project is based on (now inactive) ApduView tool (http://www.fernandes.org/apduview/index.html) by Andrew Fernandes which allowed to log PC/SC communication.  
 
-The APDUPlay project provides following functionality: 
+The APDUPlay project provides the following functionality: 
   * Log content and additional information about the exchanged PC/SC communication (APDU packets).
   * Manipulate the communication in real time based on pattern matching rules (e.g., always return success for VERIFY PIN command despite an incorrect PIN value).
   * Redirect communication via socket to other device/computer to support remotely connected smartcards (only Windows version at the moment).
@@ -22,10 +22,10 @@ See more details at https://github.com/petrs/APDUPlay/wiki.
 ##  Installation and use 
 1. Find out if your application requires 32- or 64-bit winscard.dll (e.g., using [Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck))
 2. Copy Microsoft's original winscard.dll library to a target application folder and rename it to original32.dll or original64.dll (based on Step 1). 
-3. Place APDUPlay's custom winscard.dll library to a target application folder so it is loaded first.
+3. Place APDUPlay's custom winscard.dll library to a target application folder, so it is loaded first.
 4. Place configuration file named winscard_rules.txt into the same folder.
 
-The target application folder should now looks like this (CAProfiler_64b.exe used as example)
+The target application folder should now look like this (CAProfiler_64b.exe used as an example)
 ```cmd
 .
 ..
@@ -74,10 +74,10 @@ received:6a 82
 ```
 7. (Optional) Inspect other APDUPlay features like APDU commands modification or redirection to remote socket proxy.
 
-The installation and usage process is relatively simple, but may be little tricky if something doesn't work (e.g., library is loaded from a different than expected path, application terminates without giving any error message etc.). The first step is always to make sure that APDUPlay's stub library is used together with the correct winscard_rules.txt. See Examples section for detailed step-by-step installation and troubleshooting. 
+The installation and usage process is relatively simple, but may be little tricky if something does not work (e.g., the library is loaded from a different than an expected path, the application terminates without giving any error message, etc.). The first step is always to make sure that APDUPlay's stub library is used together with the correct winscard_rules.txt. See Examples section for detailed step-by-step installation and troubleshooting. 
 
 ##  Installation (Windows OS)
-1. Find out if targeted application is 32- or 64-bit [(Use Microsoft Sysinternals Sigcheck utility)](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck). Run sigcheck.exe targetApp.exe and look for MachineType: 32-bit or 64-bit (works also for dll files) 
+1. Find out if a targeted application is 32- or 64-bit [(Use Microsoft Sysinternals Sigcheck utility)](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck). Run sigcheck.exe targetApp.exe and look for MachineType: 32-bit or 64-bit (also works for dll files) 
 1. Copy Winscard.dll from your system folder (c:\Windows\System32\winscard.dll for 64-bit target application (if you are running 64-bit OS) or c:\Windows\SysWOW64\winscard.dll for 32-bit application) to the folder with target application and rename it to original32.dll or original64.dll respectively. NOTE: c:\Windows\System32\ contains either 32-bit or 64-bit version based on your OS.
 2. Copy Winscard.dll from APDUPlay project to the folder with target application (the folder should contain winscard.dll binary from APDUPlay project AND originalXX.dll which is Microsoft's original winscard.dll)
 3. Run the application and inspect resulting files winscard_log.txt and winscard_rules_log.txt
@@ -85,12 +85,12 @@ The installation and usage process is relatively simple, but may be little trick
 
 
 ## Examples
-The localization of correct winscard.dll path can be sometimes a tedious task, especially for applications using additional frameworks to access PC/SC interface. Here are some examples with increasing difficulty:
+The localization of correct winscard.dll path can sometimes be a tedious task, especially for applications using additional frameworks to access PC/SC interface. Here are some examples of increasing difficulty:
   1. Simple application directly using winscard.dll ([CAProfiler.exe](https://github.com/petrs/CAProfiler/releases/latest))
   2. Application with persistent agent ([gpg2.exe --card-edit](https://gpg4win.org/download.html))
   3. Java-based application accessing smartcards via JRE: ([GlobalPlatformPro gp -l](https://github.com/martinpaljak/GlobalPlatformPro))
 
-Alternatively, you may replace winscard.dll directly in the system folder. Warning: PC/SC communication from ALL applications runing on your system is now intercepted and logged to file including your PINs, passwords etc. - so use this option with care!
+Alternatively, you may replace winscard.dll directly in the system folder. Warning: PC/SC communication from ALL applications running on your system is now intercepted and logged to file including your PINs, passwords etc. - so use this option with care!
 
 
 ## Troubleshooting
@@ -99,7 +99,7 @@ Alternatively, you may replace winscard.dll directly in the system folder. Warni
   
   * Problem: Target application is (probably) not loading modified winscard.dll from APDUPlay project, but uses standard Microsoft's one from system folder (no files with logged communication are created). Use [Process Monitor utility]( https://docs.microsoft.com/en-us/sysinternals/downloads/procmon) from Microsoft to find location of loaded libraries (use Filter option to limit results only to target application: CTRL+L -> Process Name is 'targetApp.exe' -> Add). Search for event 'Load Image path_to_folder\Winscard.dll'. The path_to_folder should point to APDUPlay's version of winscard.dll, not Microsoft one.
 
-  * Problem: Logging seems to work, but only for the first of application. When started again, changes done to winscard_rules.txt does not apply. Target application might have persistent component (e.g., GPG have gpg-agent.exe) which loads the dll (and rules from winscard_rules.txt) and runs even when target application is terminated. Try to locate and kill this component, or restart computer (will force component to restart again).
+  * Problem: Logging seems to work, but only for the first of application. When started again, changes done to winscard_rules.txt does not apply. Target application might have persistent component (e.g., GPG have gpg-agent.exe) which loads the dll (and rules from winscard_rules.txt) and runs even when target application is terminated. Try to locate and kill this component, or restart the computer (will force component to restart again).
 
   * Problem: Target application always opens winscard.dll from system folders (either system32 or sysWOW64 folder). 
 Run cmd as admin, then:
@@ -107,7 +107,7 @@ Run cmd as admin, then:
 cd target_folder (either system32 or sysWOW64)
 takeown /f winscard.dll
 cacls winscard.dll /G your_username:F
-rename winscard.dll to winscard_MS.dll  (winscard.dll might be currently used by some other process so direct copy woudl not be possible)
+rename winscard.dll to winscard_MS.dll  (winscard.dll might be currently used by some other process so direct copy would not be possible)
 copy APDUPlay's winscard.dll instead winscard.dll
 ```
 
