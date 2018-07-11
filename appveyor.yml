@@ -3,7 +3,7 @@
 #---------------------------------#
 
 # version format
-version: 1.0.{build}
+version: 2.0.{build}
 
 # branches to build
 branches:
@@ -68,7 +68,7 @@ build:
 #       artifacts                 #
 #---------------------------------#
 artifacts:
-- path: c:\projects\APDUPlay\x64\Release\winscard.dll
-  name: winscard.dll 64bit
-- path: c:\projects\APDUPlay\Release\winscard.dll
-  name: winscard.dll 32bit
+- path: x64\Release\winscard.dll
+  name: APDUPlay's winscard.dll 64bit
+- path: Release\winscard.dll
+  name: APDUPlay's winscard.dll 32bit
