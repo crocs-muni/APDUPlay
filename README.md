@@ -53,8 +53,28 @@ APPLET_AID_JCOP_CM             : a0 00 00 00 03 00 00 00
 APPLET_AID_VISA_PREFIX         : a0 00 00 00 03
 ```
 6. Inspect the generated files with an intercepted communication (winscard_log.txt, apduplay_debug.txt ...).
+```ini
+[begin]
+SCardTransmit (handle 0x00000000)#
+apduCounter:0#
+totalBytesINCounter:1#
+transmitted:00 a4 04 00 05 a0 00 00 00 03 00
+responseTime:12#
+SCardTransmit result:0x0#
+received:6f 10 84 08 a0 00 00 00 03 00 00 00 a5 04 9f 65 01 ff 90 00
 
-The installation and usage process is relatively simple, but may be little tricky if something doesn't work (e.g., library is loaded from a different than expected path, application terminates without giving any error message etc.). See Examples section for detailed step-by-step installation and troubleshooting. 
+SCardTransmit (handle 0x00000000)#
+apduCounter:1#
+totalBytesINCounter:12#
+transmitted:00 a4 04 00 05 a0 00 00 00 04 00
+responseTime:9#
+SCardTransmit result:0x0#
+received:6a 82
+...
+```
+7. (Optional) Inspect other APDUPlay features like APDU commands modification or redirection to remote socket proxy.
+
+The installation and usage process is relatively simple, but may be little tricky if something doesn't work (e.g., library is loaded from a different than expected path, application terminates without giving any error message etc.). The first step is always to make sure that APDUPlay's stub library is used together with the correct winscard_rules.txt. See Examples section for detailed step-by-step installation and troubleshooting. 
 
 ##  Installation (Windows OS)
 1. Find out if targeted application is 32- or 64-bit [(Use Microsoft Sysinternals Sigcheck utility)](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck). Run sigcheck.exe targetApp.exe and look for MachineType: 32-bit or 64-bit (works also for dll files) 
