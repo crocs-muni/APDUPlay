@@ -2933,14 +2933,14 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
 		LogDebugString(message);
 		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
 		if (pRemoteConfig->pSocket != NULL) {
-			LogDebugString(_CONV("success"), false);
+			LogDebugString(_CONV("success\n"), false);
 		}
 		else {
-			LogDebugString(_CONV("failed"), false);
+			LogDebugString(_CONV("failed\n"), false);
 		}
 	}
 	catch (std::string error) {
-		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error);
+		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
 		LogDebugString(message, false);
 	}
 	catch (...) {
@@ -3126,7 +3126,7 @@ LONG CWinscardApp::Remote_ParseResponse(string_type rawResponse, DWORD expectedC
 
 	size_t pos = 0;
 	if (rawResponse.at(pos) != '>') {
-		LogWinscardRules("'>'was expected at begin");
+		LogWinscardRules("'>'was expected at begin\n");
 		status = SCARD_F_COMM_ERROR;
 	}
 	pos++;
@@ -3135,7 +3135,7 @@ LONG CWinscardApp::Remote_ParseResponse(string_type rawResponse, DWORD expectedC
 		size_t pos2 = rawResponse.find(CMD_SEPARATOR);
 		string_type uniqueCmdID = rawResponse.substr(pos, pos2 - 1);
 		if (expectedCommandID != atoi(uniqueCmdID.c_str())) {
-			LogWinscardRules("Unexpected commandID in response");
+			LogWinscardRules("Unexpected commandID in response\n");
 			status = SCARD_F_COMM_ERROR;
 		}
 		pos = pos2 + 1;
