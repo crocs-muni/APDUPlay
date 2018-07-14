@@ -15,7 +15,7 @@ The APDUPlay project provides the following functionality:
   * Manipulate the communication in real time based on pattern matching rules (e.g., always return success for VERIFY PIN command despite an incorrect PIN value).
   * Redirect communication via socket to other device/computer to support remotely connected smartcards (only Windows version at the moment).
   * Reorder list of smart card readers detected and returned by SCardListReaders (e.g., if multiple readers exist and application always connects only to the first one)
-  * Visualize captured data in a structured way (separate Java project Parser combined with [Graphviz](graphviz.org)).
+  * Visualize captured data in a structured way (separate Java project Parser combined with [Graphviz](https://www.graphviz.org/)).
 
 See more details at https://github.com/petrs/APDUPlay/wiki.
 
@@ -97,7 +97,7 @@ Alternatively, you may replace winscard.dll directly in the system folder. Warni
 
   * Problem: After running target application, the following error message is displayed: "The procedure entry point original.g_rgSCardT1Pci could not be located in the dynamic link library WinSCard.dll.". You likely mismatched 64-bit and 32-bit versions of APDUPlay's winscard.dll and Microsoft's original library (renamed as original32.dll). Use [Microsoft Sysinternals Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck) to verify that both libraries as either 64-bit or 32-bit (based on your target application needs).
   
-  * Problem: Target application is (probably) not loading modified winscard.dll from APDUPlay project, but uses standard Microsoft's one from system folder (no files with logged communication are created). Use [Process Monitor utility]( https://docs.microsoft.com/en-us/sysinternals/downloads/procmon) from Microsoft to find location of loaded libraries (use Filter option to limit results only to target application: CTRL+L -> Process Name is 'targetApp.exe' -> Add). Search for event 'Load Image path_to_folder\Winscard.dll'. The path_to_folder should point to APDUPlay's version of winscard.dll, not Microsoft one.
+  * Problem: Target application is (probably) not loading modified winscard.dll from APDUPlay project, but uses standard Microsoft's one from system folder (no files with logged communication are created). Use [Process Monitor utility](https://docs.microsoft.com/en-us/sysinternals/downloads/procmon) from Microsoft to find location of loaded libraries (use Filter option to limit results only to target application: CTRL+L -> Process Name is 'targetApp.exe' -> Add). Search for event 'Load Image path_to_folder\Winscard.dll'. The path_to_folder should point to APDUPlay's version of winscard.dll, not Microsoft one.
 
   * Problem: Logging seems to work, but only for the first of application. When started again, changes done to winscard_rules.txt does not apply. Target application might have persistent component (e.g., GPG have gpg-agent.exe) which loads the dll (and rules from winscard_rules.txt) and runs even when target application is terminated. Try to locate and kill this component, or restart the computer (will force component to restart again).
 
