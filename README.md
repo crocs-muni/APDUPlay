@@ -39,7 +39,7 @@ target_application <--> APDUPlay_winscard.dll <--> original64.dll <--> smartcard
 1. Find out if your application requires 32- or 64-bit winscard.dll (e.g., using [Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck))
 2. Copy Microsoft's original winscard.dll library to a target application folder and rename it to original32.dll or original64.dll (based on the Step 1). 
 3. Place APDUPlay's custom winscard.dll library to a target application folder, so it is loaded first.
-4. Place configuration file named winscard_rules.txt into the same folder.
+4. Place configuration file named winscard_rules.txt into the same folder. Read full documentation of [winscard_rules.txt file](https://github.com/crocs-muni/APDUPlay/wiki/APDUPlay-configuration).
 
 The target application folder should now look like this (CAProfiler_64b.exe used as an example)
 ```cmd
@@ -113,6 +113,12 @@ target_application <--> APDUPlay_winscard.dll <--> socket_proxy_localhost <--> R
 ```
 
 Note, that original winscard.dll (renamed as original64.dll) is not even used for transmission of APDU in this case as no physical smartcard is contacted/present on localhost.
+
+### Redirection to smartcard connected to remote computer
+TODO
+
+### Multiple smartcards connected to remote computer
+TODO
 
 ##  3. Manipulate exchanged APDUs in real time based on pattern matching rules 
 This use case allows to match exchanged APDU (both input and response) against the defined patterns and modify it accordingly before sending to physical smartcard (input APDU) or back to the target application (response APDU). 
