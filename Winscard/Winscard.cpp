@@ -84,7 +84,7 @@ static std::string INSTRUCTION_FILE = "Instructions.txt";
 // The one and only CWinscardApp object
 CWinscardApp theApp;
 
-#define REMOTE_SOCKET_TIMEOUT            5
+#define REMOTE_SOCKET_TIMEOUT            20
 #define REMOTE_SOCKET_LONG_TIMEOUT       20
 static string_type REMOTE_SOCKET_ENDSEQ = _CONV("@@");
 
