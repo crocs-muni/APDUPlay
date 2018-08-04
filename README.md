@@ -12,14 +12,30 @@ The primary uses for APDUPlay project are debugging and reverse engineering of u
 
 The APDUPlay project provides the following functionality: 
   * Log content and additional information about the exchanged PC/SC communication (APDU packets).
-  * Manipulate the communication in real time based on pattern matching rules (e.g., always return success for VERIFY PIN command despite an incorrect PIN value).
   * Redirect communication via socket to other device/computer to support remotely connected smartcards (only Windows version at the moment).
+  * Manipulate the communication in real time based on pattern matching rules (e.g., always return success for VERIFY PIN command despite an incorrect PIN value).
   * Reorder list of smart card readers detected and returned by SCardListReaders (e.g., if multiple readers exist and application always connects only to the first one)
   * Visualize captured data in a structured way (separate Java project Parser combined with [Graphviz](https://www.graphviz.org/)).
 
-See more details at https://github.com/petrs/APDUPlay/wiki.
+See more details at https://github.com/crocs-muni/APDUPlay/wiki.
 
-##  Installation and use 
+##  Installation (Windows OS)
+1. Find out if a targeted application is 32- or 64-bit [(Use Microsoft Sysinternals Sigcheck utility)](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck). Run sigcheck.exe targetApp.exe and look for MachineType: 32-bit or 64-bit (also works for dll files) 
+1. Copy Winscard.dll from your system folder (c:\Windows\System32\winscard.dll for 64-bit target application (if you are running 64-bit OS) or c:\Windows\SysWOW64\winscard.dll for 32-bit application) to the folder with target application and rename it to original32.dll or original64.dll respectively. NOTE: c:\Windows\System32\ contains either 32-bit or 64-bit version based on your OS.
+2. Copy Winscard.dll from APDUPlay project to the folder with target application (the folder should contain winscard.dll binary from APDUPlay project AND originalXX.dll which is Microsoft's original winscard.dll)
+3. Run the application and inspect resulting files winscard_log.txt and winscard_rules_log.txt
+4. (Optional) Change configuration file winscard_rules.txt to modify default behavior (see below)
+
+##  1. Logging of exchanged APDU commands
+This simplest use case allows you to log all APDUs exchanged between a target application and a physical smartcard.  
+
+```ini
+target_application <--> APDUPlay_winscard.dll <--> MS_original64.dll <--> smartcard
+                                 |
+                                 v
+                           winscard_log.txt (logged APDU commands)
+```
+
 1. Find out if your application requires 32- or 64-bit winscard.dll (e.g., using [Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck))
 2. Copy Microsoft's original winscard.dll library to a target application folder and rename it to original32.dll or original64.dll (based on Step 1). 
 3. Place APDUPlay's custom winscard.dll library to a target application folder, so it is loaded first.
@@ -76,41 +92,64 @@ received:6a 82
 
 The installation and usage process is relatively simple, but may be little tricky if something does not work (e.g., the library is loaded from a different than an expected path, the application terminates without giving any error message, etc.). The first step is always to make sure that APDUPlay's stub library is used together with the correct winscard_rules.txt. See Examples section for detailed step-by-step installation and troubleshooting. 
 
-##  Installation (Windows OS)
-1. Find out if a targeted application is 32- or 64-bit [(Use Microsoft Sysinternals Sigcheck utility)](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck). Run sigcheck.exe targetApp.exe and look for MachineType: 32-bit or 64-bit (also works for dll files) 
-1. Copy Winscard.dll from your system folder (c:\Windows\System32\winscard.dll for 64-bit target application (if you are running 64-bit OS) or c:\Windows\SysWOW64\winscard.dll for 32-bit application) to the folder with target application and rename it to original32.dll or original64.dll respectively. NOTE: c:\Windows\System32\ contains either 32-bit or 64-bit version based on your OS.
-2. Copy Winscard.dll from APDUPlay project to the folder with target application (the folder should contain winscard.dll binary from APDUPlay project AND originalXX.dll which is Microsoft's original winscard.dll)
-3. Run the application and inspect resulting files winscard_log.txt and winscard_rules_log.txt
-4. (Optional) Change configuration file winscard_rules.txt to modify default behavior (see below)
+**Note:** This example shows the simplest use case only with logging of the exchanged APDU commands. For more advanced examples check [wiki pages for examples](https://github.com/crocs-muni/APDUPlay/wiki/Examples-for-OS-MS-Windows). 
 
+
+##  2. Redirection of APDU commands to socket proxy (on a remote computer)
+This use case allows you to utilize APDUPlay to redirect all APDU commands to specified socket proxy and propagate back the proxy response as response APDU command back to target application. The proxy can run on localhost or remote computer and can be written in any language. 
+
+There are two primary uses for this feature:
+1. A simulation of locally-connected smartcard while connected to a remote computer. 
+```ini
+target_application <--> APDUPlay_winscard.dll <--> socket_proxy_localhost
+
+target_application <--> APDUPlay_winscard.dll <--> socket_proxy_remotehost <--> smartcard_remotehost
+```
+2. More advanced processing of the exchanged APDUs in any suitable programming language and without need for recompilation of APDUPlay dll/so libraries. The proxy can be written in any language (e.g., Python pySimonaProxy). 
+```ini
+target_application <--> APDUPlay_winscard.dll <--> python_socket_proxy_localhost
+
+target_application <--> APDUPlay_winscard.dll <--> socket_proxy_localhost <--> RESTproxy_remotehost <--> smartcard_remotehost
+```
+
+Note, that original winscard.dll (renamed as original64.dll) is not even used for transmission of APDU in this case as no physical smartcard is contacted/present on localhost.
+
+##  3. Manipulate exchanged APDUs in real time based on pattern matching rules 
+This use case allows to match exchanged APDU (both input and response) against the defined patterns and modify it accordingly before sending to physical smartcard (input APDU) or back to the target application (response APDU). 
+
+```ini
+target_application <--> APDUPlay_winscard.dll <--> modified_apdu <--> MS_original64.dll <--> smartcard
+                                 ^
+                                 |
+                           winscard_rules.txt (definition of rewrite rules)
+```
+```ini
+[WINSCARD]
+...
+MODIFY_APDU_BY_RULES = 1                           <---- enable modification of the exchanged APDUs
+...
+[RULE1]                                            <---- first modification rule 
+APDUIN = 1                                         <---- if 1, rule is checked for an input APDU (application to card), if 0 then on response APDU (smartcard to application)
+MATCH1=in=1,cla=80,ins=ca,p1=9f,p2=17,data0=90 00  <---- apply rule when input APDU has CLA==0x80, INS==0xca ...
+ACTION=in=1,cla=80,ins=cb,p1=9f,p2=17,data0=97 00  <---- if match, then change INS to 0xca and data[0] to 0x97 
+USAGE = 1                                          <---- if 1, rule is in use. If 0, then rule is ignored  
+[RULE2]                                            <---- another modification rule
+...
+```
 
 ## Examples
-The localization of correct winscard.dll path can sometimes be a tedious task, especially for applications using additional frameworks to access PC/SC interface. Here are some examples of increasing difficulty:
+The localization of correct winscard.dll path can sometimes be a tedious task, especially for applications using additional frameworks to access PC/SC interface. Check [wiki pages for examples](https://github.com/crocs-muni/APDUPlay/wiki/Examples-for-OS-MS-Windows) with the increasing difficulty:
   1. Simple application directly using winscard.dll ([CAProfiler.exe](https://github.com/petrs/CAProfiler/releases/latest))
   2. Application with persistent agent ([gpg2.exe --card-edit](https://gpg4win.org/download.html))
   3. Java-based application accessing smartcards via JRE: ([GlobalPlatformPro gp -l](https://github.com/martinpaljak/GlobalPlatformPro))
 
-Alternatively, you may replace winscard.dll directly in the system folder. Warning: PC/SC communication from ALL applications running on your system is now intercepted and logged to file including your PINs, passwords etc. - so use this option with care!
+Alternatively, you may replace winscard.dll directly inside the system folder. Warning: PC/SC communication from ALL applications running on your system is now intercepted and logged to file including your PINs, passwords etc. - so use this option with care!
 
 
 ## Troubleshooting
+Please read [Troubleshooting](https://github.com/crocs-muni/APDUPlay/wiki/Troubleshooting) wiki page
 
-  * Problem: After running target application, the following error message is displayed: "The procedure entry point original.g_rgSCardT1Pci could not be located in the dynamic link library WinSCard.dll.". You likely mismatched 64-bit and 32-bit versions of APDUPlay's winscard.dll and Microsoft's original library (renamed as original32.dll). Use [Microsoft Sysinternals Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck) to verify that both libraries as either 64-bit or 32-bit (based on your target application needs).
-  
-  * Problem: Target application is (probably) not loading modified winscard.dll from APDUPlay project, but uses standard Microsoft's one from system folder (no files with logged communication are created). Use [Process Monitor utility](https://docs.microsoft.com/en-us/sysinternals/downloads/procmon) from Microsoft to find location of loaded libraries (use Filter option to limit results only to target application: CTRL+L -> Process Name is 'targetApp.exe' -> Add). Search for event 'Load Image path_to_folder\Winscard.dll'. The path_to_folder should point to APDUPlay's version of winscard.dll, not Microsoft one.
-
-  * Problem: Logging seems to work, but only for the first of application. When started again, changes done to winscard_rules.txt does not apply. Target application might have persistent component (e.g., GPG have gpg-agent.exe) which loads the dll (and rules from winscard_rules.txt) and runs even when target application is terminated. Try to locate and kill this component, or restart the computer (will force component to restart again).
-
-  * Problem: Target application always opens winscard.dll from system folders (either system32 or sysWOW64 folder). 
-Run cmd as admin, then:
-```
-cd target_folder (either system32 or sysWOW64)
-takeown /f winscard.dll
-cacls winscard.dll /G your_username:F
-rename winscard.dll to winscard_MS.dll  (winscard.dll might be currently used by some other process so direct copy would not be possible)
-copy APDUPlay's winscard.dll instead winscard.dll
-```
-
-Please, open an issue in case of any bug found. 
+## Bugs and issues
+Please, open an issue in case of any bug is found. 
 
 
