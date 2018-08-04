@@ -8,7 +8,7 @@ Linux SO: [![Build Status](https://travis-ci.org/crocs-muni/apduplay.svg?branch=
 
 The APDUPlay project allows you to log, modify, redirect and visualize smartcard communication realized via PC/SC interface (winscard.dll library). The functionality is achieved by custom "stub" library (provided by APDUPlay) which intercepts and redirects the communication to original winscard.dll (provided by Microsoft) or remote socket proxy. The project supports applications running on Windows Vista, 7, 8, 10 and Linux both 32- and 64-bit.
 
-The primary uses for APDUPlay project are debugging and reverse engineering of unknown APDU-based protocols, redirection of communication to the remote smartcard and penetration testing for black-box applications. The APDUPlay project is based on (now inactive) [ApduView tool](http://www.fernandes.org/apduview/index.html) by Andrew Fernandes which allowed to log PC/SC communication.  
+The primary uses for APDUPlay project are debugging and reverse engineering of unknown APDU-based protocols, redirection of communication to the remote smartcard and penetration testing of black-box applications. The APDUPlay project is based on (now inactive) [ApduView tool](http://www.fernandes.org/apduview/index.html) by Andrew Fernandes which allowed to log PC/SC communication.  
 
 The APDUPlay project provides the following functionality: 
   * Log content and additional information about the exchanged PC/SC communication (APDU packets).
@@ -24,7 +24,7 @@ See more details at https://github.com/crocs-muni/APDUPlay/wiki.
 1. Copy Winscard.dll from your system folder (c:\Windows\System32\winscard.dll for 64-bit target application (if you are running 64-bit OS) or c:\Windows\SysWOW64\winscard.dll for 32-bit application) to the folder with target application and rename it to original32.dll or original64.dll respectively. NOTE: c:\Windows\System32\ contains either 32-bit or 64-bit version based on your OS.
 2. Copy Winscard.dll from APDUPlay project to the folder with target application (the folder should contain winscard.dll binary from APDUPlay project AND originalXX.dll which is Microsoft's original winscard.dll)
 3. Run the application and inspect resulting files winscard_log.txt and winscard_rules_log.txt
-4. (Optional) Change configuration file winscard_rules.txt to modify default behavior (see below)
+4. (Optional) Change configuration file winscard_rules.txt to modify default behavior (see examples below)
 
 ##  1. Logging of exchanged APDU commands
 This simplest use case allows you to log all APDUs exchanged between a target application and a physical smartcard.  
