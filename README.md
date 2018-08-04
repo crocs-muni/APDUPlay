@@ -8,7 +8,7 @@ Linux SO: [![Build Status](https://travis-ci.org/crocs-muni/apduplay.svg?branch=
 
 The APDUPlay project allows you to log, modify, redirect and visualize smartcard communication realized via PC/SC interface (winscard.dll library). The functionality is achieved by custom "stub" library (provided by APDUPlay) which intercepts and redirects the communication to original winscard.dll (provided by Microsoft) or remote socket proxy. The project supports applications running on Windows Vista, 7, 8, 10 and Linux both 32- and 64-bit.
 
-The primary uses for APDUPlay project are debugging and reverse engineering of unknown APDU-based protocols, redirection of communication to the remote smartcard and penetration testing for black-box applications. The APDUPlay project is based on (now inactive) ApduView tool (http://www.fernandes.org/apduview/index.html) by Andrew Fernandes which allowed to log PC/SC communication.  
+The primary uses for APDUPlay project are debugging and reverse engineering of unknown APDU-based protocols, redirection of communication to the remote smartcard and penetration testing for black-box applications. The APDUPlay project is based on (now inactive) [ApduView tool](http://www.fernandes.org/apduview/index.html) by Andrew Fernandes which allowed to log PC/SC communication.  
 
 The APDUPlay project provides the following functionality: 
   * Log content and additional information about the exchanged PC/SC communication (APDU packets).
@@ -37,7 +37,7 @@ target_application <--> APDUPlay_winscard.dll <--> original64.dll <--> smartcard
 ```
 
 1. Find out if your application requires 32- or 64-bit winscard.dll (e.g., using [Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck))
-2. Copy Microsoft's original winscard.dll library to a target application folder and rename it to original32.dll or original64.dll (based on Step 1). 
+2. Copy Microsoft's original winscard.dll library to a target application folder and rename it to original32.dll or original64.dll (based on the Step 1). 
 3. Place APDUPlay's custom winscard.dll library to a target application folder, so it is loaded first.
 4. Place configuration file named winscard_rules.txt into the same folder.
 
@@ -57,7 +57,7 @@ LOG_EXCHANGED_APDU = 1
 LOG_BASE_PATH = ./
 ```
 
-5. Now run target application (CAProfiler_64b.exe in this example). The application should execute normally. 
+5. Now run target application ([CAProfiler_64b.exe](https://github.com/petrs/CAProfiler/releases) in this example). The application should execute normally. 
 ```cmd
 >CAProfiler_64b.exe
 Available readers:
