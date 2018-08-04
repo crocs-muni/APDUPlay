@@ -268,12 +268,18 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		CHECK(status == SCARD_S_SUCCESS);
 
 		// Print available readers
+		memset(readers, 0, READERS_LEN);
 		status = Original_SCardListReaders(cardContext, NULL, (char*) &readers, &len);
 		CHECK(status == SCARD_S_SUCCESS);
-		size_t pos = 0;
-		while (pos < len) {
-			cout << readers + pos << endl;
-			pos += strlen(readers + pos) + 1;
+		if (status == SCARD_S_SUCCESS) {
+			size_t pos = 0;
+			while (pos < len) {
+				cout << readers + pos << endl;
+				pos += strlen(readers + pos) + 1;
+			}
+		}
+		else {
+			cout << "SCardListReaders failed, no print readers";
 		}
 		cout << endl;
 
@@ -287,10 +293,15 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		cout << endl << endl;
 
 		// Send APDU
-		SendAPDU("80 cb 9f 17 02 97 00", hCard, scProtocol);
+		//SendAPDU("80 cb 9f 17 02 97 00", hCard, scProtocol);
 
-		SendAPDU("00 a4 00 00 00", hCard, scProtocol);
+		//SendAPDU("00 a4 00 00 00", hCard, scProtocol);
 
+		SendAPDU("11 00 00 00 00", hCard, scProtocol);
+
+		SendAPDU("22 00 00 00 00", hCard, scProtocol);
+
+		SendAPDU("33 00 00 00 00", hCard, scProtocol);
 
 		//
 		// Verify expected content of resulting files
