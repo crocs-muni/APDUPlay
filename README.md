@@ -30,10 +30,10 @@ See more details at https://github.com/crocs-muni/APDUPlay/wiki.
 This simplest use case allows you to log all APDUs exchanged between a target application and a physical smartcard.  
 
 ```ini
-target_application <--> APDUPlay_winscard.dll <--> MS_original64.dll <--> smartcard
-                                 |
-                                 v
-                           winscard_log.txt (logged APDU commands)
+target_application <--> APDUPlay_winscard.dll <--> original64.dll <--> smartcard
+                         |                                  ^
+                         v                                  | 
+                   winscard_log.txt (logged APDUs)     renamed winscard.dll by Microsoft
 ```
 
 1. Find out if your application requires 32- or 64-bit winscard.dll (e.g., using [Sigcheck utility](https://docs.microsoft.com/en-us/sysinternals/downloads/sigcheck))
@@ -118,7 +118,7 @@ Note, that original winscard.dll (renamed as original64.dll) is not even used fo
 This use case allows to match exchanged APDU (both input and response) against the defined patterns and modify it accordingly before sending to physical smartcard (input APDU) or back to the target application (response APDU). 
 
 ```ini
-target_application <--> APDUPlay_winscard.dll <--> modified_apdu <--> MS_original64.dll <--> smartcard
+target_application <--> APDUPlay_winscard.dll <--> modified_apdu <--> original64.dll <--> smartcard
                                  ^
                                  |
                            winscard_rules.txt (definition of rewrite rules)
