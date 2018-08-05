@@ -99,8 +99,8 @@ BYTE    GET_APDU1[] = { 0x00, 0xC0, 0x00, 0x00 };
 BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 
 //#define VIRT_READER_NAME        "VirtOpenPGP"
-#define VIRT_READER_NAME        "Simona /111.222.123.033@07"
-#define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
+//#define VIRT_READER_NAME        "Simona /111.222.123.033@07"
+//#define VIRTUAL_READERS_LEN     strlen(VIRT_READER_NAME)
 
 #define CMD_APDU				"APDU"
 #define CMD_RESET				"RESET"
@@ -855,15 +855,22 @@ SCard LONG STDCALL SCardListReaders(
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		if ((status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			DWORD     newLen = (DWORD)(*pcchReaders + VIRTUAL_READERS_LEN + 2);
+			DWORD     newLen = (DWORD)(*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 2);
 			char*   readers = new char[newLen];
 			memset(readers, 0, newLen);
 			*pcchReaders = newLen;
 			if ((status = (*Original_SCardListReaders)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
-				// COPY NAME OF VIRTUAL READERS TO END
-				memcpy(readers + *pcchReaders, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
+				// COPY NAME OF VIRTUAL READERS TO THE END 
+				char* virtReadersPtr = readers + *pcchReaders;
+				memcpy(virtReadersPtr, theApp.m_winscardConfig.sVIRTUAL_READERS.c_str(), theApp.m_winscardConfig.sVIRTUAL_READERS.length());
+				// Virtual readers are separated by ; => change to ';' to '\0')
+				for (size_t i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
+					if (virtReadersPtr[i] == ',') { 
+						virtReadersPtr[i] = '\0'; 
+					}
+				}
 				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD)strlen(VIRT_READER_NAME) + 1;
+				*pcchReaders += (DWORD) theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1;
 				readers[*pcchReaders - 1] = 0;
 				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
 				char**  temp = (char**)mszReaders;
@@ -879,24 +886,36 @@ SCard LONG STDCALL SCardListReaders(
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		DWORD     realLen = *pcchReaders;
 		if ((status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
-			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
+			if ((realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() > *pcchReaders) || (mszReaders == NULL)) {
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = (DWORD) (realLen + VIRTUAL_READERS_LEN);
+				*pcchReaders = (DWORD) (realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
 			}
 			else {
 				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
+				memset(mszReaders, 0, *pcchReaders);
 				realLen = *pcchReaders;
 				if ((status = (*Original_SCardListReaders)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
 					*pcchReaders = realLen;
 
-					// ADD VIRTUAL READER
-					// COPY NAME OF VIRTUAL READERS TO END
-					memcpy(mszReaders + realLen, VIRT_READER_NAME, strlen(VIRT_READER_NAME));
-					*pcchReaders = (DWORD) (realLen + strlen(VIRT_READER_NAME) + 1);
-					// ADD TRAILING ZERO
+					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+						// ADD VIRTUAL READER
+						// COPY NAME OF VIRTUAL READERS TO END
+						char* virtReadersPtr = mszReaders + realLen - 1;
+						memcpy(virtReadersPtr, theApp.m_winscardConfig.sVIRTUAL_READERS.c_str(), theApp.m_winscardConfig.sVIRTUAL_READERS.length());
+						// Virtual readers are separated by ; => change to ';' to '\0')
+						for (size_t i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
+							if (virtReadersPtr[i] == ',') {
+								virtReadersPtr[i] = '\0';
+							}
+						}
+						*pcchReaders = (DWORD)(realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1);
+					}
+					else { *pcchReaders = realLen; }
+
+					// ADD TWO TRAILING ZEROES
+					mszReaders[*pcchReaders - 2] = 0;
 					mszReaders[*pcchReaders - 1] = 0;
-					/**/
 					CCommonFnc::String_ParseNullSeparatedArray((BYTE*)mszReaders, *pcchReaders - 1, &readersList);
 				}
 			}
@@ -1060,17 +1079,20 @@ SCard LONG STDCALL SCardListReadersW(
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			DWORD     newLen = (DWORD) (*pcchReaders + VIRTUAL_READERS_LEN);
+			DWORD     newLen = (DWORD) (*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
 			WCHAR*   readers = new WCHAR[newLen];
 			memset(readers, 0, newLen * sizeof(WCHAR));
 			*pcchReaders = newLen;
 			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
 				// COPY NAME OF VIRTUAL READERS TO END
-				for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
-					readers[i + *pcchReaders] = VIRT_READER_NAME[i];
+				for (DWORD i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
+					readers[i + *pcchReaders] = theApp.m_winscardConfig.sVIRTUAL_READERS.at(i);
+					if (readers[i + *pcchReaders] == L',') {
+						readers[i + *pcchReaders] = L'\0';
+					}
 				}
 				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD)strlen(VIRT_READER_NAME) + 1;
+				*pcchReaders += (DWORD) theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1;
 				readers[*pcchReaders - 1] = 0;
 				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
 				WCHAR**  temp = (WCHAR**)mszReaders;
@@ -1086,25 +1108,29 @@ SCard LONG STDCALL SCardListReadersW(
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		DWORD     realLen = *pcchReaders;
 		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
-			if ((realLen + VIRTUAL_READERS_LEN > *pcchReaders) || (mszReaders == NULL)) {
+			if ((realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() > *pcchReaders) || (mszReaders == NULL)) {
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = (DWORD) (realLen + VIRTUAL_READERS_LEN);
+				*pcchReaders = (DWORD) (realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
 			}
 			else {
 				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
-				realLen = *pcchReaders;
+				realLen = *pcchReaders - 1;
 				memset(mszReaders, 0, *pcchReaders * sizeof(WCHAR));
 				if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
 					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
-					if (strlen(VIRT_READER_NAME) > 0) {
-						for (DWORD i = 0; i < strlen(VIRT_READER_NAME) + 1; i++) {
-							mszReaders[i + realLen] = VIRT_READER_NAME[i];
+					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+						for (DWORD i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
+							mszReaders[i + realLen] = theApp.m_winscardConfig.sVIRTUAL_READERS.at(i);
+							if (mszReaders[i + realLen] == L',') {
+								mszReaders[i + realLen] = L'\0';
+							}
 						}
-						*pcchReaders = (DWORD)(realLen + strlen(VIRT_READER_NAME) + 1);
+						*pcchReaders = (DWORD)(realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1);
 					}
 					else { *pcchReaders = realLen; }
-					// ADD TRAILING ZERO
+					// ADD TWO TRAILING ZEROES
+					mszReaders[*pcchReaders - 2] = 0;
 					mszReaders[*pcchReaders - 1] = 0;
 
 					CCommonFnc::String_ParseNullSeparatedArray(mszReaders, *pcchReaders, &readersList);
@@ -3273,6 +3299,12 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		if (type_length(char_value) != 0)
 		{
 			m_winscardConfig.sREADER_ORDERED_FIRST = char_value;
+		}
+		type_copy(sec_and_key, section_name);
+		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":VIRTUAL_READERS")), "");
+		if (type_length(char_value) != 0)
+		{
+			m_winscardConfig.sVIRTUAL_READERS = char_value;
 		}
 	}
 

@@ -238,11 +238,14 @@ TEST_CASE("Winscard tests", "[winscard_tests]")
 		myfile << "LOG_FUNCTIONS_CALLS = 1\n";
 		myfile << "AUTO_REQUEST_DATA = 1\n";
 		myfile << "LOG_BASE_PATH = ./\n";
-        myfile << "[RULE1]\n";
+		myfile << "VIRTUAL_READERS = Simona13,Simona2 \n";
+		myfile << "\n";
+		myfile << "[RULE1]\n";
         myfile << "MATCH1=in=1,cla=80,ins=ca,p1=9f,p2=17,data0=90 00,\n";
         myfile << "ACTION=in=1,cla=80,ins=cb,p1=9f,p2=17,data0=97 00,\n";
         myfile << "USAGE = 1\n";
         myfile << "APDUIN = 1\n";
+		myfile << "\n";
 
 		myfile << "[REMOTE]\n";
 		myfile << "REDIRECT = 1\n";
