@@ -853,13 +853,36 @@ SCard LONG STDCALL SCardListReaders(
 		// NO BUFFER IS SUPPLIED
 
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		if ((status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
+		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, pcchReaders);
+		// Supress error when virtual readers are set
+		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+			*pcchReaders = 0;
+			status = SCARD_S_SUCCESS;
+		}
+
+		if (status == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
 			DWORD     newLen = (DWORD)(*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 2);
 			char*   readers = new char[newLen];
 			memset(readers, 0, newLen);
 			*pcchReaders = newLen;
-			if ((status = (*Original_SCardListReaders)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
+			status = (*Original_SCardListReaders)(hContext, mszGroups, readers, pcchReaders);
+
+
+			if (status == SCARD_E_NO_READERS_AVAILABLE) {
+				// No real readers are available. Check if virtual readers are supplied
+				if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+					LogDebugString(string_format(_CONV("No real cards available, but virtual readers specified => continuing only with virtual readers.\n")));
+					// Virtual readers are required => continue as OK (only virtual will be returned)
+					status = SCARD_S_SUCCESS;
+					*pcchReaders = 0;
+				}
+				else {
+					// No virtual readers specified => return SCARD_E_NO_READERS_AVAILABLE error
+				}
+			}
+
+			if (status == SCARD_S_SUCCESS) {
 				// COPY NAME OF VIRTUAL READERS TO THE END 
 				char* virtReadersPtr = readers + *pcchReaders;
 				memcpy(virtReadersPtr, theApp.m_winscardConfig.sVIRTUAL_READERS.c_str(), theApp.m_winscardConfig.sVIRTUAL_READERS.length());
@@ -885,7 +908,15 @@ SCard LONG STDCALL SCardListReaders(
 		// BUFFER SUPPLIED
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		DWORD     realLen = *pcchReaders;
-		if ((status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
+		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen);
+
+		// Supress error when virtual readers are set
+		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) { 
+			realLen = 0;
+			status = SCARD_S_SUCCESS;
+		}
+
+		if (status == SCARD_S_SUCCESS) {
 			if ((realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() > *pcchReaders) || (mszReaders == NULL)) {
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
 				*pcchReaders = (DWORD) (realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
@@ -895,13 +926,29 @@ SCard LONG STDCALL SCardListReaders(
 				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
 				memset(mszReaders, 0, *pcchReaders);
 				realLen = *pcchReaders;
-				if ((status = (*Original_SCardListReaders)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
+				status = (*Original_SCardListReaders)(hContext, mszGroups, mszReaders, &realLen);
+				if (status == SCARD_E_NO_READERS_AVAILABLE) {
+					// No real readers are available. Check if virtual readers are supplied
+					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+						LogDebugString(string_format(_CONV("No real cards available, but virtual readers specified => continuing only with virtual readers.\n")));
+						// Virtual readers are required => continue as OK (only virtual will be returned)
+						status = SCARD_S_SUCCESS;
+						realLen = 0;
+					}
+					else {
+						// No virtual readers specified => return SCARD_E_NO_READERS_AVAILABLE error
+					}
+				}
+				if (status == SCARD_S_SUCCESS) {
 					*pcchReaders = realLen;
 
 					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
 						// ADD VIRTUAL READER
 						// COPY NAME OF VIRTUAL READERS TO END
-						char* virtReadersPtr = mszReaders + realLen - 1;
+						char* virtReadersPtr = mszReaders;
+						if (realLen > 0) { // Jump right after real readers
+							virtReadersPtr += realLen - 1;
+						}
 						memcpy(virtReadersPtr, theApp.m_winscardConfig.sVIRTUAL_READERS.c_str(), theApp.m_winscardConfig.sVIRTUAL_READERS.length());
 						// Virtual readers are separated by ; => change to ';' to '\0')
 						for (size_t i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
@@ -909,7 +956,13 @@ SCard LONG STDCALL SCardListReaders(
 								virtReadersPtr[i] = '\0';
 							}
 						}
-						*pcchReaders = (DWORD)(realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1);
+						// If no real readers were present, add two trailing zeroes, one otherwise
+						if (realLen == 0) {
+							*pcchReaders = (DWORD)(theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 2);
+						}
+						else {
+							*pcchReaders = (DWORD)(realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1);
+						}
 					}
 					else { *pcchReaders = realLen; }
 
