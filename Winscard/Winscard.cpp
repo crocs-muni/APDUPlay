@@ -3148,7 +3148,8 @@ Remote card protocol
  all other lines not starting with > or # are ignored
 */
 string_type Remote_FormatRequest(string_type targetReader, DWORD uniqueCmdID, string_type command, string_type commandData, string_type notes, string_type lineSeparator) {
-	return string_format(">%s%s>%d%s%s%s%s%s%s", targetReader.c_str(), lineSeparator.c_str(), uniqueCmdID, CMD_SEPARATOR, command.c_str(), CMD_SEPARATOR, commandData.c_str(), lineSeparator.c_str(), notes.c_str());
+//	return string_format(">%s%s>%d%s%s%s%s%s%s", targetReader.c_str(), lineSeparator.c_str(), uniqueCmdID, CMD_SEPARATOR, command.c_str(), CMD_SEPARATOR, commandData.c_str(), lineSeparator.c_str(), notes.c_str());
+	return string_format(">%s%s\n>%d%s%s%s%s%s%s", targetReader.c_str(), lineSeparator.c_str(), uniqueCmdID, CMD_SEPARATOR, command.c_str(), CMD_SEPARATOR, commandData.c_str(), lineSeparator.c_str(), notes.c_str());
 }
 
 #if defined (_WIN32)
