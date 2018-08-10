@@ -392,6 +392,10 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls*
 		}	//end while
 	}
 
+	if (!itemName.empty()) {
+		pValueString->push_back(itemName);
+		itemName = "";
+	}
     return status;
 }
 
