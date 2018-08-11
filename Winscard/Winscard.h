@@ -65,6 +65,7 @@ public:
 
 #if defined (_WIN32)
     LONG Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, SCARD_IO_REQUEST* pioSendPci, LPCBYTE pbSendBuffer, DWORD cbSendLength, SCARD_IO_REQUEST* pioRecvPci, LPBYTE pbRecvBuffer, LPDWORD pcbRecvLength);
+	LONG Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, string_type command, string_type commandData, string_type* pResponse);
 	LONG Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader);
 	LONG Remote_ParseResponse(string_type rawResponse, DWORD expectedUniqueID, string_type* respCommand);
 #endif
