@@ -70,10 +70,12 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-static string_type LIBRARY_VERSION = _CONV("2.1.0");
+static string_type LIBRARY_VERSION = _CONV("2.1.1");
 
 static string_type ENV_APDUPLAY_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
 static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
+static string_type ENV_APDUPLAY_REMOTE_TAG = _CONV("APDUPLAY_REMOTE_TAG");
+
 static string_type APDUPLAY_DEBUG_FILE = _CONV("c:\\Temp\\apduplay_debug.txt");
 
 static string_type RULE_FILE = _CONV("winscard_rules.txt");
@@ -105,6 +107,7 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 #define CMD_APDU				"APDU"
 #define CMD_RESET				"RESET"
 #define CMD_ENUM				"ENUM"
+#define CMD_PERSONALIZE			"PERSONALIZE"
 #define CMD_LINE_SEPARATOR		"|"	
 #define CMD_SEPARATOR			":"	
 #define CMD_RESPONSE_FAIL		"FAIL"	
@@ -2990,6 +2993,19 @@ BOOL CWinscardApp::InitInstance()
     // LOAD MODIFICATION RULES
     LoadRules();
 
+	// Check for env. variable containing additional personalization of this instance
+	// (not stored in configuration file to enable instance personalization without need for separate folder with separate file)
+	LogDebugString(string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_REMOTE_TAG.c_str()));
+	char* remoteTag = std::getenv(ENV_APDUPLAY_REMOTE_TAG.c_str());
+	if (remoteTag != NULL) {
+		LogDebugString(string_format(_CONV("found '%s'\n"), remoteTag), false);
+		theApp.m_remoteConfig.remoteTag = remoteTag;
+	}
+	else {
+		LogDebugString(_CONV("not found\n"), false);
+	}
+
+
     // CONNECT TO REMOTE SOCKET IF REQUIRED
     if (m_remoteConfig.bRedirect) {
 		LogDebugString(_CONV("[REMOTE] Redirect = 1 => going to connect to specified socket (make sure socket is opened. If application terminates, try to set Redirect = 0 to disable remote redirecting)\n"));
@@ -2998,7 +3014,13 @@ BOOL CWinscardApp::InitInstance()
 	if (theApp.m_winscardConfig.bLOG_EXCHANGED_APDU) CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("[begin]\n"));
 
 	BOOL bStatus = initialize();
-	LogDebugString(string_format(_CONV("Finalizing InitInstance with %s\n"), bStatus ? _CONV("true") : _CONV("false")));
+	LogDebugString(_CONV("Finalizing InitInstance with status: "));
+	if (bStatus) {
+		LogDebugString(_CONV("true\n"), false);
+	}
+	else {
+		LogDebugString(_CONV("false\n"), false);
+	}
 
 	return bStatus;
 }
@@ -3017,6 +3039,13 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
 		else {
 			LogDebugString(_CONV("failed\n"), false);
 		}
+
+		// Send personalization data
+		if (theApp.m_remoteConfig.remoteTag.length() > 0) {
+			string_type response;
+			Remote_SendRequest(pRemoteConfig, "empty", CMD_PERSONALIZE, theApp.m_remoteConfig.remoteTag, &response);
+		}
+
 	}
 	catch (std::string error) {
 		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
@@ -3153,32 +3182,42 @@ string_type Remote_FormatRequest(string_type targetReader, DWORD uniqueCmdID, st
 }
 
 #if defined (_WIN32)
+LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, string_type command, string_type commandData, string_type* pResponse) {
+	LONG status = SCARD_S_SUCCESS;
+	string_type     message;
+
+	// unique command ID
+	theApp.m_remoteConfig.nextCommandID++;
+	string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, command, commandData, "", CMD_LINE_SEPARATOR);
+	pRemoteConfig->pSocket->SendLine(l);
+	//message.Insert(0, "\n::-> ");
+	message.insert(0, _CONV("::-> "));
+	LogWinscardRules(message);
+	_sleep(500);
+
+	// OBTAIN RESPONSE, PARSE BACK 
+	// TODO: parse response, propagate it, chck unique command ID
+	l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+
+	// Parse response
+	status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
+
+	replace(pResponse->begin(), pResponse->end(), '\n', ' ');
+	message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
+	LogWinscardRules(message);
+
+	return status;
+}
+
+
 LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader) {
 	LONG        status = 0;
 	string_type     message;
 
 	if (pRemoteConfig->pSocket != NULL) {
 		try {
-			// unique command ID
-			theApp.m_remoteConfig.nextCommandID++;
-			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_RESET, "", "", CMD_LINE_SEPARATOR);
-			pRemoteConfig->pSocket->SendLine(l);
-			//message.Insert(0, "\n::-> ");
-			message.insert(0, _CONV("::-> "));
-			LogWinscardRules(message);
-			_sleep(500);
-
-			// OBTAIN RESPONSE, PARSE BACK 
-			// TODO: parse response, propagate it, chck unique command ID
-			l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
-
-			// Parse response
 			string_type response;
-			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
-
-			replace(response.begin(), response.end(), '\n', ' ');
-			message = string_format(_CONV("::<- %s\n"), response.c_str());
-			LogWinscardRules(message);
+			Remote_SendRequest(pRemoteConfig, targetReader, CMD_RESET, "", &response);
 		}
 		catch (const char* s) {
 			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)\n"), message.c_str(), s);
