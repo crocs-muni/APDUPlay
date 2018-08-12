@@ -70,7 +70,7 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-static string_type LIBRARY_VERSION = _CONV("2.1.0");
+static string_type LIBRARY_VERSION = _CONV("2.1.1");
 
 static string_type ENV_APDUPLAY_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
 static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
