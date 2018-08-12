@@ -176,6 +176,7 @@ typedef struct _REMOTE_CONFIG {
 	string_type     port;
 	string_type     cfgScript;
 	string_type		remoteReaderPrefix; // prefix of reader name signalizing remote reader. If matches, all calls are redirected to remote proxy
+	string_type		remoteTag;			// personalization remote tag to be interpreted by remote proxy for personalization of proxy actions 
     BYTE            measureApdu[255];    
     BYTE            measureApduLen;     // number of used bytes from measureApdu array
     int             measureApduByteCounter;     // number of incoming apdu bytes before the measurement is run - part of get params 1 xx 0 command
