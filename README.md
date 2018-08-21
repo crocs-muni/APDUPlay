@@ -155,6 +155,11 @@ Alternatively, you may replace winscard.dll directly inside the system folder. W
 ## Troubleshooting
 Please read [Troubleshooting](https://github.com/crocs-muni/APDUPlay/wiki/Troubleshooting) wiki page
 
+## Related projects
+  * [APDUTrace](https://www.mysmartlogon.com/knowledge-base/trace-apdu-on-windows/) - logging via inserted kernel filter driver, works on WinXP-Win10 both 32b and 64b. If you need only the logging on Windows machine, grab this one! 
+  * [APDU spying tool](https://www.idrix.fr/Root/content/category/7/25/48/) - Windows logging via replacement of wiscard.dll (same approach as APDUPlay), no modification. 64b version only on request.
+
+
 ## Bugs and issues
 Please, open an issue in case of any bug is found. 
 
