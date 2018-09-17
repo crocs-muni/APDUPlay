@@ -78,6 +78,8 @@ static errno_t(*type_path_split)(const char_type*, char_type*, size_t, char_type
 	typedef wchar_t WCHAR;
 	typedef wchar_t* LPWSTR;
 	typedef const wchar_t* LPCWSTR;
+	typedef unsigned char boolean;
+	#define GetLastError() errno
 #ifndef TRUE
 	#define TRUE 1
 #endif
