@@ -1,4 +1,5 @@
 ; Copyright (c) 2001 Andrew Fernandes <andrew@fernandes.org>. All rights reserved.
+; Petr Svenda 2008-2018 
 ;
 ; This work may be used and distributed under the terms of the GNU Public License,
 ; as written in the included file "gpl.txt" or online at <http://www.gnu.org/>.
@@ -51,6 +52,9 @@ EXPORTS
 ;SCardListReadersW=original32.SCardListReadersW @44
 ;SCardLocateCardsA=original32.SCardLocateCardsA @45
 ;SCardLocateCardsW=original32.SCardLocateCardsW @46
+;SCardPciRaw=original32.SCardPciRaw @46
+;SCardPciT0=original32.SCardPciT0 @46
+;SCardPciT1=original32.SCardPciT1 @46
 ;SCardReconnect=original32.SCardReconnect @47
 ;SCardReleaseAllEvents=original32.SCardReleaseAllEvents @3
 ;SCardReleaseContext=original32.SCardReleaseContext @48
