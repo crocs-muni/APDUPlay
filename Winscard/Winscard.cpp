@@ -169,7 +169,7 @@ void LogWinscardRules(string_type message) {
 
 void DumpMemory(LPCBYTE location, DWORD length) {
 	string_type message;
-	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)location, length, &message);
+	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) location, length, &message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 }
@@ -573,6 +573,8 @@ SCard LONG STDCALL SCardTransmit(
 		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\n", hCard);
 		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\n"), hCard);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+		LogWinscardRules(buffer);
+
 
 		//sprintf(buffer, "apduCounter:%d#\n", apduCounter);
 		buffer = string_format(_CONV("apduCounter:%d#\n"), apduCounter);
@@ -1131,7 +1133,6 @@ SCard LONG STDCALL SCardListReadersW(
 
 	if (*pcchReaders == SCARD_AUTOALLOCATE) {
 		// NO BUFFER IS SUPPLIED
-
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
@@ -1141,15 +1142,17 @@ SCard LONG STDCALL SCardListReadersW(
 			*pcchReaders = newLen;
 			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
 				// COPY NAME OF VIRTUAL READERS TO END
-				for (DWORD i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
-					readers[i + *pcchReaders] = theApp.m_winscardConfig.sVIRTUAL_READERS.at(i);
-					if (readers[i + *pcchReaders] == L',') {
-						readers[i + *pcchReaders] = L'\0';
+				if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+					for (DWORD i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
+						readers[i + *pcchReaders] = theApp.m_winscardConfig.sVIRTUAL_READERS.at(i);
+						if (readers[i + *pcchReaders] == L',') {
+							readers[i + *pcchReaders] = L'\0';
+						}
 					}
+					// ADD TRAILING ZERO
+					*pcchReaders += (DWORD)theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1;
+					readers[*pcchReaders - 1] = 0;
 				}
-				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD) theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1;
-				readers[*pcchReaders - 1] = 0;
 				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
 				WCHAR**  temp = (WCHAR**)mszReaders;
 				*temp = readers;
@@ -1235,7 +1238,7 @@ SCard LONG STDCALL SCardListReadersW(
 		availableReaders += L", ";
 	}
 	availableReaders += L"\n";
-	//LogWinscardRules(availableReaders);
+	LogWinscardRules(string_format(_CONV("SCardListReadersW available readers %s\n"), availableReaders));
 
 	return status;
 }
