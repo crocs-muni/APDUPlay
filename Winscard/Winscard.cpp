@@ -629,13 +629,10 @@ SCard LONG STDCALL SCardTransmit(
 	theApp.m_processedApduByteCounter += cbSendLength;
 
 #if defined(_WIN32)
-	// Check if redirection is required
-	if (theApp.m_remoteConfig.bRedirect) {
 	// Check if provided card handle is remote card
-		if (theApp.IsRemoteCard(hCard)) {
-			// FORWARD TO REMOTE SOCKET 
-			result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-		}
+	if (theApp.IsRemoteCard(hCard)) {
+		// FORWARD TO REMOTE SOCKET 
+		result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
 	}
 	else {
 #endif
@@ -679,18 +676,15 @@ SCard LONG STDCALL SCardTransmit(
 			int tmp = sendBuffer[4] & 0xff; tmp += 2; *pcbRecvLength = tmp;
 
 #if defined(_WIN32)
-			// Check if redirection is required
-			if (theApp.m_remoteConfig.bRedirect) {
-				// Check if provided card handle is remote card
-				if (theApp.IsRemoteCard(hCard)) {
-					// FORWARD TO REMOTE SOCKET 
-					result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *) pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
-				}
+			// Check if provided card handle is remote card
+			if (theApp.IsRemoteCard(hCard)) {
+				// FORWARD TO REMOTE SOCKET 
+				result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *) pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
 			}
 			else {
 #endif
 
-			result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+				result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
 #if defined(_WIN32) 	
 			}
 #endif
@@ -3819,7 +3813,7 @@ int CWinscardApp::LoadRules() {
 		instructionDict = iniparser_load((const char*) INSTRUCTION_FILE.c_str());
 	}
 
-	LogDebugString(string_format(_CONV("Finalizing LoadRules with status %s\n"), status));
+	LogDebugString(string_format(_CONV("Finalizing LoadRules with status %d\n"), status));
 
 	return status;
 }
