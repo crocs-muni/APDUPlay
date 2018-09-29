@@ -220,7 +220,8 @@ typedef struct _WINSCARD_CONFIG {
     BOOL    bMODIFY_APDU_BY_RULES = FALSE;
     BOOL    bLOG_WRITE_DESCRIPTION = FALSE;
     string_type sREADER_ORDERED_FIRST;
-	string_type sVIRTUAL_READERS;
+	string_type sVIRTUAL_READERS_STATIC;	// virtual readers loaded from configuration file (always shown)
+	string_type sVIRTUAL_READERS;			// Virtual readers loaded from cfg file + dynamically from remote proxy
 	string_type sLOG_BASE_PATH;
     
     _WINSCARD_CONFIG(void) {

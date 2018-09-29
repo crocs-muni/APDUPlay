@@ -190,6 +190,10 @@ SCard LONG STDCALL SCardEstablishContext(
 	string_type message;
 	message = string_format(_CONV("SCardEstablishContext() called\n"));
 	LogWinscardRules(message);
+
+	// Release ctxs for remote cards (if any)
+	theApp.Remote_SCardReleaseContext();
+
 	LONG status = (*Original_SCardEstablishContext)(dwScope, pvReserved1, pvReserved2, phContext);
 	message = string_format(_CONV("-> hContext:0x%x\n"), *phContext);
 	LogWinscardRules(message);
@@ -207,6 +211,10 @@ SCard LONG STDCALL SCardReleaseContext(
 	string_type message;
 	message = string_format(_CONV("SCardReleaseContext(hContext:0x%x) called\n"), hContext);
 	LogWinscardRules(message);
+
+	// Release ctxs for remote cards (if any)
+	theApp.Remote_SCardReleaseContext();
+
 	return (*Original_SCardReleaseContext)(hContext);
 }
 
@@ -775,9 +783,11 @@ SCard LONG STDCALL SCardConnect(
 		dwShareMode = SCARD_SHARE_SHARED;
 	}
 
-	// Detect remote cards (now only via reader prefix) and assign virtual card handle
+	// Detect remote cards 
 	string_type readerName = szReader;
-	if (readerName.find(theApp.m_remoteConfig.remoteReaderPrefix) != -1) {
+	//if (readerName.find(theApp.m_remoteConfig.remoteReaderPrefix) != -1) { // (now only via reader prefix) and assign virtual card handle
+	readerName.append(",");
+	if (theApp.m_winscardConfig.sVIRTUAL_READERS.find(readerName) != -1) {
 		theApp.m_nextRemoteCardID++;
 		*phCard = theApp.m_nextRemoteCardID;
 		theApp.remoteReadersMap[*phCard] = szReader;
@@ -847,6 +857,19 @@ SCard LONG STDCALL SCardListReaders(
 
 	int  status = SCARD_S_SUCCESS;
 	ls     readersList;
+
+	// Try to read list of remote readers if required
+	if (theApp.m_remoteConfig.bRedirect) {
+		string_type readers = "";
+		if (theApp.Remote_ListReaders(&(theApp.m_remoteConfig), &readers) == SCARD_S_SUCCESS) {
+			// Put remote readers into list
+			theApp.m_winscardConfig.sVIRTUAL_READERS.clear();
+			theApp.m_winscardConfig.sVIRTUAL_READERS.append(theApp.m_winscardConfig.sVIRTUAL_READERS_STATIC);
+			theApp.m_winscardConfig.sVIRTUAL_READERS.append(",");
+			theApp.m_winscardConfig.sVIRTUAL_READERS.append(readers);
+		}
+	}
+
 
 	if (*pcchReaders == SCARD_AUTOALLOCATE) {
 		// NO BUFFER IS SUPPLIED
@@ -1124,6 +1147,18 @@ SCard LONG STDCALL SCardListReadersW(
 
 	LONG    status = SCARD_S_SUCCESS;
 	lws     readersList;
+
+	// Try to read list of remote readers if required
+	if (theApp.m_remoteConfig.bRedirect) {
+		string_type readers = "";
+		if (theApp.Remote_ListReaders(&(theApp.m_remoteConfig), &readers) == SCARD_S_SUCCESS) {
+			// Put remote readers into list
+			theApp.m_winscardConfig.sVIRTUAL_READERS.clear();
+			theApp.m_winscardConfig.sVIRTUAL_READERS.append(theApp.m_winscardConfig.sVIRTUAL_READERS_STATIC);
+			theApp.m_winscardConfig.sVIRTUAL_READERS.append(",");
+			theApp.m_winscardConfig.sVIRTUAL_READERS.append(readers);
+		}
+	}
 
 	if (*pcchReaders == SCARD_AUTOALLOCATE) {
 		// NO BUFFER IS SUPPLIED
@@ -3056,6 +3091,39 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
     return STAT_OK;
 }
 
+LONG CWinscardApp::Remote_ListReaders(REMOTE_CONFIG* pRemoteConfig, string_type* pResponse) {
+	LONG        status = 0;
+	string_type     message;
+
+	if (pRemoteConfig->pSocket != NULL) {
+		try {
+			Remote_SendRequest(pRemoteConfig, "empty", CMD_ENUM, "", pResponse);
+		}
+		catch (const char* s) {
+			message = string_format(_CONV("Remote_ListReaders(), SendLine(%s), fail with (%s)\n"), message.c_str(), s);
+			LogWinscardRules(message);
+			status = SCARD_F_UNKNOWN_ERROR;
+		}
+		catch (...) {
+			message = string_format(_CONV("Remote_ListReaders(), SendLine(%s), fail with (unhandled exception)\n"), message.c_str());
+			LogWinscardRules(message);
+			status = SCARD_F_UNKNOWN_ERROR;
+		}
+	}
+	else {
+		status = SCARD_F_COMM_ERROR;
+	}
+
+	return status;
+}
+
+LONG CWinscardApp::Remote_SCardReleaseContext() {
+	theApp.cardReaderMap.clear();
+	theApp.remoteReadersMap.clear();
+	m_nextRemoteCardID = 1;
+	return 0;
+}
+
 #endif
 
 
@@ -3394,7 +3462,8 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":VIRTUAL_READERS")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_winscardConfig.sVIRTUAL_READERS = char_value;
+			m_winscardConfig.sVIRTUAL_READERS_STATIC = char_value;
+			m_winscardConfig.sVIRTUAL_READERS = m_winscardConfig.sVIRTUAL_READERS_STATIC;
 		}
 	}
 
