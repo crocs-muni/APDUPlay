@@ -22,7 +22,13 @@ public:
     static int APDU_ConvertToString(CARDAPDU* pAPDU, string_type* pString, BOOL toSendAPDU);
 	
     static int String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls* pValueString);
-    static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lws* pValueString);
+	static int String_ParseSeparatedArray(const char* array, size_t arraySize, char separator, ls* pValueString);
+	static int String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lws* pValueString);
+	static int String_ParseSeparatedArray(const WCHAR* array, size_t arraySize, WCHAR separator, lws* pValueString);
+
+	static int String_SerializeAsSeparatedArray(ls* pValueString, char separator, char* array, size_t* pArraySize);
+	static int String_SerializeAsSeparatedArray(ls* pValueString, WCHAR separator, WCHAR* array, size_t* pArraySize);
+
 };
 
 size_t compareWithNoCase(const char_type* str1, const char_type* str2);

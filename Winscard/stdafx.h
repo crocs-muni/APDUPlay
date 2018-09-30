@@ -220,8 +220,10 @@ typedef struct _WINSCARD_CONFIG {
     BOOL    bMODIFY_APDU_BY_RULES = FALSE;
     BOOL    bLOG_WRITE_DESCRIPTION = FALSE;
     string_type sREADER_ORDERED_FIRST;
-	string_type sVIRTUAL_READERS_STATIC;	// virtual readers loaded from configuration file (always shown)
-	string_type sVIRTUAL_READERS;			// Virtual readers loaded from cfg file + dynamically from remote proxy
+	// Virtual readers
+	string_type				sVIRTUAL_READERS_STATIC;	// Virtual readers as loaded from configuration file (always shown)
+	std::list<string_type>	listVIRTUAL_READERS_STATIC; // Parsed sVIRTUAL_READERS_STATIC
+	std::list<string_type>	listVIRTUAL_READERS;		// List of all virtual readers: loaded from cfg file + dynamically from remote proxy
 	string_type sLOG_BASE_PATH;
     
     _WINSCARD_CONFIG(void) {
@@ -248,7 +250,7 @@ typedef struct _WINSCARD_CONFIG {
         bLOG_EXCHANGED_APDU = FALSE;   // DEFAULT: FALSE, SET TO TRUE IF LOGGING OF APDU DATA IS REQUIRED
         bMODIFY_APDU_BY_RULES = FALSE;   // DEFAULT: FALSE, SET TO TRUE . 
         sREADER_ORDERED_FIRST = "";
-		sVIRTUAL_READERS = "";
+		//sVIRTUAL_READERS = "";
 		sLOG_BASE_PATH = "";
 #endif
     }

@@ -68,7 +68,7 @@ public:
 	LONG Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, string_type command, string_type commandData, string_type* pResponse);
 	LONG Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader);
 	LONG Remote_ParseResponse(string_type rawResponse, DWORD expectedUniqueID, string_type* respCommand);
-	LONG Remote_ListReaders(REMOTE_CONFIG* pRemoteConfig, string_type* pResponse);
+	LONG Remote_ListReaders(REMOTE_CONFIG* pRemoteConfig, list<string_type>* pResponse);
 	LONG Remote_SCardReleaseContext();
 #endif
 	int LoadRule(string_type ruleName, dictionary* dict);

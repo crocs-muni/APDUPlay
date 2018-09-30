@@ -371,6 +371,10 @@ int CCommonFnc::BYTE_ConvertFromArrayToHexString(const BYTE* pArray, DWORD pbArr
 }
 
 int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls* pValueString) {
+	return CCommonFnc::String_ParseSeparatedArray((char*) array, arraySize, '\0', pValueString);
+}
+
+int CCommonFnc::String_ParseSeparatedArray(const char* array, size_t arraySize, char separator, ls* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
 	std::string itemName;
@@ -379,8 +383,8 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls*
 	itemName = "";
 	
 	if (arraySize > 0) {
-		while ((array[pos] != '\0' || array[pos + 1] != '\0') && pos <= (arraySize - 1)) {	// -1 belong to special end zero
-			if (array[pos] == '\0') {	// end of one item
+		while ((array[pos] != separator || array[pos + 1] != separator) && pos <= (arraySize - 1)) {	// -1 belong to special end zero
+			if (array[pos] == separator) {	// end of one item
 				if (itemName != "") pValueString->push_back(itemName);
 
 				itemName = "";
@@ -391,7 +395,7 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls*
 
 		}	//end while
 	}
-
+	// Treat last item
 	if (!itemName.empty()) {
 		pValueString->push_back(itemName);
 		itemName = "";
@@ -400,6 +404,10 @@ int CCommonFnc::String_ParseNullSeparatedArray(BYTE* array, DWORD arraySize, ls*
 }
 
 int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lws* pValueString) {
+	return CCommonFnc::String_ParseSeparatedArray(array, arraySize, L'\0', pValueString);
+}
+
+int CCommonFnc::String_ParseSeparatedArray(const WCHAR* array, size_t arraySize, WCHAR separator, lws* pValueString) {
     int     status = STAT_OK;
     DWORD   pos;
 	std::wstring itemName;
@@ -408,8 +416,8 @@ int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lw
 	itemName = L"";
 	
 	if (arraySize > 0) {
-		while ((array[pos] != L'\0' || array[pos + 1] != L'\0') && pos <= (arraySize - 1)) {	// -1 belong to special end zero
-			if (array[pos] == L'\0') {	// end of one item
+		while ((array[pos] != separator || array[pos + 1] != separator) && pos <= (arraySize - 1)) {	// -1 belong to special end zero
+			if (array[pos] == separator) {	// end of one item
 				if (itemName.length() != 0) pValueString->push_back(itemName);
 
 				itemName = L"";
@@ -420,6 +428,87 @@ int CCommonFnc::String_ParseNullSeparatedArray(WCHAR* array, DWORD arraySize, lw
 
 		}	//end while
 	}
+	// Treat last item
+	if (!itemName.empty()) {
+		pValueString->push_back(itemName);
+		itemName = L"";
+	}
 
     return status;
+}
+
+int CCommonFnc::String_SerializeAsSeparatedArray(ls* pValueString, char separator, char* outArray, size_t* pArraySize) {
+	int     status = STAT_OK;
+
+	// Compute required length
+	size_t reqLength = 0;
+	for (ls::iterator iter = pValueString->begin(); iter != pValueString->end(); iter++) {
+		if (iter->length() > 0) {
+			reqLength += iter->length() + 1; // item + separator
+		}
+	}
+
+	if (outArray == NULL) {
+		*pArraySize = reqLength;
+	}
+	else {
+		if (*pArraySize <= reqLength) {
+			// Serialize list
+			size_t position = 0;
+			for (ls::iterator iter = pValueString->begin(); iter != pValueString->end(); iter++) {
+				if (iter->length() > 0) {
+					memcpy(outArray + position, iter->c_str(), iter->length());
+					position += iter->length();
+					outArray[position] = separator;
+					position++;
+				}
+			}
+
+			*pArraySize = position;
+		}
+		else {
+			status = STAT_NOT_ENOUGHT_MEMORY;
+		}
+	}
+
+	return status;
+}
+
+int CCommonFnc::String_SerializeAsSeparatedArray(ls* pValueString, WCHAR separator, WCHAR* outArray, size_t* pArraySize) {
+	int     status = STAT_OK;
+
+	// Compute required length
+	size_t reqLength = 0;
+	for (ls::iterator iter = pValueString->begin(); iter != pValueString->end(); iter++) {
+		if (iter->length() > 0) {
+			reqLength += iter->length() + 1; // item + separator
+		}
+	}
+
+	if (outArray == NULL) {
+		*pArraySize = reqLength;
+	}
+	else {
+		if (*pArraySize <= reqLength) {
+			// Serialize list
+			size_t position = 0;
+			for (ls::iterator iter = pValueString->begin(); iter != pValueString->end(); iter++) {
+				if (iter->length() > 0) {
+					for (size_t i = 0; i < iter->length(); i++) { // Copy character by character to make correct conversion from char to wchar
+						outArray[position + i] = iter->at(i);
+					}
+					position += iter->length();
+					outArray[position] = separator;
+					position++;
+				}
+			}
+
+			*pArraySize = position;
+		}
+		else {
+			status = STAT_NOT_ENOUGHT_MEMORY;
+		}
+	}
+
+	return status;
 }
