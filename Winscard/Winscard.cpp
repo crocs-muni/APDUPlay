@@ -877,7 +877,7 @@ SCard LONG STDCALL SCardListReaders(
 
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		DWORD realLen = 0;
-		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, pcchReaders);
+		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen);
 		*pcchReaders = realLen;
 		// Supress error when virtual readers are set
 		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
