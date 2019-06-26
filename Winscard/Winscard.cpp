@@ -217,7 +217,8 @@ SCard LONG STDCALL SCardReleaseContext(
 	// Release ctxs for remote cards (if any)
 	theApp.Remote_SCardReleaseContext();
 
-	return (*Original_SCardReleaseContext)(hContext);
+	LONG status = (*Original_SCardReleaseContext)(hContext);
+	return status;
 }
 
 
@@ -988,7 +989,7 @@ SCard LONG STDCALL SCardListReaders(
 							*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
 						}
 						else {
-							*pcchReaders = (DWORD)(realLen + virtReadersLen); // dditional zero was already inserted before
+							*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
 						}
 						mszReaders[*pcchReaders - 1] = 0;
 					}
@@ -3046,6 +3047,19 @@ BOOL CWinscardApp::InitInstance()
 	memset(szPath, 0, sizeof(szPath) * sizeof(TCHAR));
 	if (GetModuleFileName(NULL, szPath, MAX_PATH)) {
 		LogDebugString(string_format(_CONV("Target application: '%s'\n"), szPath));
+		// Try to extract binary name and store it
+		string_type binaryPath = szPath;
+		std::size_t found = binaryPath.rfind(_CONV("\\"));
+		if (found == std::string::npos) {
+			found = binaryPath.rfind(_CONV("/"));
+		}
+		
+		if (found != std::string::npos) {
+			found += 1; // skip after folder separator
+			loadingBinaryName = binaryPath.substr(found);
+			// Add extracted calling binary name to remote tag personalization
+			theApp.m_remoteConfig.remoteTag += string_format(_CONV("binary=%s;"), theApp.loadingBinaryName.c_str());
+		}
 	}
 
 
@@ -3058,11 +3072,12 @@ BOOL CWinscardApp::InitInstance()
 	char* remoteTag = std::getenv(ENV_APDUPLAY_REMOTE_TAG.c_str());
 	if (remoteTag != NULL) {
 		LogDebugString(string_format(_CONV("found '%s'\n"), remoteTag), false);
-		theApp.m_remoteConfig.remoteTag = remoteTag;
+		theApp.m_remoteConfig.remoteTag += remoteTag; // Note: remoteTag is assumed to have proper structure remote server can understand
 	}
 	else {
 		LogDebugString(_CONV("not found\n"), false);
 	}
+
 
 
     // CONNECT TO REMOTE SOCKET IF REQUIRED

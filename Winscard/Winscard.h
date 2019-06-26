@@ -39,6 +39,8 @@ public:
 	unordered_map<SCARDHANDLE, string_type>	remoteReadersMap;
 	DWORD   m_nextRemoteCardID = 1;
 	
+	string_type loadingBinaryName;
+	
 
 
 #if defined (_WIN32)
