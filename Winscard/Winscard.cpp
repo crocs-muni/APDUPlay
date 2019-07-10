@@ -91,7 +91,7 @@ CWinscardApp theApp;
 #define REMOTE_SOCKET_TIMEOUT            20
 #define REMOTE_SOCKET_LONG_TIMEOUT       20
 static string_type REMOTE_SOCKET_ENDSEQ = _CONV("@@");
-#define VIRTUAL_READERS_SEPARATOR		 _CONV(',')
+#define VIRTUAL_READERS_SEPARATOR		 _CONV('|')
 #define REMOTE_APDU_RESPONSE_WAIT_TIME			0
 #define REMOTE_APDU_RESPONSE_WAIT_TIME_PER_BYTE	20
 
@@ -113,6 +113,7 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 #define CMD_APDU				"APDU"
 #define CMD_RESET				"RESET"
 #define CMD_ENUM				"ENUM"
+#define CMD_READERS				"READERS"
 #define CMD_PERSONALIZE			"PERSONALIZE"
 #define CMD_LINE_SEPARATOR		"|"	
 #define CMD_SEPARATOR			":"	
@@ -3120,7 +3121,7 @@ BOOL CWinscardApp::InitInstance()
 			found += 1; // skip after folder separator
 			loadingBinaryName = binaryPath.substr(found);
 			// Add extracted calling binary name to remote tag personalization
-			theApp.m_remoteConfig.remoteTag += string_format(_CONV("binary=%s;"), theApp.loadingBinaryName.c_str());
+			theApp.m_remoteConfig.remoteTag += string_format(_CONV("binary=%s"), theApp.loadingBinaryName.c_str());
 		}
 	}
 
@@ -3175,6 +3176,7 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
 		else {
 			LogDebugString(_CONV("failed\n"), false);
 		}
+		pRemoteConfig->pSocket->Close();
 
 		// Send personalization data
 		if (theApp.m_remoteConfig.remoteTag.length() > 0) {
@@ -3187,11 +3189,11 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
 	}
 	catch (std::string error) {
 		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
-		LogDebugString(message, false);
+		LogDebugString(message, true);
 	}
 	catch (...) {
 		message = string_format(_CONV("Failed to connect to %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
-		LogDebugString(message, false);
+		LogDebugString(message, true);
 	}
 
     return STAT_OK;
@@ -3204,7 +3206,9 @@ LONG CWinscardApp::Remote_ListReaders(REMOTE_CONFIG* pRemoteConfig, list<string_
 	if (pRemoteConfig->pSocket != NULL) {
 		string_type response;
 		try {
-			Remote_SendRequest(pRemoteConfig, NO_READER, CMD_ENUM, "0", &response);
+			message = string_format(_CONV("%s%s0"), pRemoteConfig->remoteTag.c_str(), CMD_SEPARATOR);
+			//message = string_format(_CONV("*:%s:0"), pRemoteConfig->remoteTag.c_str());
+			Remote_SendRequest(pRemoteConfig, NO_READER, CMD_READERS, message, &response);
 			response.erase(response.find_last_not_of(" \n\r\t") + 1);
 
 			list<string_type> remoteReaders;
@@ -3377,25 +3381,51 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 	LONG status = SCARD_S_SUCCESS;
 	string_type     message;
 
-	// unique command ID
-	theApp.m_remoteConfig.nextCommandID++;
-	string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, command, commandData, "", CMD_LINE_SEPARATOR);
-	pRemoteConfig->pSocket->SendLine(l);
-	//message.Insert(0, "\n::-> ");
-	message.insert(0, _CONV("::-> \n"));
-	LogWinscardRules(message);
-	_sleep(REMOTE_APDU_RESPONSE_WAIT_TIME);
 
-	// OBTAIN RESPONSE, PARSE BACK 
-	// TODO: parse response, propagate it, chck unique command ID
-	l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+	string_type sIP(pRemoteConfig->IP);
+	try {
+		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+		if (pRemoteConfig->pSocket == NULL) {
+			message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s failed"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+			LogDebugString(message, true);
+			return false;
+		}
 
-	// Parse response
-	status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
 
-	replace(pResponse->begin(), pResponse->end(), '\n', ' ');
-	message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
-	LogWinscardRules(message);
+		// unique command ID
+		theApp.m_remoteConfig.nextCommandID++;
+		string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, command, commandData, "", CMD_LINE_SEPARATOR);
+		pRemoteConfig->pSocket->SendLine(l);
+		replace(l.begin(), l.end(), '\n', ' ');
+		//message = string_format(_CONV("::-> %s\n"), l.c_str());
+		message = string_format(_CONV("::-> %s %s\n"), command.c_str(), "(hidden data)");
+		LogWinscardRules(message);
+		//LogDebugString(message, false);
+		if (REMOTE_APDU_RESPONSE_WAIT_TIME > 0) {
+			_sleep(REMOTE_APDU_RESPONSE_WAIT_TIME);
+		}
+
+		// OBTAIN RESPONSE, PARSE BACK 
+		l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+		// Parse response
+		status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
+
+		replace(pResponse->begin(), pResponse->end(), '\n', ' ');
+		message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
+		//message = string_format(_CONV("::<- %s\n"), "(hidden response)");
+		LogWinscardRules(message);
+		//LogDebugString(message, false);
+
+		pRemoteConfig->pSocket->Close();
+	}
+	catch (std::string error) {
+		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
+		LogDebugString(message, true);
+	}
+	catch (...) {
+		message = string_format(_CONV("Failed to connect to %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+		LogDebugString(message, true);
+	}
 
 	return status;
 }
@@ -3472,6 +3502,12 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
 			// unique command ID
 			theApp.m_remoteConfig.nextCommandID++;
 			CCommonFnc::BYTE_ConvertFromArrayToHexString(pbSendBuffer, cbSendLength, &value, false);
+			
+			string_type     response;
+			Remote_SendRequest(pRemoteConfig, targetReader, CMD_APDU, value, &response);
+			response.erase(response.find_last_not_of(" \n\r\t") + 1);
+
+/*
 			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
 			pRemoteConfig->pSocket->SendLine(l);
 			replace(l.begin(), l.end(), '\n', ' ');
@@ -3493,6 +3529,7 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
 			replace(l.begin(), l.end(), '\n', ' ');
 			message = string_format(_CONV("::<- %s\n"), l.c_str());
             LogWinscardRules(message);
+*/
             
             if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
