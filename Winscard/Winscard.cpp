@@ -3384,6 +3384,9 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 
 	string_type sIP(pRemoteConfig->IP);
 	try {
+		if (pRemoteConfig->pSocket) {
+			delete pRemoteConfig->pSocket;
+		}
 		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
 		if (pRemoteConfig->pSocket == NULL) {
 			message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s failed"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
@@ -3411,8 +3414,8 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 		status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
 
 		replace(pResponse->begin(), pResponse->end(), '\n', ' ');
-		message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
-		//message = string_format(_CONV("::<- %s\n"), "(hidden response)");
+		//message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
+		message = string_format(_CONV("::<- %s\n"), "(hidden response)");
 		LogWinscardRules(message);
 		//LogDebugString(message, false);
 
