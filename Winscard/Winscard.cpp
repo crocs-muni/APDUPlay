@@ -799,7 +799,8 @@ SCard LONG STDCALL SCardConnect(
 		dwShareMode = SCARD_SHARE_SHARED;
 	}
 
-	// Detect remote cards 
+	// Detect remote cards (now only via reader prefix) and assign virtual card handle
+#if defined(_WIN32)
 	string_type readerName = szReader;
 	if (theApp.IsRemoteReader(readerName)) {
 		theApp.m_nextRemoteCardID++;
@@ -810,12 +811,15 @@ SCard LONG STDCALL SCardConnect(
 		theApp.remoteCardsATRMap[szReader] = atr;
 	}
 	else {
+#endif
 		// Standard physical reader
 		status = (*Original_SCardConnect)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
 		string_type message;
 		message = string_format(_CONV("SCardConnect(hContext:0x%x,%s,hCard:0x%x) called\n"), hContext, szReader, *phCard);
 		LogWinscardRules(message);
+#if defined(_WIN32)
 	}
+#endif
 
 	// Store mapping between card handle and reader (used in card remoting)
 	theApp.cardReaderMap[*phCard] = szReader;
@@ -2990,7 +2994,7 @@ int initialize()
 		load_func(hOriginal, "SCardConnect");
 	if (!Original_SCardConnect) {
 		error = dlerror();
-		LogDebugString(_CONV("Could not find SCardConnect procedure address:  %s\n", error);
+		fprintf(stderr, "Could not find SCardConnect procedure address:  %s\n", error);
 		return FALSE;
 	}
 
@@ -2999,7 +3003,7 @@ int initialize()
 		load_func(hOriginal, "SCardStatus");
 	if ((!Original_SCardStatus)) {
 		error = dlerror();
-		LogDebugString(_CONV("Could not find SCardStatus procedure address:  %s\n", error);
+		fprintf(stderr, "Could not find SCardStatus procedure address:  %s\n", error);
 		return FALSE;
 	}
 
@@ -3080,7 +3084,7 @@ void GetDesktopPath(char_type* path)
 	string_type stringPath = "/home/";
     stringPath += login;
     stringPath += "/Desktop/APDUPlay/";
-    type_copy(rulesFilePath, stringPath.c_str());
+    type_copy(path, stringPath.c_str());
 #else
 	char_type appData[MAX_PATH];
 	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);

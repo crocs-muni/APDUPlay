@@ -125,7 +125,7 @@ std::string BytesToHex(BYTE* data, size_t dataLen) {
 	std::stringstream ss;
 	char oneByte[3];
 	for (size_t i = 0; i < dataLen; ++i) {
-		sprintf_s(oneByte, sizeof(oneByte), "%.2x", data[i]);
+		snprintf(oneByte, sizeof(oneByte), "%.2x", data[i]);
 		ss << oneByte;
 	}
 	return ss.str();
