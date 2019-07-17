@@ -1,4 +1,4 @@
-﻿#include "stdafx.h"
+#include "stdafx.h"
 #include <chrono>
 #include <thread>
 #include <fstream>
@@ -799,7 +799,7 @@ SCard LONG STDCALL SCardConnect(
 		dwShareMode = SCARD_SHARE_SHARED;
 	}
 
-	// Detect remote cards (now only via reader prefix) and assign virtual card handle
+	// Detect remote cards 
 #if defined(_WIN32)
 	string_type readerName = szReader;
 	if (theApp.IsRemoteReader(readerName)) {
@@ -3084,7 +3084,7 @@ void GetDesktopPath(char_type* path)
 	string_type stringPath = "/home/";
     stringPath += login;
     stringPath += "/Desktop/APDUPlay/";
-    type_copy(path, stringPath.c_str());
+    type_copy(rulesFilePath, stringPath.c_str());
 #else
 	char_type appData[MAX_PATH];
 	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);
@@ -3665,7 +3665,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 			m_remoteConfig.bRedirect = value;
 		}
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":NEWSOCKETPERCOMMAND")), 2)) != 2)
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":NEW_SOCKET_PER_COMMAND")), 2)) != 2)
 		{
 			m_remoteConfig.bOpenSocketForEveryCommand = value;
 		}
