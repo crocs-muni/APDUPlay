@@ -3661,7 +3661,7 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 			m_remoteConfig.bRedirect = value;
 		}
 		type_copy(sec_and_key, section_name);
-		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":NEWSOCKETPERCOMMAND")), 2)) != 2)
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":NEW_SOCKET_PER_COMMAND")), 2)) != 2)
 		{
 			m_remoteConfig.bOpenSocketForEveryCommand = value;
 		}
