@@ -155,12 +155,20 @@ static SCard LONG(STDCALL *Original_SCardListReaders)(
 	OUT     LPSTR mszReaders,
 	IN OUT  LPDWORD pcchReaders
 	);
-
+static SCard LONG(STDCALL *Original_SCardListReadersW)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR mszGroups,
+	OUT     LPWSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
 static SCard LONG(STDCALL *Original_SCardEstablishContext)(
 	IN  DWORD dwScope,
 	IN  LPCVOID pvReserved1,
 	IN  LPCVOID pvReserved2,
 	OUT LPSCARDCONTEXT phContext
+	);
+static SCard LONG(STDCALL *Original_SCardReleaseContext)(
+	IN  SCARDCONTEXT hContext
 	);
 
 int SendAPDU(string_type apdu, SCARDHANDLE  hCard, DWORD scProtocol) {

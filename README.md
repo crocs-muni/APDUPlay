@@ -4,7 +4,7 @@ PC/SC APDU inspection and manipulation tool (APDUPlay)
 [![Latest release](https://img.shields.io/github/release/crocs-muni/apduplay.svg)](https://github.com/crocs-muni/apduplay/releases/latest)
 
 Windows DLL: [![Build status](https://ci.appveyor.com/api/projects/status/ktwde29drhtw7jml?svg=true)](https://ci.appveyor.com/project/petrs/apduplay)
-Linux SO: [![Build Status](https://travis-ci.org/crocs-muni/apduplay.svg?branch=master)](https://travis-ci.org/crocs-muni/apduplay)
+Linux SO: [![Build Status](https://travis-ci.org/crocs-muni/APDUPlay.svg?branch=master)](https://travis-ci.org/crocs-muni/APDUPlay)
 
 The APDUPlay project allows you to log, modify, redirect and visualize smartcard communication realized via PC/SC interface (winscard.dll library). The functionality is achieved by custom "stub" library (provided by APDUPlay) which intercepts and redirects the communication to original winscard.dll (provided by Microsoft) or remote socket proxy. The project supports applications running on Windows Vista, 7, 8, 10 and Linux both 32- and 64-bit.
 
