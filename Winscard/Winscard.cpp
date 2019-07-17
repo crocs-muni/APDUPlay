@@ -2,6 +2,7 @@
 #include <chrono>
 #include <thread>
 #include <fstream>
+#include <codecvt>
 #ifndef INTERFACE_H
 #define INTERFACE_H
 /*
@@ -47,7 +48,6 @@ Please, report any bugs to author <petr@svenda.com>
 #include <winscard.h>
 #include "Winscard.h"
 #include "CommonFnc.h"
-
 #include <time.h>
 #if defined(_WIN32)
 #include "socket.h"
@@ -70,11 +70,14 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-static string_type LIBRARY_VERSION = _CONV("2.1.2");
+static string_type LIBRARY_VERSION = _CONV("2019.07.17");
 
 static string_type ENV_APDUPLAY_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
 static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
 static string_type ENV_APDUPLAY_REMOTE_TAG = _CONV("APDUPLAY_REMOTE_TAG");
+static string_type ENV_APDUPLAY_DISABLE_LOGGING = _CONV("APDUPLAY_DISABLE_LOGGING");
+
+static string_type NO_READER = "*"; // was "empty" before
 
 static string_type APDUPLAY_DEBUG_FILE = _CONV("c:\\Temp\\apduplay_debug.txt");
 
@@ -89,6 +92,10 @@ CWinscardApp theApp;
 #define REMOTE_SOCKET_TIMEOUT            20
 #define REMOTE_SOCKET_LONG_TIMEOUT       20
 static string_type REMOTE_SOCKET_ENDSEQ = _CONV("@@");
+#define VIRTUAL_READERS_SEPARATOR		 _CONV('|')
+#define REMOTE_APDU_RESPONSE_WAIT_TIME			0
+#define REMOTE_APDU_RESPONSE_WAIT_TIME_PER_BYTE	20
+
 
 //#define HANDLE_VIRTUAL_CARD             0xABADBABE
 #define HANDLE_VIRTUAL_CARD             0x1
@@ -107,6 +114,7 @@ BYTE    GET_APDU2[] = { 0xC0, 0xC0, 0x00, 0x00 };
 #define CMD_APDU				"APDU"
 #define CMD_RESET				"RESET"
 #define CMD_ENUM				"ENUM"
+#define CMD_READERS				"READERS"
 #define CMD_PERSONALIZE			"PERSONALIZE"
 #define CMD_LINE_SEPARATOR		"|"	
 #define CMD_SEPARATOR			":"	
@@ -151,25 +159,29 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 /* ******************************************************************************* */
 
 void LogDebugString(string_type message, bool bInsertTime = true) {
-	string_type logLine;
+	if (theApp.m_remoteConfig.bDisableLogging == FALSE) {
+		string_type logLine;
 
-	if (bInsertTime) {
-		string_type date_and_time = getCurrentTimeString();
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("%s: %s"), date_and_time.c_str(), message.c_str()));
-	}
-	else {
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, message);
+		if (bInsertTime) {
+			string_type date_and_time = getCurrentTimeString();
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("%s: %s"), date_and_time.c_str(), message.c_str()));
+		}
+		else {
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, message);
+		}
 	}
 }
 
 void LogWinscardRules(string_type message) {
-	LogDebugString(message);
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	if (theApp.m_remoteConfig.bDisableLogging == FALSE) {
+		LogDebugString(message);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
 }
 
 void DumpMemory(LPCBYTE location, DWORD length) {
 	string_type message;
-	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*)location, length, &message);
+	CCommonFnc::BYTE_ConvertFromArrayToHexString((BYTE*) location, length, &message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, message);
 	CCommonFnc::File_AppendString(WINSCARD_LOG, _CONV("\n"));
 }
@@ -190,6 +202,10 @@ SCard LONG STDCALL SCardEstablishContext(
 	string_type message;
 	message = string_format(_CONV("SCardEstablishContext() called\n"));
 	LogWinscardRules(message);
+
+	// Release ctxs for remote cards (if any)
+	theApp.Remote_SCardReleaseContext();
+
 	LONG status = (*Original_SCardEstablishContext)(dwScope, pvReserved1, pvReserved2, phContext);
 	message = string_format(_CONV("-> hContext:0x%x\n"), *phContext);
 	LogWinscardRules(message);
@@ -207,7 +223,12 @@ SCard LONG STDCALL SCardReleaseContext(
 	string_type message;
 	message = string_format(_CONV("SCardReleaseContext(hContext:0x%x) called\n"), hContext);
 	LogWinscardRules(message);
-	return (*Original_SCardReleaseContext)(hContext);
+
+	// Release ctxs for remote cards (if any)
+	theApp.Remote_SCardReleaseContext();
+
+	LONG status = (*Original_SCardReleaseContext)(hContext);
+	return status;
 }
 
 
@@ -573,6 +594,8 @@ SCard LONG STDCALL SCardTransmit(
 		//sprintf(buffer, "SCardTransmit (handle 0x%0.8X)#\n", hCard);
 		buffer = string_format(_CONV("SCardTransmit (handle 0x%0.8X)#\n"), hCard);
 		CCommonFnc::File_AppendString(WINSCARD_LOG, buffer);
+		LogWinscardRules(buffer);
+
 
 		//sprintf(buffer, "apduCounter:%d#\n", apduCounter);
 		buffer = string_format(_CONV("apduCounter:%d#\n"), apduCounter);
@@ -627,13 +650,10 @@ SCard LONG STDCALL SCardTransmit(
 	theApp.m_processedApduByteCounter += cbSendLength;
 
 #if defined(_WIN32)
-	// Check if redirection is required
-	if (theApp.m_remoteConfig.bRedirect) {
 	// Check if provided card handle is remote card
-		if (theApp.IsRemoteCard(hCard)) {
-			// FORWARD TO REMOTE SOCKET 
-			result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
-		}
+	if (theApp.IsRemoteCard(hCard)) {
+		// FORWARD TO REMOTE SOCKET 
+		result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *)pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, pcbRecvLength);
 	}
 	else {
 #endif
@@ -677,18 +697,15 @@ SCard LONG STDCALL SCardTransmit(
 			int tmp = sendBuffer[4] & 0xff; tmp += 2; *pcbRecvLength = tmp;
 
 #if defined(_WIN32)
-			// Check if redirection is required
-			if (theApp.m_remoteConfig.bRedirect) {
-				// Check if provided card handle is remote card
-				if (theApp.IsRemoteCard(hCard)) {
-					// FORWARD TO REMOTE SOCKET 
-					result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *) pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
-				}
+			// Check if provided card handle is remote card
+			if (theApp.IsRemoteCard(hCard)) {
+				// FORWARD TO REMOTE SOCKET 
+				result = theApp.Remote_SCardTransmit(&(theApp.m_remoteConfig), theApp.GetReaderName(hCard), (SCARD_IO_REQUEST *) pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
 			}
 			else {
 #endif
 
-			result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
+				result = (*Original_SCardTransmit)(hCard, pioSendPci, (LPCBYTE)sendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer + recvOffset, pcbRecvLength);
 #if defined(_WIN32) 	
 			}
 #endif
@@ -773,6 +790,9 @@ SCard LONG STDCALL SCardConnect(
 	OUT		LPSCARDHANDLE phCard,
 	OUT		LPDWORD pdwActiveProtocol)
 {
+
+	LogWinscardRules(_CONV("SCardConnect called\n"));
+
 	LONG status = SCARD_S_SUCCESS;
 	if (theApp.m_winscardConfig.bFORCE_CONNECT_SHARED_MODE) {
 		// we will always set mode to shared, if required
@@ -782,11 +802,13 @@ SCard LONG STDCALL SCardConnect(
 	// Detect remote cards (now only via reader prefix) and assign virtual card handle
 #if defined(_WIN32)
 	string_type readerName = szReader;
-	if (readerName.find(theApp.m_remoteConfig.remoteReaderPrefix) != -1) {
+	if (theApp.IsRemoteReader(readerName)) {
 		theApp.m_nextRemoteCardID++;
 		*phCard = theApp.m_nextRemoteCardID;
 		theApp.remoteReadersMap[*phCard] = szReader;
-		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), szReader);
+		string_type atr;
+		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), szReader, &atr);
+		theApp.remoteCardsATRMap[szReader] = atr;
 	}
 	else {
 #endif
@@ -856,20 +878,51 @@ SCard LONG STDCALL SCardListReaders(
 	int  status = SCARD_S_SUCCESS;
 	ls     readersList;
 
+	// Try to read list of remote readers if required
+	if (theApp.m_remoteConfig.bRedirect) {
+		string_type readers = "";
+		list<string_type> remoteReaders;
+		if (theApp.Remote_ListReaders(&(theApp.m_remoteConfig), &remoteReaders) == SCARD_S_SUCCESS) {
+			// Put remote readers into list
+			theApp.m_winscardConfig.listVIRTUAL_READERS = remoteReaders; 
+			theApp.remoteCardsATRMap.clear(); // Clear ATR of remote cards
+			// Obtain ATR for every remote reader
+			ls::iterator   iter;
+			for (iter = remoteReaders.begin(); iter != remoteReaders.end(); iter++) {
+				string_type atr;
+				status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), *iter, &atr);
+				if (status == SCARD_S_SUCCESS) {
+					theApp.remoteCardsATRMap[*iter] = atr;
+				}
+			}
+
+
+			// readers from cfg file
+			theApp.m_winscardConfig.listVIRTUAL_READERS.insert(theApp.m_winscardConfig.listVIRTUAL_READERS.begin(), 
+					theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.end()); 
+
+		}
+	}
+
+
 	if (*pcchReaders == SCARD_AUTOALLOCATE) {
 		// NO BUFFER IS SUPPLIED
 
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, pcchReaders);
+		DWORD realLen = 0;
+		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen);
+		*pcchReaders = realLen;
 		// Supress error when virtual readers are set
-		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
 			*pcchReaders = 0;
 			status = SCARD_S_SUCCESS;
 		}
 
 		if (status == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			DWORD     newLen = (DWORD)(*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 2);
+			size_t virtReadersLen = 0;
+			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, '\0', NULL, &virtReadersLen);
+			DWORD     newLen = (DWORD)(*pcchReaders + virtReadersLen + 2); // +2 for two terminating zeroes
 			char*   readers = new char[newLen];
 			memset(readers, 0, newLen);
 			*pcchReaders = newLen;
@@ -878,7 +931,7 @@ SCard LONG STDCALL SCardListReaders(
 
 			if (status == SCARD_E_NO_READERS_AVAILABLE) {
 				// No real readers are available. Check if virtual readers are supplied
-				if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+				if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
 					LogDebugString(string_format(_CONV("No real cards available, but virtual readers specified => continuing only with virtual readers.\n")));
 					// Virtual readers are required => continue as OK (only virtual will be returned)
 					status = SCARD_S_SUCCESS;
@@ -891,21 +944,24 @@ SCard LONG STDCALL SCardListReaders(
 
 			if (status == SCARD_S_SUCCESS) {
 				// COPY NAME OF VIRTUAL READERS TO THE END 
-				char* virtReadersPtr = readers + *pcchReaders;
-				memcpy(virtReadersPtr, theApp.m_winscardConfig.sVIRTUAL_READERS.c_str(), theApp.m_winscardConfig.sVIRTUAL_READERS.length());
-				// Virtual readers are separated by ; => change to ';' to '\0')
-				for (size_t i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
-					if (virtReadersPtr[i] == ',') { 
-						virtReadersPtr[i] = '\0'; 
-					}
+				char* virtReadersPtr = readers;
+				if (realLen > 0) { // Jump right after real readers
+					virtReadersPtr += realLen - 1;
 				}
-				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD) theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1;
+				CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, '\0', virtReadersPtr, &virtReadersLen);
+				// If no real readers were present, add space additional trailing zero
+				if (realLen == 0) {
+					*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
+				}
+				else {
+					*pcchReaders = (DWORD)(realLen + virtReadersLen); // space for additional zero was already inserted before
+				}
 				readers[*pcchReaders - 1] = 0;
+				//mszReaders[*pcchReaders - 1] = 0;
 				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
 				char**  temp = (char**)mszReaders;
 				*temp = readers;
-				CCommonFnc::String_ParseNullSeparatedArray((BYTE*)readers, *pcchReaders - 1, &readersList);
+				CCommonFnc::String_ParseNullSeparatedArray((BYTE*) readers, *pcchReaders - 1, &readersList);
 				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
 				theApp.m_charAllocatedMemoryList.push_back(readers);
 			}
@@ -918,15 +974,17 @@ SCard LONG STDCALL SCardListReaders(
 		status = (*Original_SCardListReaders)(hContext, mszGroups, NULL, &realLen);
 
 		// Supress error when virtual readers are set
-		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) { 
+		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
 			realLen = 0;
 			status = SCARD_S_SUCCESS;
 		}
 
 		if (status == SCARD_S_SUCCESS) {
-			if ((realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() > *pcchReaders) || (mszReaders == NULL)) {
+			size_t virtReadersLen = 0;
+			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, '\0', NULL, &virtReadersLen);
+			if ((realLen + virtReadersLen + 2 > *pcchReaders) || (mszReaders == NULL)) {
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = (DWORD) (realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
+				*pcchReaders = (DWORD) (realLen + virtReadersLen);
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
 			}
 			else {
@@ -936,7 +994,7 @@ SCard LONG STDCALL SCardListReaders(
 				status = (*Original_SCardListReaders)(hContext, mszGroups, mszReaders, &realLen);
 				if (status == SCARD_E_NO_READERS_AVAILABLE) {
 					// No real readers are available. Check if virtual readers are supplied
-					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+					if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
 						LogDebugString(string_format(_CONV("No real cards available, but virtual readers specified => continuing only with virtual readers.\n")));
 						// Virtual readers are required => continue as OK (only virtual will be returned)
 						status = SCARD_S_SUCCESS;
@@ -949,33 +1007,27 @@ SCard LONG STDCALL SCardListReaders(
 				if (status == SCARD_S_SUCCESS) {
 					*pcchReaders = realLen;
 
-					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
+					if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
 						// ADD VIRTUAL READER
 						// COPY NAME OF VIRTUAL READERS TO END
+
 						char* virtReadersPtr = mszReaders;
 						if (realLen > 0) { // Jump right after real readers
 							virtReadersPtr += realLen - 1;
 						}
-						memcpy(virtReadersPtr, theApp.m_winscardConfig.sVIRTUAL_READERS.c_str(), theApp.m_winscardConfig.sVIRTUAL_READERS.length());
-						// Virtual readers are separated by ; => change to ';' to '\0')
-						for (size_t i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
-							if (virtReadersPtr[i] == ',') {
-								virtReadersPtr[i] = '\0';
-							}
-						}
+						CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, '\0', virtReadersPtr, &virtReadersLen);
+
 						// If no real readers were present, add two trailing zeroes, one otherwise
 						if (realLen == 0) {
-							*pcchReaders = (DWORD)(theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 2);
+							*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
 						}
 						else {
-							*pcchReaders = (DWORD)(realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1);
+							*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
 						}
+						mszReaders[*pcchReaders - 1] = 0;
 					}
 					else { *pcchReaders = realLen; }
 
-					// ADD TWO TRAILING ZEROES
-					mszReaders[*pcchReaders - 2] = 0;
-					mszReaders[*pcchReaders - 1] = 0;
 					CCommonFnc::String_ParseNullSeparatedArray((BYTE*)mszReaders, *pcchReaders - 1, &readersList);
 				}
 			}
@@ -1020,10 +1072,176 @@ SCard LONG STDCALL SCardListReaders(
 	std::string    availableReaders = "-> Found readers: ";
 	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
 		availableReaders += *iter;
+		availableReaders += ",";
+	}
+	availableReaders += "\n";
+	LogWinscardRules(availableReaders);
+	LogWinscardRules(string_format(_CONV("Number of readers found: %d\n"), readersList.size()));
+
+
+	return status;
+}
+
+static SCard LONG(STDCALL *Original_SCardListReadersW)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR mszGroups,
+	OUT     LPWSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
+
+SCard LONG STDCALL SCardListReadersW(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR mszGroups,
+	OUT     LPWSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders)
+{
+	string_type message;
+	message = string_format(_CONV("SCardListReadersW(hContext:0x%x) called\n"), hContext);
+	LogWinscardRules(message);
+
+	LONG    status = SCARD_S_SUCCESS;
+	lws     readersList;
+
+	// Try to read list of remote readers if required
+	if (theApp.m_remoteConfig.bRedirect) {
+		list<string_type> remoteReaders;
+		if (theApp.Remote_ListReaders(&(theApp.m_remoteConfig), &remoteReaders) == SCARD_S_SUCCESS) {
+			// Put remote readers into list
+			theApp.m_winscardConfig.listVIRTUAL_READERS = remoteReaders;
+			theApp.m_winscardConfig.listVIRTUAL_READERS.insert(theApp.m_winscardConfig.listVIRTUAL_READERS.begin(),
+				theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.end()); // readers from cfg file
+		}
+	}
+
+	if (*pcchReaders == SCARD_AUTOALLOCATE) {
+		// NO BUFFER IS SUPPLIED
+		// OBTAIN REQUIRED LENGTH FOR REAL READERS
+		DWORD realLen = 0;
+		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
+			*pcchReaders = realLen;
+			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
+			size_t virtReadersLen = 0;
+			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', NULL, &virtReadersLen);
+			DWORD     newLen = (DWORD)(*pcchReaders + virtReadersLen + 2); // +2 for two terminating zeroes
+																		   // DWORD     newLen = (DWORD) (*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
+			WCHAR*   readers = new WCHAR[newLen];
+			memset(readers, 0, newLen * sizeof(WCHAR));
+			*pcchReaders = newLen;
+			realLen = newLen;
+			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, &realLen)) == SCARD_S_SUCCESS) {
+				*pcchReaders = realLen;
+				if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
+					// COPY NAME OF VIRTUAL READERS TO END
+					WCHAR* virtReadersPtr = readers;
+					if (realLen > 0) { // Jump right after real readers
+						virtReadersPtr += realLen - 1;
+					}
+					CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', virtReadersPtr, &virtReadersLen);
+					// If no real readers were present, add two trailing zeroes, one otherwise
+					if (realLen == 0) {
+						*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
+					}
+					else {
+						*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
+					}
+					mszReaders[*pcchReaders - 1] = 0;
+				}
+				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
+				WCHAR**  temp = (WCHAR**)mszReaders;
+				*temp = readers;
+				CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
+				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
+				theApp.m_wcharAllocatedMemoryList.push_back(readers);
+			}
+		}
+	}
+	else {
+		// BUFFER SUPPLIED
+		// OBTAIN REQUIRED LENGTH FOR REAL READERS
+		DWORD     realLen = *pcchReaders;
+		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
+			size_t virtReadersLen = 0;
+			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', NULL, &virtReadersLen);
+
+			if ((realLen + virtReadersLen + 2 > *pcchReaders) || (mszReaders == NULL)) {
+				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
+				*pcchReaders = (DWORD)(realLen + virtReadersLen + 2);
+				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
+			}
+			else {
+				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
+				realLen = *pcchReaders - 1;
+				memset(mszReaders, 0x00, *pcchReaders * sizeof(WCHAR));
+				if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
+					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
+					if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
+						WCHAR* virtReadersPtr = mszReaders;
+						if (realLen > 0) { // Jump right after real readers
+							virtReadersPtr += realLen - 1;
+						}
+						CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', virtReadersPtr, &virtReadersLen);
+					}
+					else { *pcchReaders = realLen; }
+					// If no real readers were present, add two trailing zeroes, one otherwise
+					if (realLen == 0) {
+						*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
+					}
+					else {
+						*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
+					}
+					mszReaders[*pcchReaders - 1] = 0;
+
+					CCommonFnc::String_ParseNullSeparatedArray(mszReaders, *pcchReaders, &readersList);
+				}
+			}
+		}
+	}
+
+	if (status == STAT_OK && mszReaders != NULL) {
+		if (theApp.m_winscardConfig.sREADER_ORDERED_FIRST != _CONV("")) {
+			// REODERING OF READERS WILL BE PERFORMED
+
+			// TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
+			for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
+				if (memcmp((LPCTSTR)theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR)) == 0) {
+					// PREFFERED READER FOUND
+
+					WCHAR*   readers = new WCHAR[*pcchReaders];
+					memset(readers, 0, *pcchReaders * sizeof(WCHAR));
+					memcpy(readers, mszReaders, *pcchReaders * sizeof(WCHAR));
+
+					DWORD   offset = 0;
+					// PREFFERED FIRST
+					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR));
+					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
+					offset += (DWORD)(theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1);
+					// ORIGINAL PREDECESOR SECOND
+					memcpy(readers + offset, mszReaders, i * sizeof(WCHAR));
+					offset += i;
+					// ORIGINAL SUCCESSOR THIRD - IS THERE FROM INITIAL MEMCPY
+
+					// COPY BACK
+					memcpy(mszReaders, readers, *pcchReaders * sizeof(WCHAR));
+					delete[] readers;
+
+					break;
+				}
+			}
+		}
+	}
+
+	lws::iterator   iter;
+	std::string availableReaders = "-> Found readers: ";
+	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
+		// Convert wchar to ascii
+		std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor;
+		std::string readerNameA = convertor.to_bytes(*iter);
+		availableReaders += readerNameA;
 		availableReaders += ", ";
 	}
 	availableReaders += "\n";
 	LogWinscardRules(availableReaders);
+	LogWinscardRules(string_format(_CONV("Number of readers found: %d\n"), readersList.size()));
 
 	return status;
 }
@@ -1113,136 +1331,7 @@ SCard LONG STDCALL SCardConnectW(
 	return status;
 }
 
-static SCard LONG(STDCALL *Original_SCardListReadersW)(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCWSTR mszGroups,
-	OUT     LPWSTR mszReaders,
-	IN OUT  LPDWORD pcchReaders
-	);
 
-SCard LONG STDCALL SCardListReadersW(
-	IN      SCARDCONTEXT hContext,
-	IN      LPCWSTR mszGroups,
-	OUT     LPWSTR mszReaders,
-	IN OUT  LPDWORD pcchReaders)
-{
-	string_type message;
-	message = string_format(_CONV("SCardListReadersW(hContext:0x%x) called\n"), hContext);
-	LogWinscardRules(message);
-
-	LONG    status = SCARD_S_SUCCESS;
-	lws     readersList;
-
-	if (*pcchReaders == SCARD_AUTOALLOCATE) {
-		// NO BUFFER IS SUPPLIED
-
-		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, pcchReaders)) == SCARD_S_SUCCESS) {
-			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
-			DWORD     newLen = (DWORD) (*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
-			WCHAR*   readers = new WCHAR[newLen];
-			memset(readers, 0, newLen * sizeof(WCHAR));
-			*pcchReaders = newLen;
-			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, pcchReaders)) == SCARD_S_SUCCESS) {
-				// COPY NAME OF VIRTUAL READERS TO END
-				for (DWORD i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
-					readers[i + *pcchReaders] = theApp.m_winscardConfig.sVIRTUAL_READERS.at(i);
-					if (readers[i + *pcchReaders] == L',') {
-						readers[i + *pcchReaders] = L'\0';
-					}
-				}
-				// ADD TRAILING ZERO
-				*pcchReaders += (DWORD) theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1;
-				readers[*pcchReaders - 1] = 0;
-				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
-				WCHAR**  temp = (WCHAR**)mszReaders;
-				*temp = readers;
-				CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
-				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
-				theApp.m_wcharAllocatedMemoryList.push_back(readers);
-			}
-		}
-	}
-	else {
-		// BUFFER SUPPLIED
-		// OBTAIN REQUIRED LENGTH FOR REAL READERS
-		DWORD     realLen = *pcchReaders;
-		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
-			if ((realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() > *pcchReaders) || (mszReaders == NULL)) {
-				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
-				*pcchReaders = (DWORD) (realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
-				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
-			}
-			else {
-				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
-				realLen = *pcchReaders - 1;
-				memset(mszReaders, 0, *pcchReaders * sizeof(WCHAR));
-				if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
-					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
-					if (theApp.m_winscardConfig.sVIRTUAL_READERS.length() > 0) {
-						for (DWORD i = 0; i < theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1; i++) {
-							mszReaders[i + realLen] = theApp.m_winscardConfig.sVIRTUAL_READERS.at(i);
-							if (mszReaders[i + realLen] == L',') {
-								mszReaders[i + realLen] = L'\0';
-							}
-						}
-						*pcchReaders = (DWORD)(realLen + theApp.m_winscardConfig.sVIRTUAL_READERS.length() + 1);
-					}
-					else { *pcchReaders = realLen; }
-					// ADD TWO TRAILING ZEROES
-					mszReaders[*pcchReaders - 2] = 0;
-					mszReaders[*pcchReaders - 1] = 0;
-
-					CCommonFnc::String_ParseNullSeparatedArray(mszReaders, *pcchReaders, &readersList);
-				}
-			}
-		}
-	}
-
-	if (status == STAT_OK && mszReaders != NULL) {
-		if (theApp.m_winscardConfig.sREADER_ORDERED_FIRST != _CONV("")) {
-			// REODERING OF READERS WILL BE PERFORMED
-
-			// TRY TO FIND POSITION OF PREFFERED READER IN BUFFER
-			for (DWORD i = 0; i < *pcchReaders - theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length(); i++) {
-				if (memcmp((LPCTSTR)theApp.m_winscardConfig.sREADER_ORDERED_FIRST.c_str(), mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR)) == 0) {
-					// PREFFERED READER FOUND
-
-					WCHAR*   readers = new WCHAR[*pcchReaders];
-					memset(readers, 0, *pcchReaders * sizeof(WCHAR));
-					memcpy(readers, mszReaders, *pcchReaders * sizeof(WCHAR));
-
-					DWORD   offset = 0;
-					// PREFFERED FIRST
-					memcpy(readers, mszReaders + i, theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() * sizeof(WCHAR));
-					readers[theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length()] = 0;
-					offset += (DWORD)(theApp.m_winscardConfig.sREADER_ORDERED_FIRST.length() + 1);
-					// ORIGINAL PREDECESOR SECOND
-					memcpy(readers + offset, mszReaders, i * sizeof(WCHAR));
-					offset += i;
-					// ORIGINAL SUCCESSOR THIRD - IS THERE FROM INITIAL MEMCPY
-
-					// COPY BACK
-					memcpy(mszReaders, readers, *pcchReaders * sizeof(WCHAR));
-					delete[] readers;
-
-					break;
-				}
-			}
-		}
-	}
-
-	lws::iterator   iter;
-	std::wstring availableReaders = L"-> Found readers: ";
-	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
-		availableReaders += *iter;
-		availableReaders += L", ";
-	}
-	availableReaders += L"\n";
-	//LogWinscardRules(availableReaders);
-
-	return status;
-}
 
 static SCard LONG(STDCALL *Original_SCardListReaderGroupsW)(
 	IN      SCARDCONTEXT hContext,
@@ -1808,7 +1897,30 @@ SCard LONG STDCALL SCardGetStatusChangeA(
 	IN      DWORD cReaders
 ) {
 	LogWinscardRules(_CONV("SCardGetStatusChangeA called\n"));
-	return (*Original_SCardGetStatusChangeA)(hContext, dwTimeout, rgReaderStates, cReaders);
+	string_type message = string_format(_CONV("-> rgReaderStates.szReader: %s\n"), rgReaderStates->szReader);
+	LogWinscardRules(message);
+
+	LONG status = SCARD_S_SUCCESS;
+	if (theApp.IsRemoteReader(rgReaderStates->szReader)) {
+		status = SCARD_S_SUCCESS;
+		rgReaderStates->dwEventState = 0x00010422;
+
+		// Set ATR based on previously retrieved value
+		if (theApp.remoteCardsATRMap.find(rgReaderStates->szReader) != theApp.remoteCardsATRMap.end()) {
+			string_type atr = theApp.remoteCardsATRMap[rgReaderStates->szReader];
+			rgReaderStates->cbAtr = 0x24;
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(atr, rgReaderStates->rgbAtr, &(rgReaderStates->cbAtr));
+		}
+		else {
+			rgReaderStates->cbAtr = 0x00;
+		}
+	}
+	else {
+		status = (*Original_SCardGetStatusChangeA)(hContext, dwTimeout, rgReaderStates, cReaders);
+	}
+	message = string_format(_CONV("-> return status: 0x%x\n"), status);
+	LogWinscardRules(message);
+	return status;
 }
 
 
@@ -1825,8 +1937,24 @@ SCard LONG STDCALL SCardGetStatusChangeW(
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
 	IN      DWORD cReaders
 ) {
+	LONG status = SCARD_S_SUCCESS;
+	// Convert wchar to ascii
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor;
+	std::string readerNameA = convertor.to_bytes(rgReaderStates->szReader);
+
 	LogWinscardRules(_CONV("SCardGetStatusChangeW called\n"));
-	return (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
+	string_type message = string_format(_CONV("-> rgReaderStates.szReader: %s\n"), readerNameA);
+	LogWinscardRules(message);
+	if (theApp.IsRemoteReader(readerNameA)) {
+		status = SCARD_S_SUCCESS;
+	}
+	else {
+		status = (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
+	}
+	message = string_format(_CONV("-> return status: 0x%x\n"), status);
+	LogWinscardRules(message);
+
+	return status;
 }
 
 static SCard LONG(STDCALL *Original_SCardUIDlgSelectCardA)(
@@ -2965,20 +3093,31 @@ void GetDesktopPath(char_type* path)
 #endif
 }
 
+char* Reg_GetEnvVariable(string_type variableName) {
+	LogDebugString(string_format(_CONV("Going to query %s env variable ... "), variableName.c_str()));
+	char* value = std::getenv(variableName.c_str());
+	if (value != NULL) {
+		LogDebugString(string_format(_CONV("found '%s'\n"), value), false);
+	}
+	else {
+		LogDebugString(_CONV("not found\n"), false);
+	}
 
+	return value;
+}
 
 #if defined (_WIN32)
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
 	// Check for user-defined path for debug file
-	char* debugPath = std::getenv(ENV_APDUPLAY_DEBUG_PATH.c_str());
+	char* debugPath = Reg_GetEnvVariable(ENV_APDUPLAY_DEBUG_PATH);
 	if (debugPath != NULL) {
 		APDUPLAY_DEBUG_FILE = debugPath;
 	}
 
     srand((int) time(NULL));
-	LogDebugString(_CONV("#####################################################################################\n"), false);
+	LogDebugString(_CONV("\n#####################################################################################\n"), false);
 	LogDebugString(_CONV("InitInstance entered\n"));
 
 #if defined (_WIN32) && !defined(_WIN64)
@@ -2991,25 +3130,39 @@ BOOL CWinscardApp::InitInstance()
 	memset(szPath, 0, sizeof(szPath) * sizeof(TCHAR));
 	if (GetModuleFileName(NULL, szPath, MAX_PATH)) {
 		LogDebugString(string_format(_CONV("Target application: '%s'\n"), szPath));
+		// Try to extract binary name and store it
+		string_type binaryPath = szPath;
+		std::size_t found = binaryPath.rfind(_CONV("\\"));
+		if (found == std::string::npos) {
+			found = binaryPath.rfind(_CONV("/"));
+		}
+		
+		if (found != std::string::npos) {
+			found += 1; // skip after folder separator
+			loadingBinaryName = binaryPath.substr(found);
+			// Add extracted calling binary name to remote tag personalization
+			theApp.m_remoteConfig.remoteTag += string_format(_CONV("binary=%s"), theApp.loadingBinaryName.c_str());
+		}
 	}
 
 
     // LOAD MODIFICATION RULES
     LoadRules();
 
+
 	// Check for env. variable containing additional personalization of this instance
 	// (not stored in configuration file to enable instance personalization without need for separate folder with separate file)
-	LogDebugString(string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_REMOTE_TAG.c_str()));
-	char* remoteTag = std::getenv(ENV_APDUPLAY_REMOTE_TAG.c_str());
-	if (remoteTag != NULL) {
-		LogDebugString(string_format(_CONV("found '%s'\n"), remoteTag), false);
-		theApp.m_remoteConfig.remoteTag = remoteTag;
-	}
-	else {
-		LogDebugString(_CONV("not found\n"), false);
+	// Note: remoteTag is assumed to have proper structure remote server can understand
+	char* remoteTag = Reg_GetEnvVariable(ENV_APDUPLAY_REMOTE_TAG);
+	if (remoteTag != NULL) { theApp.m_remoteConfig.remoteTag += remoteTag; }
+
+	char* silenceLogging = Reg_GetEnvVariable(ENV_APDUPLAY_DISABLE_LOGGING);
+	if (silenceLogging != NULL) { 
+		LogWinscardRules("!!! Detected environmental variable disabling all subsequent logging (which improves the card communication speed for scenarios with high number of APDus).\nPlease remove environmental variable APDUPLAY_DISABLE_LOGGING if you want to see more logs.");
+		theApp.m_remoteConfig.bDisableLogging = TRUE;
 	}
 
-
+	
     // CONNECT TO REMOTE SOCKET IF REQUIRED
     if (m_remoteConfig.bRedirect) {
 		LogDebugString(_CONV("[REMOTE] Redirect = 1 => going to connect to specified socket (make sure socket is opened. If application terminates, try to set Redirect = 0 to disable remote redirecting)\n"));
@@ -3043,24 +3196,84 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
 		else {
 			LogDebugString(_CONV("failed\n"), false);
 		}
+		pRemoteConfig->pSocket->Close();
+		delete pRemoteConfig->pSocket;
+		pRemoteConfig->pSocket = NULL;
 
 		// Send personalization data
 		if (theApp.m_remoteConfig.remoteTag.length() > 0) {
+			message = string_format(_CONV("Sending personalization string to remote proxy '%s'\n"), theApp.m_remoteConfig.remoteTag.c_str());
+			LogDebugString(message);
 			string_type response;
-			Remote_SendRequest(pRemoteConfig, "empty", CMD_PERSONALIZE, theApp.m_remoteConfig.remoteTag, &response);
+			Remote_SendRequest(pRemoteConfig, NO_READER, CMD_PERSONALIZE, theApp.m_remoteConfig.remoteTag, &response);
 		}
 
 	}
 	catch (std::string error) {
 		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
-		LogDebugString(message, false);
+		LogDebugString(message, true);
 	}
 	catch (...) {
 		message = string_format(_CONV("Failed to connect to %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
-		LogDebugString(message, false);
+		LogDebugString(message, true);
 	}
 
     return STAT_OK;
+}
+
+LONG CWinscardApp::Remote_ListReaders(REMOTE_CONFIG* pRemoteConfig, list<string_type>* pResponse) {
+	LONG        status = 0;
+	string_type     message;
+
+	if (pRemoteConfig->pSocket != NULL) {
+		string_type response;
+		try {
+			message = string_format(_CONV("%s%s0"), pRemoteConfig->remoteTag.c_str(), CMD_SEPARATOR);
+			//message = string_format(_CONV("*:%s:0"), pRemoteConfig->remoteTag.c_str());
+			Remote_SendRequest(pRemoteConfig, NO_READER, CMD_READERS, message, &response);
+			response.erase(response.find_last_not_of(" \n\r\t") + 1);
+
+			list<string_type> remoteReaders;
+			CCommonFnc::String_ParseSeparatedArray(response.c_str(), response.length(), VIRTUAL_READERS_SEPARATOR, &remoteReaders);
+
+			ls::iterator   iter;
+			for (iter = remoteReaders.begin(); iter != remoteReaders.end(); iter++) {
+				if (iter->at(iter->length() - 1) == '=') {
+					// Assume base64 encoding, decode
+					std::vector<BYTE> decoded = CCommonFnc::base64_decode(*iter);
+					//string_type readerName;
+					string_type readerName(decoded.begin(), decoded.end());
+					//CCommonFnc::BYTE_ConvertFromArrayToHexString(decoded.data(), decoded.size(), &readerName);
+					pResponse->push_back(readerName);
+				}
+				else {
+					pResponse->push_back(*iter);
+				}
+			}
+		}
+		catch (const char* s) {
+			message = string_format(_CONV("Remote_ListReaders(), SendLine(%s), fail with (%s)\n"), message.c_str(), s);
+			LogWinscardRules(message);
+			status = SCARD_F_UNKNOWN_ERROR;
+		}
+		catch (...) {
+			message = string_format(_CONV("Remote_ListReaders(), SendLine(%s), fail with (unhandled exception)\n"), message.c_str());
+			LogWinscardRules(message);
+			status = SCARD_F_UNKNOWN_ERROR;
+		}
+	}
+	else {
+		status = SCARD_F_COMM_ERROR;
+	}
+
+	return status;
+}
+
+LONG CWinscardApp::Remote_SCardReleaseContext() {
+	theApp.cardReaderMap.clear();
+	theApp.remoteReadersMap.clear();
+	m_nextRemoteCardID = 1;
+	return 0;
 }
 
 #endif
@@ -3190,31 +3403,70 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 	LONG status = SCARD_S_SUCCESS;
 	string_type     message;
 
-	// unique command ID
-	theApp.m_remoteConfig.nextCommandID++;
-	string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, command, commandData, "", CMD_LINE_SEPARATOR);
-	pRemoteConfig->pSocket->SendLine(l);
-	//message.Insert(0, "\n::-> ");
-	message.insert(0, _CONV("::-> "));
-	LogWinscardRules(message);
-	_sleep(500);
 
-	// OBTAIN RESPONSE, PARSE BACK 
-	// TODO: parse response, propagate it, chck unique command ID
-	l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+	string_type sIP(pRemoteConfig->IP);
+	try {
+		// TODO - add as config param (open/close socket for every command)
+		// This version will open connection for every command (slow if not connection to localhost)
+		if (pRemoteConfig->bOpenSocketForEveryCommand) {
+			if (pRemoteConfig->pSocket) {
+				delete pRemoteConfig->pSocket;
+			}
+			pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+		}
+		else {
+			if (pRemoteConfig->pSocket == NULL) {
+				pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+			}
+		}
 
-	// Parse response
-	status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
+		if (pRemoteConfig->pSocket == NULL) {
+			message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s failed"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+			LogDebugString(message, true);
+			return false;
+		}
 
-	replace(pResponse->begin(), pResponse->end(), '\n', ' ');
-	message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
-	LogWinscardRules(message);
+
+		// unique command ID
+		theApp.m_remoteConfig.nextCommandID++;
+		string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, command, commandData, "", CMD_LINE_SEPARATOR);
+		pRemoteConfig->pSocket->SendLine(l);
+		replace(l.begin(), l.end(), '\n', ' ');
+		//message = string_format(_CONV("::-> %s\n"), l.c_str());
+		message = string_format(_CONV("::-> %s %s\n"), command.c_str(), "(hidden data)");
+		LogWinscardRules(message);
+		if (REMOTE_APDU_RESPONSE_WAIT_TIME > 0) {
+			_sleep(REMOTE_APDU_RESPONSE_WAIT_TIME);
+		}
+
+		// OBTAIN RESPONSE, PARSE BACK 
+		l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+		// Parse response
+		status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
+
+		replace(pResponse->begin(), pResponse->end(), '\n', ' ');
+		//message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
+		message = string_format(_CONV("::<- %s\n"), "(hidden response)");
+		LogWinscardRules(message);
+
+		if (pRemoteConfig->bOpenSocketForEveryCommand) {
+			pRemoteConfig->pSocket->Close();
+		}
+	}
+	catch (std::string error) {
+		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
+		LogDebugString(message, true);
+	}
+	catch (...) {
+		message = string_format(_CONV("Failed to connect to %s:%s\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
+		LogDebugString(message, true);
+	}
 
 	return status;
 }
 
 
-LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader) {
+LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type targetReader, string_type* pATR) {
 	LONG        status = 0;
 	string_type     message;
 
@@ -3222,6 +3474,7 @@ LONG CWinscardApp::Remote_SCardConnect(REMOTE_CONFIG* pRemoteConfig, string_type
 		try {
 			string_type response;
 			Remote_SendRequest(pRemoteConfig, targetReader, CMD_RESET, "", &response);
+			*pATR = response;
 		}
 		catch (const char* s) {
 			message = string_format(_CONV("Remote_SCardConnect(), SendLine(%s), fail with (%s)\n"), message.c_str(), s);
@@ -3283,29 +3536,12 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
         try {
 			// unique command ID
 			theApp.m_remoteConfig.nextCommandID++;
-			CCommonFnc::BYTE_ConvertFromArrayToHexString(pbSendBuffer, cbSendLength, &value);
-			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
-            pRemoteConfig->pSocket->SendLine(l);
-            //message.Insert(0, "\n::-> ");
-			message.insert(0, _CONV("::-> "));
-            LogWinscardRules(message);
-            
-            // SLEEP LONGER, IF MORE DATA WILL BE RETURNED BY SYSTEM 00 0c 00 00 xx CALL            
-            if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
-                _sleep(pbSendBuffer[4] * 20);       // LC * 20ms
-            }
-            else _sleep(500);
-            
-            // OBTAIN RESPONSE, PARSE BACK 
-            l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
+			CCommonFnc::BYTE_ConvertFromArrayToHexString(pbSendBuffer, cbSendLength, &value, false);
+			
+			string_type     response;
+			Remote_SendRequest(pRemoteConfig, targetReader, CMD_APDU, value, &response);
+			response.erase(response.find_last_not_of(" \n\r\t") + 1);
 
-			string_type response;
-			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
-
-			replace(l.begin(), l.end(), '\n', ' ');
-			message = string_format(_CONV("::<- %s\n"), l.c_str());
-            LogWinscardRules(message);
-            
             if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
                 // NOTE: pbRecvBuffer IS ASSUMED TO HAVE 260B
@@ -3401,7 +3637,20 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		char_value = iniparser_getstring(dict, type_cat(sec_and_key, _CONV(":VIRTUAL_READERS")), "");
 		if (type_length(char_value) != 0)
 		{
-			m_winscardConfig.sVIRTUAL_READERS = char_value;
+			m_winscardConfig.sVIRTUAL_READERS_STATIC = char_value;
+/*
+			// Make sure there is , at the end of list
+			if (m_winscardConfig.sVIRTUAL_READERS_STATIC.at(m_winscardConfig.sVIRTUAL_READERS_STATIC.length()) != ',') {
+				m_winscardConfig.sVIRTUAL_READERS_STATIC.append(",");
+			}
+*/
+			// Parse list of readers provided in configuration file
+			m_winscardConfig.listVIRTUAL_READERS_STATIC.clear();
+			CCommonFnc::String_ParseSeparatedArray(char_value, type_length(char_value), VIRTUAL_READERS_SEPARATOR, &(m_winscardConfig.listVIRTUAL_READERS_STATIC));
+
+			// Copy into list of virtual readers
+			m_winscardConfig.listVIRTUAL_READERS.clear();
+			m_winscardConfig.listVIRTUAL_READERS = m_winscardConfig.listVIRTUAL_READERS_STATIC;
 		}
 	}
 
@@ -3414,6 +3663,11 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2)
 		{
 			m_remoteConfig.bRedirect = value;
+		}
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":NEWSOCKETPERCOMMAND")), 2)) != 2)
+		{
+			m_remoteConfig.bOpenSocketForEveryCommand = value;
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -3723,9 +3977,9 @@ int CWinscardApp::LoadRules() {
 	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 	
 	//
-	// Searching for 'winscard_rules.txt' (priority) 
-	// 1. Lookup in local directory
-	// 2. Lookup for APDUPLAY environmental variable
+	// Searching for 'winscard_rules.txt' (priority ordering) 
+	// 1. Lookup in local directory of the loading application
+	// 2. Lookup for APDUPLAY environmental variable and read 
 	// (UNUSED) 3. Lookup on user Desktop 
 
 	if (!file) {  // 1. Lookup in local directory
@@ -3741,8 +3995,7 @@ int CWinscardApp::LoadRules() {
 	}
 
 	if (!file) { // 2. Lookup for APDUPLAY environmental variable
-		char* configPath = std::getenv(ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str());
-		LogDebugString(string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str()));
+		char* configPath = Reg_GetEnvVariable(ENV_APDUPLAY_WINSCARD_RULES_PATH);
 		if (configPath != NULL) {
 			LogDebugString(string_format(_CONV(" defined (%s)\n"), configPath), false);
 			// variable detected, try to open 
@@ -3820,7 +4073,7 @@ int CWinscardApp::LoadRules() {
 		instructionDict = iniparser_load((const char*) INSTRUCTION_FILE.c_str());
 	}
 
-	LogDebugString(string_format(_CONV("Finalizing LoadRules with status %s\n"), status));
+	LogDebugString(string_format(_CONV("Finalizing LoadRules with status %d\n"), status));
 
 	return status;
 }
@@ -3834,12 +4087,26 @@ string_type CWinscardApp::GetReaderName(IN SCARDHANDLE hCard) {
 }
 
 /**
-Returns reader name corresponding to provided card handle
+Returns true if given handle is of remote card
 */
 boolean CWinscardApp::IsRemoteCard(IN SCARDHANDLE hCard) {
 	auto it = theApp.remoteReadersMap.find(hCard);
 	return it != theApp.remoteReadersMap.end();
 }
+
+/**
+Returns true if given reader name is of remote reader
+*/
+boolean CWinscardApp::IsRemoteReader(IN string_type readerName) {
+	if (std::find(theApp.m_winscardConfig.listVIRTUAL_READERS.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS.end(), readerName) != theApp.m_winscardConfig.listVIRTUAL_READERS.end()) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+
 
 
 #if defined(_WIN32) && defined(_UNICODE)
