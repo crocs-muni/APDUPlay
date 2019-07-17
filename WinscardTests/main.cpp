@@ -125,7 +125,7 @@ std::string BytesToHex(BYTE* data, size_t dataLen) {
 	std::stringstream ss;
 	char oneByte[3];
 	for (size_t i = 0; i < dataLen; ++i) {
-		snprintf(oneByte, sizeof(oneByte), "%.2x", data[i]);
+		sprintf_s(oneByte, sizeof(oneByte), "%.2x", data[i]);
 		ss << oneByte;
 	}
 	return ss.str();
@@ -155,12 +155,20 @@ static SCard LONG(STDCALL *Original_SCardListReaders)(
 	OUT     LPSTR mszReaders,
 	IN OUT  LPDWORD pcchReaders
 	);
-
+static SCard LONG(STDCALL *Original_SCardListReadersW)(
+	IN      SCARDCONTEXT hContext,
+	IN      LPCWSTR mszGroups,
+	OUT     LPWSTR mszReaders,
+	IN OUT  LPDWORD pcchReaders
+	);
 static SCard LONG(STDCALL *Original_SCardEstablishContext)(
 	IN  DWORD dwScope,
 	IN  LPCVOID pvReserved1,
 	IN  LPCVOID pvReserved2,
 	OUT LPSCARDCONTEXT phContext
+	);
+static SCard LONG(STDCALL *Original_SCardReleaseContext)(
+	IN  SCARDCONTEXT hContext
 	);
 
 int SendAPDU(string_type apdu, SCARDHANDLE  hCard, DWORD scProtocol) {
