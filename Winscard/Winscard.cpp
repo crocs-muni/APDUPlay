@@ -70,11 +70,12 @@ static SCard \1 (STDCALL *Original_\2)
 /**/
 #pragma warning(disable:4996)   
 
-static string_type LIBRARY_VERSION = _CONV("2.1.4");
+static string_type LIBRARY_VERSION = _CONV("2019.07.17");
 
 static string_type ENV_APDUPLAY_WINSCARD_RULES_PATH = _CONV("APDUPLAY");
 static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
 static string_type ENV_APDUPLAY_REMOTE_TAG = _CONV("APDUPLAY_REMOTE_TAG");
+static string_type ENV_APDUPLAY_DISABLE_LOGGING = _CONV("APDUPLAY_DISABLE_LOGGING");
 
 static string_type NO_READER = "*"; // was "empty" before
 
@@ -158,20 +159,24 @@ const SCARD_IO_REQUEST g_rgSCardT0Pci, g_rgSCardT1Pci, g_rgSCardRawPci;
 /* ******************************************************************************* */
 
 void LogDebugString(string_type message, bool bInsertTime = true) {
-	string_type logLine;
+	if (theApp.m_remoteConfig.bDisableLogging == FALSE) {
+		string_type logLine;
 
-	if (bInsertTime) {
-		string_type date_and_time = getCurrentTimeString();
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("%s: %s"), date_and_time.c_str(), message.c_str()));
-	}
-	else {
-		CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, message);
+		if (bInsertTime) {
+			string_type date_and_time = getCurrentTimeString();
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, string_format(_CONV("%s: %s"), date_and_time.c_str(), message.c_str()));
+		}
+		else {
+			CCommonFnc::File_AppendString(APDUPLAY_DEBUG_FILE, message);
+		}
 	}
 }
 
 void LogWinscardRules(string_type message) {
-	LogDebugString(message);
-	CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	if (theApp.m_remoteConfig.bDisableLogging == FALSE) {
+		LogDebugString(message);
+		CCommonFnc::File_AppendString(WINSCARD_RULES_LOG, message);
+	}
 }
 
 void DumpMemory(LPCBYTE location, DWORD length) {
@@ -3084,20 +3089,31 @@ void GetDesktopPath(char_type* path)
 #endif
 }
 
+char* Reg_GetEnvVariable(string_type variableName) {
+	LogDebugString(string_format(_CONV("Going to query %s env variable ... "), variableName.c_str()));
+	char* value = std::getenv(variableName.c_str());
+	if (value != NULL) {
+		LogDebugString(string_format(_CONV("found '%s'\n"), value), false);
+	}
+	else {
+		LogDebugString(_CONV("not found\n"), false);
+	}
 
+	return value;
+}
 
 #if defined (_WIN32)
 BOOL CWinscardApp::InitInstance()
 {
 	CWinApp::InitInstance();
 	// Check for user-defined path for debug file
-	char* debugPath = std::getenv(ENV_APDUPLAY_DEBUG_PATH.c_str());
+	char* debugPath = Reg_GetEnvVariable(ENV_APDUPLAY_DEBUG_PATH);
 	if (debugPath != NULL) {
 		APDUPLAY_DEBUG_FILE = debugPath;
 	}
 
     srand((int) time(NULL));
-	LogDebugString(_CONV("#####################################################################################\n"), false);
+	LogDebugString(_CONV("\n#####################################################################################\n"), false);
 	LogDebugString(_CONV("InitInstance entered\n"));
 
 #if defined (_WIN32) && !defined(_WIN64)
@@ -3129,20 +3145,20 @@ BOOL CWinscardApp::InitInstance()
     // LOAD MODIFICATION RULES
     LoadRules();
 
+
 	// Check for env. variable containing additional personalization of this instance
 	// (not stored in configuration file to enable instance personalization without need for separate folder with separate file)
-	LogDebugString(string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_REMOTE_TAG.c_str()));
-	char* remoteTag = std::getenv(ENV_APDUPLAY_REMOTE_TAG.c_str());
-	if (remoteTag != NULL) {
-		LogDebugString(string_format(_CONV("found '%s'\n"), remoteTag), false);
-		theApp.m_remoteConfig.remoteTag += remoteTag; // Note: remoteTag is assumed to have proper structure remote server can understand
+	// Note: remoteTag is assumed to have proper structure remote server can understand
+	char* remoteTag = Reg_GetEnvVariable(ENV_APDUPLAY_REMOTE_TAG);
+	if (remoteTag != NULL) { theApp.m_remoteConfig.remoteTag += remoteTag; }
+
+	char* silenceLogging = Reg_GetEnvVariable(ENV_APDUPLAY_DISABLE_LOGGING);
+	if (silenceLogging != NULL) { 
+		LogWinscardRules("!!! Detected environmental variable disabling all subsequent logging (which improves the card communication speed for scenarios with high number of APDus).\nPlease remove environmental variable APDUPLAY_DISABLE_LOGGING if you want to see more logs.");
+		theApp.m_remoteConfig.bDisableLogging = TRUE;
 	}
-	else {
-		LogDebugString(_CONV("not found\n"), false);
-	}
 
-
-
+	
     // CONNECT TO REMOTE SOCKET IF REQUIRED
     if (m_remoteConfig.bRedirect) {
 		LogDebugString(_CONV("[REMOTE] Redirect = 1 => going to connect to specified socket (make sure socket is opened. If application terminates, try to set Redirect = 0 to disable remote redirecting)\n"));
@@ -3177,6 +3193,8 @@ int CWinscardApp::Remote_Connect(REMOTE_CONFIG* pRemoteConfig) {
 			LogDebugString(_CONV("failed\n"), false);
 		}
 		pRemoteConfig->pSocket->Close();
+		delete pRemoteConfig->pSocket;
+		pRemoteConfig->pSocket = NULL;
 
 		// Send personalization data
 		if (theApp.m_remoteConfig.remoteTag.length() > 0) {
@@ -3384,10 +3402,20 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 
 	string_type sIP(pRemoteConfig->IP);
 	try {
-		if (pRemoteConfig->pSocket) {
-			delete pRemoteConfig->pSocket;
+		// TODO - add as config param (open/close socket for every command)
+		// This version will open connection for every command (slow if not connection to localhost)
+		if (pRemoteConfig->bOpenSocketForEveryCommand) {
+			if (pRemoteConfig->pSocket) {
+				delete pRemoteConfig->pSocket;
+			}
+			pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
 		}
-		pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+		else {
+			if (pRemoteConfig->pSocket == NULL) {
+				pRemoteConfig->pSocket = new SocketClient(sIP, type_to_int(pRemoteConfig->port.c_str(), NULL, 10));
+			}
+		}
+
 		if (pRemoteConfig->pSocket == NULL) {
 			message = string_format(_CONV("Connnecting to remote proxy with IP:port = %s:%s failed"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str());
 			LogDebugString(message, true);
@@ -3403,7 +3431,6 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 		//message = string_format(_CONV("::-> %s\n"), l.c_str());
 		message = string_format(_CONV("::-> %s %s\n"), command.c_str(), "(hidden data)");
 		LogWinscardRules(message);
-		//LogDebugString(message, false);
 		if (REMOTE_APDU_RESPONSE_WAIT_TIME > 0) {
 			_sleep(REMOTE_APDU_RESPONSE_WAIT_TIME);
 		}
@@ -3417,9 +3444,10 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 		//message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
 		message = string_format(_CONV("::<- %s\n"), "(hidden response)");
 		LogWinscardRules(message);
-		//LogDebugString(message, false);
 
-		pRemoteConfig->pSocket->Close();
+		if (pRemoteConfig->bOpenSocketForEveryCommand) {
+			pRemoteConfig->pSocket->Close();
+		}
 	}
 	catch (std::string error) {
 		message = string_format(_CONV("Failed to connect to %s:%s (error: %s)\n"), pRemoteConfig->IP.c_str(), pRemoteConfig->port.c_str(), error.c_str());
@@ -3510,30 +3538,6 @@ LONG CWinscardApp::Remote_SCardTransmit(REMOTE_CONFIG* pRemoteConfig, string_typ
 			Remote_SendRequest(pRemoteConfig, targetReader, CMD_APDU, value, &response);
 			response.erase(response.find_last_not_of(" \n\r\t") + 1);
 
-/*
-			string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, CMD_APDU, value, "", CMD_LINE_SEPARATOR);
-			pRemoteConfig->pSocket->SendLine(l);
-			replace(l.begin(), l.end(), '\n', ' ');
-			message = string_format(_CONV("::-> %s\n"), l.c_str());
-			LogWinscardRules(message);
-            
-            // SLEEP LONGER, IF MORE DATA WILL BE RETURNED BY SYSTEM 00 0c 00 00 xx CALL            
-            if (memcmp(pbSendBuffer, GET_APDU1, sizeof(GET_APDU1)) == 0 || memcmp(pbSendBuffer, GET_APDU2, sizeof(GET_APDU2)) == 0) {
-                _sleep(pbSendBuffer[4] * REMOTE_APDU_RESPONSE_WAIT_TIME_PER_BYTE);       // LC * 20ms
-            }
-            else _sleep(REMOTE_APDU_RESPONSE_WAIT_TIME);
-            
-            // OBTAIN RESPONSE, PARSE BACK 
-            l = pRemoteConfig->pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
-
-			string_type response;
-			status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, &response);
-
-			replace(l.begin(), l.end(), '\n', ' ');
-			message = string_format(_CONV("::<- %s\n"), l.c_str());
-            LogWinscardRules(message);
-*/
-            
             if (response.find(CMD_RESPONSE_FAIL) == string_type::npos) {
                 // RESPONSE CORRECT
                 // NOTE: pbRecvBuffer IS ASSUMED TO HAVE 260B
@@ -3655,6 +3659,11 @@ int CWinscardApp::LoadRule(const char_type* section_name, dictionary* dict/*stri
 		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":REDIRECT")), 2)) != 2)
 		{
 			m_remoteConfig.bRedirect = value;
+		}
+		type_copy(sec_and_key, section_name);
+		if ((value = iniparser_getboolean(dict, type_cat(sec_and_key, _CONV(":NEWSOCKETPERCOMMAND")), 2)) != 2)
+		{
+			m_remoteConfig.bOpenSocketForEveryCommand = value;
 		}
 
 		type_copy(sec_and_key, section_name);
@@ -3964,9 +3973,9 @@ int CWinscardApp::LoadRules() {
 	WINSCARD_RULES_LOG += _CONV("_") + date_and_time + _CONV(".txt");
 	
 	//
-	// Searching for 'winscard_rules.txt' (priority) 
-	// 1. Lookup in local directory
-	// 2. Lookup for APDUPLAY environmental variable
+	// Searching for 'winscard_rules.txt' (priority ordering) 
+	// 1. Lookup in local directory of the loading application
+	// 2. Lookup for APDUPLAY environmental variable and read 
 	// (UNUSED) 3. Lookup on user Desktop 
 
 	if (!file) {  // 1. Lookup in local directory
@@ -3982,8 +3991,7 @@ int CWinscardApp::LoadRules() {
 	}
 
 	if (!file) { // 2. Lookup for APDUPLAY environmental variable
-		char* configPath = std::getenv(ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str());
-		LogDebugString(string_format(_CONV("Going to query %s env variable ... "), ENV_APDUPLAY_WINSCARD_RULES_PATH.c_str()));
+		char* configPath = Reg_GetEnvVariable(ENV_APDUPLAY_WINSCARD_RULES_PATH);
 		if (configPath != NULL) {
 			LogDebugString(string_format(_CONV(" defined (%s)\n"), configPath), false);
 			// variable detected, try to open 

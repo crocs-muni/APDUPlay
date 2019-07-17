@@ -172,6 +172,7 @@ typedef std::list<PTR>           lptr;
 
 typedef struct _REMOTE_CONFIG {
     BOOL            bRedirect;
+	BOOL			bOpenSocketForEveryCommand;
 	string_type     IP;
 	string_type     port;
 	string_type     cfgScript;
@@ -188,12 +189,14 @@ typedef struct _REMOTE_CONFIG {
     BOOL            sampleReaded;
 	DWORD			nextCommandID;		// next unique command ID (checked on response)
     
+	BOOL			bDisableLogging;	// If TRUE, no logging is performed
     _REMOTE_CONFIG(void) {
         clear();
     }
 
     void clear() {
         bRedirect = FALSE;
+		bOpenSocketForEveryCommand = FALSE;
         IP = _CONV("");
         port = _CONV("");
         cfgScript = _CONV("");
@@ -208,6 +211,7 @@ typedef struct _REMOTE_CONFIG {
         numSamples = 1000;
         sampleReaded = FALSE;
 		nextCommandID = 1;
+		bDisableLogging = FALSE;
     }
 } REMOTE_CONFIG;
 #endif
