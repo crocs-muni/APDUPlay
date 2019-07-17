@@ -3084,7 +3084,7 @@ void GetDesktopPath(char_type* path)
 	string_type stringPath = "/home/";
     stringPath += login;
     stringPath += "/Desktop/APDUPlay/";
-    type_copy(rulesFilePath, stringPath.c_str());
+    type_copy(path, stringPath.c_str());
 #else
 	char_type appData[MAX_PATH];
 	SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, appData);
