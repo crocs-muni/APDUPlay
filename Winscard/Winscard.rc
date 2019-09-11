@@ -12,47 +12,11 @@
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
-#ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE  
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE  
-BEGIN
-    "#include ""afxres.h""\n"
-    "\0"
-END
-
-3 TEXTINCLUDE  
-BEGIN
-    "#define _AFX_NO_SPLITTER_RESOURCES\n"
-    "#define _AFX_NO_OLE_RESOURCES\n"
-    "#define _AFX_NO_TRACKER_RESOURCES\n"
-    "#define _AFX_NO_PROPERTY_RESOURCES\n"
-    "\n"
-	"#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CSY)\n"
-	"LANGUAGE 5, 1\n"
-	"#pragma code_page(1250)\n"
-    "#include ""res\\Winscard.rc2""  // non-Microsoft Visual C++ edited resources\n"
-#ifndef _AFXDLL
-    "#include ""afxres.rc""  	// Standard components\n"
-#endif
-    "#endif\n"
-    "\0"
-END
-
-/////////////////////////////////////////////////////////////////////////////
-#endif    // APSTUDIO_INVOKED
-
+// Czech (Czech Republic) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CSY)
-LANGUAGE 5, 1
+LANGUAGE LANG_CZECH, SUBLANG_DEFAULT
 #pragma code_page(1250)
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,9 +24,9 @@ LANGUAGE 5, 1
 // Version
 //
 
-VS_VERSION_INFO     VERSIONINFO
-  FILEVERSION       1,0,0,1
-  PRODUCTVERSION    1,0,0,1
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 2019,9,11,1
+ PRODUCTVERSION 2019,9,11,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -73,29 +37,78 @@ VS_VERSION_INFO     VERSIONINFO
  FILETYPE 0x2L
  FILESUBTYPE 0x0L
 BEGIN
-	BLOCK "StringFileInfo"
-	BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
         BLOCK "040904e4"
-		BEGIN 
-            VALUE "CompanyName", "TODO: <Company name>"
-            VALUE "FileDescription", "TODO: <File description>"
-			VALUE "FileVersion",     "1.0.0.1"
-			VALUE "InternalName",    "Winscard.dll"
-            VALUE "LegalCopyright", "TODO: (c) <Company name>.  All rights reserved."
-			VALUE "OriginalFilename","Winscard.dll"
-            VALUE "ProductName", "TODO: <Product name>"
-			VALUE "ProductVersion",  "1.0.0.1"
-		END
-	END
-	BLOCK "VarFileInfo" 
-	BEGIN 
-		VALUE "Translation", 0x0409, 1252
+        BEGIN
+            VALUE "CompanyName", "APDUPlay"
+            VALUE "FileDescription", "APDUPlay stub for winscard.dll"
+            VALUE "FileVersion", "2019.9.11.1"
+            VALUE "InternalName", "Winscard.dll"
+            VALUE "LegalCopyright", "CRoCS MUNI"
+            VALUE "OriginalFilename", "Winscard.dll"
+            VALUE "ProductName", "APDUPlay"
+            VALUE "ProductVersion", "2019.9.11.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
     END
 END
 
-#endif
-#ifndef APSTUDIO_INVOKED
+#endif    // Czech (Czech Republic) resources
+/////////////////////////////////////////////////////////////////////////////
 
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United Kingdom) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\n"
+    "#define _AFX_NO_OLE_RESOURCES\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\n"
+    "\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CSY)\n"
+    "LANGUAGE 5, 1\n"
+    "#pragma code_page(1250)\n"
+    "#include ""res\\Winscard.rc2""  // non-Microsoft Visual C++ edited resources\n"
+    "#include ""afxres.rc""     // Standard components\n"
+    "#endif\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (United Kingdom) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 3 resource.
@@ -108,10 +121,8 @@ END
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CSY)
 LANGUAGE 5, 1
 #pragma code_page(1250)
-#include "res\\Winscard.rc2"  // non-Microsoft Visual C++ edited resources
-#ifndef _AFXDLL
-#include "afxres.rc"  	// Standard components
-#endif
+#include "res\Winscard.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"     // Standard components
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
