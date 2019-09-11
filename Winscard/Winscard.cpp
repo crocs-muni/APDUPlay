@@ -1993,34 +1993,38 @@ SCard LONG STDCALL SCardGetStatusChangeW(
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
 	IN      DWORD cReaders
 ) {
-	LONG status = SCARD_S_SUCCESS;
+	LogWinscardRules(_CONV("SCardGetStatusChangeW called\n"));
+
 	char readerNameA[1000];
 	memset(readerNameA, 0, sizeof(readerNameA));
 	// Convert wchar to ascii
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor;
-	//std::string readerNameA = convertor.to_bytes(rgReaderStates->szReader);
 	int len = wcslen(rgReaderStates->szReader);
-	if (sizeof(readerNameA) < len) {
-		return SCARD_F_INTERNAL_ERROR;
-	}
-	for (int i = 0; i < len; i++) {
-		readerNameA[i] = (char) rgReaderStates->szReader[i];
-	}
-	//std::string readerNameA = convertor.to_bytes(rgReaderStates->szReader);
+	if (sizeof(readerNameA) < len) { return SCARD_F_INTERNAL_ERROR; }
+	for (int i = 0; i < len; i++) { readerNameA[i] = (char)rgReaderStates->szReader[i];}
 
-	LogWinscardRules(_CONV("SCardGetStatusChangeW called\n"));
-	string_type message = string_format(_CONV("-> rgReaderStates.szReader: '%s'\n"), readerNameA);
-	//string_type message = string_format(_CONV("-> rgReaderStates.szReader: %s\n"), rgReaderStates->szReader);
+	string_type message = string_format(_CONV("-> rgReaderStates.szReader: %s\n"), readerNameA);
 	LogWinscardRules(message);
+
+	LONG status = SCARD_S_SUCCESS;
 	if (theApp.IsRemoteReader(readerNameA)) {
-			status = SCARD_S_SUCCESS;
+		status = SCARD_S_SUCCESS;
+		rgReaderStates->dwEventState = 0x00010422;
+
+		// Set ATR based on previously retrieved value
+		if (theApp.remoteCardsATRMap.find(readerNameA) != theApp.remoteCardsATRMap.end()) {
+			string_type atr = theApp.remoteCardsATRMap[readerNameA];
+			rgReaderStates->cbAtr = 0x24;
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(atr, rgReaderStates->rgbAtr, &(rgReaderStates->cbAtr));
+		}
+		else {
+			rgReaderStates->cbAtr = 0x00;
+		}
 	}
 	else {
 		status = (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
 	}
 	message = string_format(_CONV("-> return status: 0x%x\n"), status);
 	LogWinscardRules(message);
-
 	return status;
 }
 
@@ -3501,8 +3505,8 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 		string_type l = Remote_FormatRequest(targetReader, theApp.m_remoteConfig.nextCommandID, command, commandData, "", CMD_LINE_SEPARATOR);
 		pRemoteConfig->pSocket->SendLine(l);
 		replace(l.begin(), l.end(), '\n', ' ');
-		message = string_format(_CONV("::-> %s\n"), l.c_str());
-		//message = string_format(_CONV("::-> %s %s\n"), command.c_str(), "(hidden data)");
+		//message = string_format(_CONV("::-> %s\n"), l.c_str());
+		message = string_format(_CONV("::-> %s %s\n"), command.c_str(), "(hidden data)");
 		LogWinscardRules(message);
 		if (REMOTE_APDU_RESPONSE_WAIT_TIME > 0) {
 			_sleep(REMOTE_APDU_RESPONSE_WAIT_TIME);
@@ -3514,8 +3518,8 @@ LONG CWinscardApp::Remote_SendRequest(REMOTE_CONFIG* pRemoteConfig, string_type 
 		status = Remote_ParseResponse(l, theApp.m_remoteConfig.nextCommandID, pResponse);
 
 		replace(pResponse->begin(), pResponse->end(), '\n', ' ');
-		message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
-		//message = string_format(_CONV("::<- %s\n"), "(hidden response)");
+		//message = string_format(_CONV("::<- %s\n"), pResponse->c_str());
+		message = string_format(_CONV("::<- %s\n"), "(hidden response)");
 		LogWinscardRules(message);
 
 		if (pRemoteConfig->bOpenSocketForEveryCommand) {
