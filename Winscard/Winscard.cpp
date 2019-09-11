@@ -1104,10 +1104,24 @@ SCard LONG STDCALL SCardListReadersW(
 
 	// Try to read list of remote readers if required
 	if (theApp.m_remoteConfig.bRedirect) {
+		string_type readers = "";
 		list<string_type> remoteReaders;
 		if (theApp.Remote_ListReaders(&(theApp.m_remoteConfig), &remoteReaders) == SCARD_S_SUCCESS) {
 			// Put remote readers into list
 			theApp.m_winscardConfig.listVIRTUAL_READERS = remoteReaders;
+			theApp.remoteCardsATRMap.clear(); // Clear ATR of remote cards
+											  // Obtain ATR for every remote reader
+			ls::iterator   iter;
+			for (iter = remoteReaders.begin(); iter != remoteReaders.end(); iter++) {
+				string_type atr;
+				status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), *iter, &atr);
+				if (status == SCARD_S_SUCCESS) {
+					theApp.remoteCardsATRMap[*iter] = atr;
+				}
+			}
+
+
+			// readers from cfg file
 			theApp.m_winscardConfig.listVIRTUAL_READERS.insert(theApp.m_winscardConfig.listVIRTUAL_READERS.begin(),
 				theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.end()); // readers from cfg file
 		}
@@ -1117,8 +1131,15 @@ SCard LONG STDCALL SCardListReadersW(
 		// NO BUFFER IS SUPPLIED
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		DWORD realLen = 0;
-		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
-			*pcchReaders = realLen;
+		status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen);
+		*pcchReaders = realLen;
+		// Supress error when virtual readers are set
+		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
+			*pcchReaders = 0;
+			status = SCARD_S_SUCCESS;
+		}
+
+		if (status == SCARD_S_SUCCESS) {
 			// ALLOCATE OWN BUFFER FOR REAL AND VIRTUAL READERS
 			size_t virtReadersLen = 0;
 			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', NULL, &virtReadersLen);
@@ -1127,43 +1148,64 @@ SCard LONG STDCALL SCardListReadersW(
 			WCHAR*   readers = new WCHAR[newLen];
 			memset(readers, 0, newLen * sizeof(WCHAR));
 			*pcchReaders = newLen;
-			realLen = newLen;
-			if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, &realLen)) == SCARD_S_SUCCESS) {
-				*pcchReaders = realLen;
+			status = (*Original_SCardListReadersW)(hContext, mszGroups, readers, pcchReaders);
+
+
+			if (status == SCARD_E_NO_READERS_AVAILABLE) {
+				// No real readers are available. Check if virtual readers are supplied
 				if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
-					// COPY NAME OF VIRTUAL READERS TO END
-					WCHAR* virtReadersPtr = readers;
-					if (realLen > 0) { // Jump right after real readers
-						virtReadersPtr += realLen - 1;
-					}
-					CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', virtReadersPtr, &virtReadersLen);
-					// If no real readers were present, add two trailing zeroes, one otherwise
-					if (realLen == 0) {
-						*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
-					}
-					else {
-						*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
-					}
-					mszReaders[*pcchReaders - 1] = 0;
+					LogDebugString(string_format(_CONV("No real cards available, but virtual readers specified => continuing only with virtual readers.\n")));
+					// Virtual readers are required => continue as OK (only virtual will be returned)
+					status = SCARD_S_SUCCESS;
+					*pcchReaders = 0;
 				}
-				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
-				WCHAR**  temp = (WCHAR**)mszReaders;
-				*temp = readers;
-				CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
-				// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
-				theApp.m_wcharAllocatedMemoryList.push_back(readers);
+				else {
+					// No virtual readers specified => return SCARD_E_NO_READERS_AVAILABLE error
+				}
 			}
+
+			if (status == SCARD_S_SUCCESS) {
+				// COPY NAME OF VIRTUAL READERS TO THE END 
+				WCHAR* virtReadersPtr = readers;
+				if (realLen > 0) { // Jump right after real readers
+					virtReadersPtr += realLen - 1;
+				}
+				CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', virtReadersPtr, &virtReadersLen);
+				// If no real readers were present, add two trailing zeroes, one otherwise
+				if (realLen == 0) {
+					*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
+				}
+				else {
+					*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
+				}
+				mszReaders[*pcchReaders - 1] = 0;
+			}
+			// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
+			WCHAR**  temp = (WCHAR**)mszReaders;
+			*temp = readers;
+			CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
+			// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
+			theApp.m_wcharAllocatedMemoryList.push_back(readers);
 		}
 	}
 	else {
 		// BUFFER SUPPLIED
 		// OBTAIN REQUIRED LENGTH FOR REAL READERS
 		DWORD     realLen = *pcchReaders;
-		if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen)) == SCARD_S_SUCCESS) {
+		status = (*Original_SCardListReadersW)(hContext, mszGroups, NULL, &realLen);
+
+		// Supress error when virtual readers are set
+		if (status == SCARD_E_NO_READERS_AVAILABLE && theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
+			realLen = 0;
+			status = SCARD_S_SUCCESS;
+		}
+
+		if (status == SCARD_S_SUCCESS) {
 			size_t virtReadersLen = 0;
 			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', NULL, &virtReadersLen);
 
 			if ((realLen + virtReadersLen + 2 > *pcchReaders) || (mszReaders == NULL)) {
+				LogWinscardRules(_CONV("Likely dummy call to obtain required buffer length for readers\n"));
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
 				*pcchReaders = (DWORD)(realLen + virtReadersLen + 2);
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
@@ -1172,7 +1214,21 @@ SCard LONG STDCALL SCardListReadersW(
 				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
 				realLen = *pcchReaders - 1;
 				memset(mszReaders, 0x00, *pcchReaders * sizeof(WCHAR));
-				if ((status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen)) == SCARD_S_SUCCESS) {
+				status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen);
+				if (status == SCARD_E_NO_READERS_AVAILABLE) {
+					// No real readers are available. Check if virtual readers are supplied
+					if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
+						LogDebugString(string_format(_CONV("No real cards available, but virtual readers specified => continuing only with virtual readers.\n")));
+						// Virtual readers are required => continue as OK (only virtual will be returned)
+						status = SCARD_S_SUCCESS;
+						realLen = 0;
+					}
+					else {
+						// No virtual readers specified => return SCARD_E_NO_READERS_AVAILABLE error
+					}
+				}
+				if (status == SCARD_S_SUCCESS) {
+					*pcchReaders = realLen;
 					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
 					if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
 						WCHAR* virtReadersPtr = mszReaders;
@@ -1180,17 +1236,17 @@ SCard LONG STDCALL SCardListReadersW(
 							virtReadersPtr += realLen - 1;
 						}
 						CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', virtReadersPtr, &virtReadersLen);
+
+						// If no real readers were present, add two trailing zeroes, one otherwise
+						if (realLen == 0) {
+							*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
+						}
+						else {
+							*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
+						}
+						mszReaders[*pcchReaders - 1] = 0;
 					}
 					else { *pcchReaders = realLen; }
-					// If no real readers were present, add two trailing zeroes, one otherwise
-					if (realLen == 0) {
-						*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
-					}
-					else {
-						*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
-					}
-					mszReaders[*pcchReaders - 1] = 0;
-
 					CCommonFnc::String_ParseNullSeparatedArray(mszReaders, *pcchReaders, &readersList);
 				}
 			}
@@ -1937,23 +1993,38 @@ SCard LONG STDCALL SCardGetStatusChangeW(
 	IN OUT  LPSCARD_READERSTATEW rgReaderStates,
 	IN      DWORD cReaders
 ) {
-	LONG status = SCARD_S_SUCCESS;
-	// Convert wchar to ascii
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor;
-	std::string readerNameA = convertor.to_bytes(rgReaderStates->szReader);
-
 	LogWinscardRules(_CONV("SCardGetStatusChangeW called\n"));
+
+	char readerNameA[1000];
+	memset(readerNameA, 0, sizeof(readerNameA));
+	// Convert wchar to ascii
+	int len = wcslen(rgReaderStates->szReader);
+	if (sizeof(readerNameA) < len) { return SCARD_F_INTERNAL_ERROR; }
+	for (int i = 0; i < len; i++) { readerNameA[i] = (char)rgReaderStates->szReader[i];}
+
 	string_type message = string_format(_CONV("-> rgReaderStates.szReader: %s\n"), readerNameA);
 	LogWinscardRules(message);
+
+	LONG status = SCARD_S_SUCCESS;
 	if (theApp.IsRemoteReader(readerNameA)) {
 		status = SCARD_S_SUCCESS;
+		rgReaderStates->dwEventState = 0x00010422;
+
+		// Set ATR based on previously retrieved value
+		if (theApp.remoteCardsATRMap.find(readerNameA) != theApp.remoteCardsATRMap.end()) {
+			string_type atr = theApp.remoteCardsATRMap[readerNameA];
+			rgReaderStates->cbAtr = 0x24;
+			CCommonFnc::BYTE_ConvertFromHexStringToArray(atr, rgReaderStates->rgbAtr, &(rgReaderStates->cbAtr));
+		}
+		else {
+			rgReaderStates->cbAtr = 0x00;
+		}
 	}
 	else {
 		status = (*Original_SCardGetStatusChangeW)(hContext, dwTimeout, rgReaderStates, cReaders);
 	}
 	message = string_format(_CONV("-> return status: 0x%x\n"), status);
 	LogWinscardRules(message);
-
 	return status;
 }
 
@@ -1966,6 +2037,8 @@ SCard LONG STDCALL SCardUIDlgSelectCardA(
 ) {
 	LogWinscardRules(_CONV("SCardUIDlgSelectCardA called\n"));
 	return (*Original_SCardUIDlgSelectCardA)(a);
+	
+
 }
 
 
