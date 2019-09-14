@@ -339,6 +339,7 @@ SCard LONG STDCALL SCardControl(
 ) {
 	LogWinscardRules(_CONV("SCardControl called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
+    	LogWinscardRules(_CONV("WARNING: No implementation for remote cards, just returns with SCARD_S_SUCCESS\n"));
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -362,6 +363,8 @@ SCard LONG STDCALL SCardGetAttrib(
 ) {
 	LogWinscardRules(_CONV("SCardGetAttrib called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
+    	LogWinscardRules(_CONV("WARNING: No implementation for remote cards, now just returns with SCARD_S_SUCCESS\n"));
+	    //https://docs.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetattrib
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -385,6 +388,8 @@ SCard LONG STDCALL SCardSetAttrib(
 ) {
 	LogWinscardRules(_CONV("SCardSetAttrib called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
+    	LogWinscardRules(_CONV("WARNING: No implementation for remote cards, now just returns with SCARD_S_SUCCESS\n"));
+	    //https://docs.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardsetattrib
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -543,6 +548,7 @@ SCard LONG STDCALL SCardDisconnect(
 
 	// DISCONNECT FROM CARD
 	if (theApp.IsRemoteCard(hCard)) {
+    	LogWinscardRules(_CONV("WARNING: No implementation for remote cards, now just returns with SCARD_S_SUCCESS\n"));
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -809,6 +815,9 @@ SCard LONG STDCALL SCardConnect(
 		string_type atr;
 		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), szReader, &atr);
 		theApp.remoteCardsATRMap[szReader] = atr;
+		string_type message;
+		message = string_format(_CONV("SCardConnect(hContext:0x%x,%s,hCard:0x%x) called\n"), hContext, szReader, *phCard);
+		LogWinscardRules(message);
 	}
 	else {
 #endif
@@ -852,7 +861,7 @@ SCard LONG STDCALL SCardStatus(
 		// According to https://docs.microsoft.com/en-us/windows/desktop/api/winscard/nf-winscard-scardstatusa
 		*pdwState = SCARD_SPECIFIC;
 		*pdwProtocol = SCARD_PROTOCOL_T1;
-
+        // TODO: fill pbAtr
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -900,7 +909,6 @@ SCard LONG STDCALL SCardListReaders(
 			// readers from cfg file
 			theApp.m_winscardConfig.listVIRTUAL_READERS.insert(theApp.m_winscardConfig.listVIRTUAL_READERS.begin(), 
 					theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.end()); 
-
 		}
 	}
 
@@ -943,7 +951,7 @@ SCard LONG STDCALL SCardListReaders(
 			}
 
 			if (status == SCARD_S_SUCCESS) {
-				// COPY NAME OF VIRTUAL READERS TO THE END 
+				// COPY NAME OF VIRTUAL READERS TO THE END
 				char* virtReadersPtr = readers;
 				if (realLen > 0) { // Jump right after real readers
 					virtReadersPtr += realLen - 1;
@@ -957,8 +965,7 @@ SCard LONG STDCALL SCardListReaders(
 					*pcchReaders = (DWORD)(realLen + virtReadersLen); // space for additional zero was already inserted before
 				}
 				readers[*pcchReaders - 1] = 0;
-				//mszReaders[*pcchReaders - 1] = 0;
-				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
+				// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER
 				char**  temp = (char**)mszReaders;
 				*temp = readers;
 				CCommonFnc::String_ParseNullSeparatedArray((BYTE*) readers, *pcchReaders - 1, &readersList);
@@ -983,6 +990,7 @@ SCard LONG STDCALL SCardListReaders(
 			size_t virtReadersLen = 0;
 			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, '\0', NULL, &virtReadersLen);
 			if ((realLen + virtReadersLen + 2 > *pcchReaders) || (mszReaders == NULL)) {
+				LogWinscardRules(_CONV("Likely dummy call to obtain required buffer length for readers\n"));
 				// SUPPLIED BUFFER IS NOT LARGE ENOUGHT
 				*pcchReaders = (DWORD) (realLen + virtReadersLen);
 				if (mszReaders != NULL) status = SCARD_E_INSUFFICIENT_BUFFER;
@@ -1006,11 +1014,8 @@ SCard LONG STDCALL SCardListReaders(
 				}
 				if (status == SCARD_S_SUCCESS) {
 					*pcchReaders = realLen;
-
+					// COPY NAME OF VIRTUAL READERS TO END (IF USED)
 					if (theApp.m_winscardConfig.listVIRTUAL_READERS.size() > 0) {
-						// ADD VIRTUAL READER
-						// COPY NAME OF VIRTUAL READERS TO END
-
 						char* virtReadersPtr = mszReaders;
 						if (realLen > 0) { // Jump right after real readers
 							virtReadersPtr += realLen - 1;
@@ -1027,7 +1032,6 @@ SCard LONG STDCALL SCardListReaders(
 						mszReaders[*pcchReaders - 1] = 0;
 					}
 					else { *pcchReaders = realLen; }
-
 					CCommonFnc::String_ParseNullSeparatedArray((BYTE*)mszReaders, *pcchReaders - 1, &readersList);
 				}
 			}
@@ -1071,14 +1075,15 @@ SCard LONG STDCALL SCardListReaders(
 	ls::iterator   iter;
 	std::string    availableReaders = "-> Found readers: ";
 	for (iter = readersList.begin(); iter != readersList.end(); iter++) {
+
+
+
 		availableReaders += *iter;
 		availableReaders += ",";
 	}
 	availableReaders += "\n";
 	LogWinscardRules(availableReaders);
 	LogWinscardRules(string_format(_CONV("Number of readers found: %d\n"), readersList.size()));
-
-
 	return status;
 }
 
@@ -1123,7 +1128,7 @@ SCard LONG STDCALL SCardListReadersW(
 
 			// readers from cfg file
 			theApp.m_winscardConfig.listVIRTUAL_READERS.insert(theApp.m_winscardConfig.listVIRTUAL_READERS.begin(),
-				theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.end()); // readers from cfg file
+				theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.begin(), theApp.m_winscardConfig.listVIRTUAL_READERS_STATIC.end());
 		}
 	}
 
@@ -1144,7 +1149,6 @@ SCard LONG STDCALL SCardListReadersW(
 			size_t virtReadersLen = 0;
 			CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', NULL, &virtReadersLen);
 			DWORD     newLen = (DWORD)(*pcchReaders + virtReadersLen + 2); // +2 for two terminating zeroes
-																		   // DWORD     newLen = (DWORD) (*pcchReaders + theApp.m_winscardConfig.sVIRTUAL_READERS.length());
 			WCHAR*   readers = new WCHAR[newLen];
 			memset(readers, 0, newLen * sizeof(WCHAR));
 			*pcchReaders = newLen;
@@ -1165,27 +1169,27 @@ SCard LONG STDCALL SCardListReadersW(
 			}
 
 			if (status == SCARD_S_SUCCESS) {
-				// COPY NAME OF VIRTUAL READERS TO THE END 
+				// COPY NAME OF VIRTUAL READERS TO THE END
 				WCHAR* virtReadersPtr = readers;
 				if (realLen > 0) { // Jump right after real readers
 					virtReadersPtr += realLen - 1;
 				}
 				CCommonFnc::String_SerializeAsSeparatedArray(&theApp.m_winscardConfig.listVIRTUAL_READERS, L'\0', virtReadersPtr, &virtReadersLen);
-				// If no real readers were present, add two trailing zeroes, one otherwise
+				// If no real readers were present, add space additional trailing zero
 				if (realLen == 0) {
 					*pcchReaders = (DWORD)(virtReadersLen + 1); // Add additional zero
 				}
 				else {
-					*pcchReaders = (DWORD)(realLen + virtReadersLen); // additional zero was already inserted before
+					*pcchReaders = (DWORD)(realLen + virtReadersLen); // space for additional zero was already inserted before
 				}
 				mszReaders[*pcchReaders - 1] = 0;
+			        // CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER
+			        WCHAR**  temp = (WCHAR**)mszReaders;
+			        *temp = readers;
+			        CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
+			        // ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
+			        theApp.m_wcharAllocatedMemoryList.push_back(readers);
 			}
-			// CAST mszReaders TO char** IS NECESSARY TO CORRECTLY PROPAGATE ALLOCATED BUFFER              
-			WCHAR**  temp = (WCHAR**)mszReaders;
-			*temp = readers;
-			CCommonFnc::String_ParseNullSeparatedArray(readers, *pcchReaders, &readersList);
-			// ADD ALLOCATED MEMORY TO LIST FOR FUTURE DEALLOCATION
-			theApp.m_wcharAllocatedMemoryList.push_back(readers);
 		}
 	}
 	else {
@@ -1212,8 +1216,8 @@ SCard LONG STDCALL SCardListReadersW(
 			}
 			else {
 				// SUPPLIED BUFFER IS OK, COPY REAL AND VIRTUAL READERS
-				realLen = *pcchReaders - 1;
 				memset(mszReaders, 0x00, *pcchReaders * sizeof(WCHAR));
+                                realLen = *pcchReaders - 1;
 				status = (*Original_SCardListReadersW)(hContext, mszGroups, mszReaders, &realLen);
 				if (status == SCARD_E_NO_READERS_AVAILABLE) {
 					// No real readers are available. Check if virtual readers are supplied
@@ -1293,7 +1297,7 @@ SCard LONG STDCALL SCardListReadersW(
 		std::wstring_convert<std::codecvt_utf8<wchar_t>> convertor;
 		std::string readerNameA = convertor.to_bytes(*iter);
 		availableReaders += readerNameA;
-		availableReaders += ", ";
+		availableReaders += ",";
 	}
 	availableReaders += "\n";
 	LogWinscardRules(availableReaders);
@@ -1301,6 +1305,7 @@ SCard LONG STDCALL SCardListReadersW(
 
 	return status;
 }
+
 
 static SCard LONG(STDCALL *Original_SCardListReaderGroups)(
 	IN      SCARDCONTEXT hContext,
@@ -1337,53 +1342,42 @@ SCard LONG STDCALL SCardConnectW(
 	LPSCARDHANDLE phCard,
 	LPDWORD pdwActiveProtocol)
 {
+	LogWinscardRules(_CONV("SCardConnectW called\n"));
+	LogWinscardRules(_CONV("WARNING: this function was not yet tested, may not work.\n"));
+
 	LONG    status = SCARD_S_SUCCESS;
-	string_type message;
-	message = string_format(_CONV("SCardConnectW(hContext:0x%x, %S) called\n"), hContext, szReader);
-	LogWinscardRules(message);
+	if (theApp.m_winscardConfig.bFORCE_CONNECT_SHARED_MODE) {
+		// we will always set mode to shared, if required
+		dwShareMode = SCARD_SHARE_SHARED;
+	}
 
-	// RESET APDU IN BYTE COUNTER
-	theApp.m_processedApduByteCounter = 0;
-
-	// RESET CARD
-	if (theApp.m_remoteConfig.bRedirect && (theApp.m_remoteConfig.pSocket != NULL)) {
+	// Detect remote cards
+#if defined(_WIN32)
+	string_type readerName = szReader;
+	if (theApp.IsRemoteReader(readerName)) {
+		theApp.m_nextRemoteCardID++;
+		*phCard = theApp.m_nextRemoteCardID;
+		theApp.remoteReadersMap[*phCard] = szReader;
+		string_type atr;
+		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), szReader, &atr);
+		theApp.remoteCardsATRMap[szReader] = atr;
 		string_type message;
-		theApp.m_remoteConfig.pSocket->SendLine(_CONV("get reset 1000"));
-		string_type l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
-		message = string_format(_CONV("\n:: %s"), l.c_str());
-		//message.Replace("\n", " ");
-		replace(message.begin(), message.end(), '\n', ' ');
+        	message = string_format(_CONV("SCardConnectW(hContext:0x%x, %S,hCard:0x%x) called\n"), hContext, szReader, *phCard);
 		LogWinscardRules(message);
-
-		// PREPARE FOR MEASUREMENT
-		message = string_format(_CONV("get params 1 %d %d"), theApp.m_remoteConfig.measureApduByteCounter, theApp.m_remoteConfig.measureApduByteDelay);
-		theApp.m_remoteConfig.pSocket->SendLine(message);
-		l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
-		message = string_format(_CONV(":: %s"), l.c_str());
-		LogWinscardRules(message);
-
-		message = string_format(_CONV("post sampling %d"), theApp.m_remoteConfig.numSamples);
-		theApp.m_remoteConfig.pSocket->SendLine(message);
-		l = theApp.m_remoteConfig.pSocket->ReceiveResponse(REMOTE_SOCKET_ENDSEQ, REMOTE_SOCKET_TIMEOUT);
-		message = string_format(_CONV(":: %s"), l.c_str());
-		LogWinscardRules(message);
-
-		// PREPARE FOR MEASUREMENT READING IN FUTURE
-		theApp.m_remoteConfig.sampleReaded = FALSE;
-
-		// CREATE VIRTUAL CARD HANDLE
-		*phCard = HANDLE_VIRTUAL_CARD;
-		*pdwActiveProtocol = SCARD_PROTOCOL_T0;
-
-		status = SCARD_S_SUCCESS;
 	}
 	else {
+#endif
+		// Standard physical reader
 		status = (*Original_SCardConnectW)(hContext, szReader, dwShareMode, dwPreferredProtocols, phCard, pdwActiveProtocol);
+		string_type message;
+		message = string_format(_CONV("SCardConnectW(hContext:0x%x,%S,hCard:0x%x) called\n"), hContext, szReader, *phCard);
+		LogWinscardRules(message);
+#if defined(_WIN32)
 	}
+#endif
 
-	message = string_format(_CONV("-> hCard:0x%x\n"), *phCard);
-	LogWinscardRules(message);
-
+	// Store mapping between card handle and reader (used in card remoting)
+	theApp.cardReaderMap[*phCard] = szReader;
 	return status;
 }
 
@@ -1872,6 +1866,7 @@ SCard LONG STDCALL SCardLocateCardsA(
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsA(%s,0x%x) called\n"), mszCards, hContext);
 	LogWinscardRules(message);
+ 	LogWinscardRules(_CONV("WARNING: No implementation yet for remote cards, if used, it is not returned\n"));
 	return (*Original_SCardLocateCardsA)(hContext, mszCards, rgReaderStates, cReaders);
 }
 
@@ -1892,6 +1887,7 @@ SCard LONG STDCALL SCardLocateCardsW(
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsW(%S,0x%x) called\n"), mszCards, hContext);
 	LogWinscardRules(message);
+ 	LogWinscardRules(_CONV("WARNING: No implementation yet for remote cards, if used, it is not returned\n"));
 	return (*Original_SCardLocateCardsW)(hContext, mszCards, rgReaderStates, cReaders);
 }
 
@@ -1914,6 +1910,7 @@ SCard LONG STDCALL SCardLocateCardsByATRA(
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsByATRA(hContext:0x%x) called\n"), hContext);
 	LogWinscardRules(message);
+ 	LogWinscardRules(_CONV("WARNING: No implementation yet for remote cards, if used, it is not returned\n"));
 	return (*Original_SCardLocateCardsByATRA)(hContext, rgAtrMasks, cAtrs, rgReaderStates, cReaders);
 }
 
@@ -1936,6 +1933,7 @@ SCard LONG STDCALL SCardLocateCardsByATRW(
 	string_type message;
 	message = string_format(_CONV("SCardLocateCardsByATRW(hContext:0x%x) called\n"), hContext);
 	LogWinscardRules(message);
+ 	LogWinscardRules(_CONV("WARNING: No implementation yet for remote cards, if used, it is not returned\n"));
 	return (*Original_SCardLocateCardsByATRW)(hContext, rgAtrMasks, cAtrs, rgReaderStates, cReaders);
 }
 
@@ -2092,6 +2090,7 @@ SCard LONG STDCALL SCardCancelTransaction(
 ) {
 	LogWinscardRules(_CONV("SCardCancelTransaction called\n"));
 	if (theApp.IsRemoteCard(hCard)) {
+    	LogWinscardRules(_CONV("WARNING: No implementation for remote cards, now just returns with SCARD_S_SUCCESS\n"));
 		return SCARD_S_SUCCESS;
 	}
 	else {
@@ -2118,10 +2117,10 @@ SCard LONG STDCALL SCardState(
 	message = string_format(_CONV("SCardState(hCard:0x%x) called\n"), hCard);
 	LogWinscardRules(message);
 	if (theApp.IsRemoteCard(hCard)) {
-		return SCARD_S_SUCCESS;
 		*pdwState = SCARD_SPECIFIC;
 		*pdwProtocol = SCARD_PROTOCOL_T1;
 		// TODO: fill pbAtr
+		return SCARD_S_SUCCESS;
 	}
 	else {
 		return (*Original_SCardState)(hCard, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
@@ -2152,10 +2151,10 @@ SCard LONG STDCALL SCardStatusW(
 	message = string_format(_CONV("SCardStatusW(hCard:0x%x) called\n"), hCard);
 	LogWinscardRules(message);
 	if (theApp.IsRemoteCard(hCard)) {
-		return SCARD_S_SUCCESS;
 		*pdwState = SCARD_SPECIFIC;
 		*pdwProtocol = SCARD_PROTOCOL_T1;
 		// TODO: fill pbAtr
+		return SCARD_S_SUCCESS;
 	}
 	else {
 		return (*Original_SCardStatusW)(hCard, szReaderName, pcchReaderLen, pdwState, pdwProtocol, pbAtr, pcbAtrLen);
