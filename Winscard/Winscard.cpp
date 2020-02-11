@@ -77,7 +77,7 @@ static string_type ENV_APDUPLAY_DEBUG_PATH = _CONV("APDUPLAY_DEBUG");
 static string_type ENV_APDUPLAY_REMOTE_TAG = _CONV("APDUPLAY_REMOTE_TAG");
 static string_type ENV_APDUPLAY_DISABLE_LOGGING = _CONV("APDUPLAY_DISABLE_LOGGING");
 
-static string_type NO_READER = "*"; // was "empty" before
+static string_type NO_READER = _CONV("*"); // was "empty" before
 
 static string_type APDUPLAY_DEBUG_FILE = _CONV("c:\\Temp\\apduplay_debug.txt");
 
@@ -361,14 +361,17 @@ SCard LONG STDCALL SCardGetAttrib(
 	OUT LPBYTE pbAttr,
 	IN OUT LPDWORD pcbAttrLen
 ) {
-	LogWinscardRules(_CONV("SCardGetAttrib called\n"));
+	string_type message;
+	message = string_format(_CONV("SCardGetAttrib(hCard:0x%x, dwAttrId:0x%x) called\n"), hCard, dwAttrId);
+	LogWinscardRules(message);
 	if (theApp.IsRemoteCard(hCard)) {
-    	LogWinscardRules(_CONV("WARNING: No implementation for remote cards, now just returns with SCARD_S_SUCCESS\n"));
-	    //https://docs.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetattrib
+			LogWinscardRules(_CONV("WARNING: No implementation for remote cards, now just returns with SCARD_S_SUCCESS\n"));
+			//https://docs.microsoft.com/en-us/windows/win32/api/winscard/nf-winscard-scardgetattrib
 		return SCARD_S_SUCCESS;
 	}
 	else {
-		return (*Original_SCardGetAttrib)(hCard, dwAttrId, pbAttr, pcbAttrLen);
+		LONG status = (*Original_SCardGetAttrib)(hCard, dwAttrId, pbAttr, pcbAttrLen);
+		return status;
 	}
 }
 
@@ -889,7 +892,7 @@ SCard LONG STDCALL SCardListReaders(
 
 	// Try to read list of remote readers if required
 	if (theApp.m_remoteConfig.bRedirect) {
-		string_type readers = "";
+		string_type readers = _CONV("");
 		list<string_type> remoteReaders;
 		if (theApp.Remote_ListReaders(&(theApp.m_remoteConfig), &remoteReaders) == SCARD_S_SUCCESS) {
 			// Put remote readers into list
@@ -1353,14 +1356,14 @@ SCard LONG STDCALL SCardConnectW(
 
 	// Detect remote cards
 #if defined(_WIN32)
-	string_type readerName = szReader;
+	string_type readerName = string_format(_CONV("%S"), szReader);
 	if (theApp.IsRemoteReader(readerName)) {
 		theApp.m_nextRemoteCardID++;
 		*phCard = theApp.m_nextRemoteCardID;
-		theApp.remoteReadersMap[*phCard] = szReader;
+		theApp.remoteReadersMap[*phCard] = readerName;
 		string_type atr;
-		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), szReader, &atr);
-		theApp.remoteCardsATRMap[szReader] = atr;
+		status = theApp.Remote_SCardConnect(&(theApp.m_remoteConfig), readerName, &atr);
+		theApp.remoteCardsATRMap[readerName] = atr;
 		string_type message;
         	message = string_format(_CONV("SCardConnectW(hContext:0x%x, %S,hCard:0x%x) called\n"), hContext, szReader, *phCard);
 		LogWinscardRules(message);
@@ -1377,7 +1380,7 @@ SCard LONG STDCALL SCardConnectW(
 #endif
 
 	// Store mapping between card handle and reader (used in card remoting)
-	theApp.cardReaderMap[*phCard] = szReader;
+	theApp.cardReaderMap[*phCard] = readerName;
 	return status;
 }
 

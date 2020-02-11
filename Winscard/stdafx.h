@@ -169,6 +169,7 @@ typedef std::list<PTR>           lptr;
 
 #if defined (_WIN32)
 #define REMOTE_READER_PREFIX_DEFAULT	"Simona"
+#define LREMOTE_READER_PREFIX_DEFAULT	L"Simona"
 
 typedef struct _REMOTE_CONFIG {
     BOOL            bRedirect;
