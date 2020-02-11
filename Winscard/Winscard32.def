@@ -95,9 +95,11 @@ SCardReadCacheW=original32.SCardReadCacheW@24
 SCardWriteCacheA=original32.SCardWriteCacheA@24
 SCardWriteCacheW=original32.SCardWriteCacheW@24
 
-g_rgSCardRawPci=original32.g_rgSCardRawPci DATA
-g_rgSCardT0Pci=original32.g_rgSCardT0Pci DATA
-g_rgSCardT1Pci=original32.g_rgSCardT1Pci DATA
+; Following three methods were removed from winscard.dll in 2019. 
+; Uncomment if compile for older version of Windows 
+;g_rgSCardRawPci=original32.g_rgSCardRawPci DATA
+;g_rgSCardT0Pci=original32.g_rgSCardT0Pci DATA
+;g_rgSCardT1Pci=original32.g_rgSCardT1Pci DATA
 
 SCardTransmit @57
 SCardConnectW @11
